@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T23:11:38.512Z",
+  "generatedAt": "2026-10-04T23:17:53.231Z",
   "collections": [
     {
       "name": "users",
@@ -174,13 +174,20 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_tasks_user ON tasks (user)",
         "CREATE INDEX idx_tasks_due_date ON tasks (due_date)",
         "CREATE INDEX idx_tasks_done ON tasks (done)",
-        "CREATE INDEX idx_tasks_user_done_due ON tasks (user, done, due_date)"
+        "CREATE INDEX idx_tasks_user_done_due ON tasks (user, done, due_date)",
+        "CREATE INDEX `idx_tasks_user_order` ON `tasks` (user, order)"
       ]
     },
     {

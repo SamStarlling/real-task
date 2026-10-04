@@ -60,12 +60,30 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Visões Temporais Estruturadas</h3>
-            <p>Navegação rigorosamente ordenada por fluxo cognitivo de execução:</p>
+            <h3>Visões Temporais & Arrastar-e-Soltar</h3>
+            <p>
+              Navegação rigorosamente ordenada por fluxo cognitivo de execução com reordenação
+              fluida:
+            </p>
             <ul>
               <li>
+                <strong>Reordenamento por Arrastar-e-Soltar (Drag & Drop):</strong> organização
+                intuitiva da prioridade de execução nas visões Hoje, Amanhã e Inbox. Ao arrastar
+                pela alça sutil em traço fino ou pelo corpo do cartão, o usuário reordena as tarefas
+                pendentes com feedback visual <em>quiet luxury</em> (elevação suave, contorno ouro
+                champagne fosco e indicador sutil de drop target). Suporta mouse e toque em telas
+                sensíveis (mobile).
+              </li>
+              <li>
+                <strong>Persistência Real no Banco:</strong> o campo sequencial <code>order</code>{' '}
+                na coleção <code>tasks</code> garante que a ordem personalizada sobrevive a
+                recarregamentos de página e se propaga instantaneamente para outras abas e
+                dispositivos via SSE Realtime. A reordenação não afeta datas, status ou tempos reais
+                das tarefas.
+              </li>
+              <li>
                 <strong>Inbox:</strong> todas as tarefas capturadas sem data de vencimento
-                atribuída. Serve como triagem primária de pendências.
+                atribuída. Serve como triagem primária de pendências priorizáveis por arrasto.
               </li>
               <li>
                 <strong>Hoje:</strong> visão principal do app. Agrupa tarefas agendadas para o dia e
@@ -74,7 +92,7 @@ export function Docs() {
               </li>
               <li>
                 <strong>Amanhã:</strong> preparação e visualização prévia da carga de trabalho do
-                dia seguinte para redução de atrito matinal.
+                dia seguinte com ordem de ataque matinal customizada.
               </li>
               <li>
                 <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
@@ -889,6 +907,19 @@ export function Docs() {
                 </tr>
                 <tr>
                   <td>
+                    <code>order</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Índice sequencial de priorização manual definida via arrastar-e-soltar nas
+                    visões Hoje, Amanhã e Inbox
+                  </td>
+                </tr>
+                <tr>
+                  <td>
                     <code>created</code> / <code>updated</code>
                   </td>
                   <td>
@@ -903,7 +934,8 @@ export function Docs() {
           <div className="docs-indices">
             <span>ÍNDICES:</span> <code>idx_tasks_user (user)</code> ·{' '}
             <code>idx_tasks_due_date (due_date)</code> · <code>idx_tasks_done (done)</code> ·{' '}
-            <code>idx_tasks_user_done_due (user, done, due_date)</code>
+            <code>idx_tasks_user_done_due (user, done, due_date)</code> ·{' '}
+            <code>idx_tasks_user_order (user, order)</code>
           </div>
         </div>
 

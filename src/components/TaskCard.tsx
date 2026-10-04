@@ -1,29 +1,66 @@
-import { Play } from 'lucide-react'
+import { GripVertical, Play } from 'lucide-react'
 import type { TaskRecord } from '@/types'
 import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
 import { updateTask } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
+
+export interface TaskCardProps {
+  task: TaskRecord
+  index: number
+  onChange: () => void
+  onOpen: () => void
+  draggable?: boolean
+  isDragging?: boolean
+  isDropTarget?: 'before' | 'after' | null
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: (e: React.DragEvent) => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
+  onTouchStartHandle?: (e: React.TouchEvent) => void
+}
+
 export function TaskCard({
   task,
   index,
   onChange,
   onOpen,
-}: {
-  task: TaskRecord
-  index: number
-  onChange: () => void
-  onOpen: () => void
-}) {
+  draggable = false,
+  isDragging = false,
+  isDropTarget = null,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  onTouchStartHandle,
+}: TaskCardProps) {
   const { start } = usePomodoro()
   const today = localDay()
   const ratio = Math.min(100, (task.actual_minutes / task.estimated_minutes) * 100)
   const overdue = !task.done && pbDay(task.due_date) < today
+
   return (
     <article
-      className={`task-card ${task.done ? 'done' : ''}`}
+      data-task-id={task.id}
+      className={`task-card ${task.done ? 'done' : ''} ${isDragging ? 'is-dragging' : ''} ${
+        isDropTarget === 'before' ? 'drop-target-before' : ''
+      } ${isDropTarget === 'after' ? 'drop-target-after' : ''}`}
       style={{ animationDelay: `${index * 40}ms` }}
+      draggable={draggable && !task.done}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
+      {draggable && !task.done && (
+        <div
+          className="task-drag-handle"
+          title="Arrastar para reordenar"
+          onTouchStart={onTouchStartHandle}
+        >
+          <GripVertical />
+        </div>
+      )}
       <button
         className="check"
         aria-label="Concluir"

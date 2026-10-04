@@ -24,6 +24,7 @@ export interface TaskRecord extends RecordModel {
   estimated_minutes: number
   actual_minutes: number
   completed_at?: string
+  order?: number
   expand?: { list?: ListRecord }
 }
 export interface SessionRecord extends RecordModel {

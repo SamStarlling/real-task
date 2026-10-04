@@ -49,6 +49,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       done: false,
       estimated_minutes: minutes,
       actual_minutes: 0,
+      order: 0,
     })
     toast({ title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : 'Inbox'}` })
     setText('')

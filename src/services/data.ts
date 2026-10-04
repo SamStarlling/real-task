@@ -90,7 +90,7 @@ export function getGoalForDate(date: Date = new Date(), user?: Partial<UserRecor
 
 export const getLists = () => pb.collection<ListRecord>('lists').getFullList({ sort: 'name' })
 export const getTasks = () =>
-  pb.collection<TaskRecord>('tasks').getFullList({ sort: '-created', expand: 'list' })
+  pb.collection<TaskRecord>('tasks').getFullList({ sort: 'order,-created', expand: 'list' })
 export const getSessions = () =>
   pb.collection<SessionRecord>('sessions').getFullList({ sort: '-started_at', expand: 'task' })
 export const createList = (name: string, user: string) =>
@@ -99,6 +99,23 @@ export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list' })
+
+/**
+ * Reordena uma lista ordenada de tarefas afetadas, persistindo o novo índice sequencial no banco.
+ * Apenas atualiza as tarefas cujo campo `order` difere da nova sequência planejada.
+ */
+export async function reorderTasks(orderedTasks: TaskRecord[]): Promise<void> {
+  const updates: Promise<unknown>[] = []
+  orderedTasks.forEach((task, idx) => {
+    const newOrder = (idx + 1) * 10
+    if (task.order !== newOrder) {
+      updates.push(pb.collection('tasks').update(task.id, { order: newOrder }))
+    }
+  })
+  if (updates.length > 0) {
+    await Promise.all(updates)
+  }
+}
 
 export const updateUserGoal = async (userId: string, minutes: number) => {
   const updated = await pb.collection('users').update(userId, { daily_focus_goal_minutes: minutes })

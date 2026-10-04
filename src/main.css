@@ -340,10 +340,82 @@ a {
   border: 1px solid rgba(197, 168, 128, 0.12);
   border-radius: 12px;
   animation: enter 0.35s both;
-  transition: 150ms;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease,
+    opacity 150ms ease;
+  position: relative;
 }
 .task-card:hover {
   border-color: rgba(197, 168, 128, 0.28);
+}
+
+/* Arrastar e soltar (Drag and drop) - Quiet Luxury */
+.task-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  cursor: grab;
+  padding: 2px 0 2px 2px;
+  margin-top: 2px;
+  flex: none;
+  touch-action: none;
+  user-select: none;
+  transition: color 150ms ease;
+}
+.task-drag-handle:hover,
+.task-card:hover .task-drag-handle {
+  color: #c5a880;
+}
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+.task-drag-handle svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.5;
+}
+
+/* Card enquanto está sendo arrastado */
+.task-card.is-dragging {
+  opacity: 0.85;
+  border-color: rgba(197, 168, 128, 0.45);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(197, 168, 128, 0.3);
+  transform: translateY(-2px) scale(1.01);
+  background: #151824;
+  z-index: 10;
+}
+
+/* Indicadores sutis de destino de drop (drop target) */
+.task-card.drop-target-before::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #c5a880;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(197, 168, 128, 0.5);
+  pointer-events: none;
+  z-index: 5;
+}
+.task-card.drop-target-after::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #c5a880;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(197, 168, 128, 0.5);
+  pointer-events: none;
+  z-index: 5;
 }
 @keyframes enter {
   from {
@@ -1904,6 +1976,14 @@ a {
   .task-card {
     padding: 16px;
     gap: 10px;
+  }
+  .task-drag-handle {
+    padding: 4px 2px;
+    touch-action: none;
+  }
+  .task-drag-handle svg {
+    width: 17px;
+    height: 17px;
   }
   .focus {
     width: 44px;
