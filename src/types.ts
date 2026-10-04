@@ -36,3 +36,13 @@ export interface SessionRecord extends RecordModel {
   status: 'completa' | 'interrompida'
   expand?: { task?: TaskRecord }
 }
+
+export interface FocusPresetRecord extends RecordModel {
+  name: string
+  user: string
+  work_minutes: number
+  short_break_minutes: number
+  long_break_minutes: number
+  blocks_before_long_break: number
+  archived?: boolean
+}

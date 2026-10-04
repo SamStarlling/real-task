@@ -1,7 +1,14 @@
 import pb from '@/lib/pocketbase/client'
-import type { ListRecord, SessionRecord, TaskRecord, UserRecord } from '@/types'
+import type {
+  FocusPresetRecord,
+  ListRecord,
+  SessionRecord,
+  TaskRecord,
+  UserRecord,
+  WeekdayKey,
+  WeeklyFocusGoals,
+} from '@/types'
 export type { WeekdayKey, WeeklyFocusGoals } from '@/types'
-import type { WeekdayKey, WeeklyFocusGoals } from '@/types'
 
 export const DEFAULT_WEEKLY_GOALS: WeeklyFocusGoals = {
   dom: 0,
@@ -114,8 +121,31 @@ export const sessionsForTask = (task: string) =>
   pb
     .collection<SessionRecord>('sessions')
     .getFullList({ filter: pb.filter('task = {:task}', { task }), sort: '-started_at' })
+
+export const getFocusPresets = (includeArchived: boolean = true) =>
+  pb.collection<FocusPresetRecord>('focus_presets').getFullList({
+    sort: 'created',
+    ...(includeArchived ? {} : { filter: 'archived = false' }),
+  })
+
+export const createFocusPreset = (data: {
+  name: string
+  user: string
+  work_minutes: number
+  short_break_minutes: number
+  long_break_minutes: number
+  blocks_before_long_break: number
+  archived?: boolean
+}) => pb.collection<FocusPresetRecord>('focus_presets').create(data)
+
+export const updateFocusPreset = (id: string, data: Partial<FocusPresetRecord>) =>
+  pb.collection<FocusPresetRecord>('focus_presets').update(id, data)
+
+export const deleteFocusPreset = (id: string) =>
+  pb.collection<FocusPresetRecord>('focus_presets').delete(id)
+
 export async function recordSession(
-  task: TaskRecord,
+  task: TaskRecord | null | undefined,
   startedAt: Date,
   endedAt: Date,
   minutes: number,
@@ -124,7 +154,7 @@ export async function recordSession(
   const user = pb.authStore.record!.id
   const midnight = new Date(endedAt.getFullYear(), endedAt.getMonth(), endedAt.getDate())
   const session = await pb.collection<SessionRecord>('sessions').create({
-    task: task.id,
+    task: task ? task.id : '',
     user,
     started_at: startedAt.toISOString(),
     ended_at: endedAt.toISOString(),
@@ -132,9 +162,11 @@ export async function recordSession(
     session_date: midnight.toISOString(),
     status,
   })
-  const current = await pb.collection<TaskRecord>('tasks').getOne(task.id)
-  await pb
-    .collection<TaskRecord>('tasks')
-    .update(task.id, { actual_minutes: Number(current.actual_minutes || 0) + minutes })
+  if (task) {
+    const current = await pb.collection<TaskRecord>('tasks').getOne(task.id)
+    await pb
+      .collection<TaskRecord>('tasks')
+      .update(task.id, { actual_minutes: Number(current.actual_minutes || 0) + minutes })
+  }
   return session
 }

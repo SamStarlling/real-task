@@ -8,6 +8,7 @@ import { Index } from '@/pages/Index'
 import { History } from '@/pages/History'
 import { Docs } from '@/pages/Docs'
 import { Settings } from '@/pages/Settings'
+import { PomodoroPage } from '@/pages/Pomodoro'
 import { AuthPage } from '@/pages/AuthPages'
 import { getSessions, getTasks } from '@/services/data'
 import type { SessionRecord, TaskRecord } from '@/types'
@@ -29,6 +30,10 @@ function Protected() {
     <Routes>
       <Route element={<Layout tasks={tasks} refresh={refresh} />}>
         <Route path="/" element={<Index tasks={tasks} refresh={refresh} />} />
+        <Route
+          path="/pomodoro"
+          element={<PomodoroPage sessions={sessions} tasks={tasks} refreshSessions={refresh} />}
+        />
         <Route path="/historico" element={<History sessions={sessions} />} />
         <Route path="/configuracoes" element={<Settings />} />
         <Route path="/docs" element={<Docs />} />

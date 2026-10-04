@@ -1,9 +1,10 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Settings, Sun } from 'lucide-react'
+import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Settings, Sun, Timer } from 'lucide-react'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLocation } from 'react-router-dom'
 import type { TaskRecord } from '@/types'
 import { localDay } from '@/lib/date-parser'
 import { pbDay } from '@/lib/format'
@@ -12,11 +13,14 @@ const links = [
   ['/?view=inbox', 'Inbox', Inbox],
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
+  ['/pomodoro', 'Pomodoro', Timer],
   ['/historico', 'Histórico', Clock3],
 ] as const
 export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isPomodoroPage = location.pathname === '/pomodoro'
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
   const count = (label: string) =>
@@ -51,7 +55,7 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
             >
               <Icon />
               <span>{label}</span>
-              {label !== 'Histórico' && <b>{count(label)}</b>}
+              {label !== 'Histórico' && label !== 'Pomodoro' && <b>{count(label)}</b>}
             </NavLink>
           ))}
         </nav>
@@ -115,7 +119,7 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
       <div className="mobile-capture">
         <CaptureBar onCreated={refresh} />
       </div>
-      <PomodoroWidget />
+      {!isPomodoroPage && <PomodoroWidget />}
     </div>
   )
 }

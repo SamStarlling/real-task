@@ -103,27 +103,43 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Pomodoro Global Integrado (25 Minutos)</h3>
-            <p>Temporizador persistente com ciclo fechado de execução:</p>
+            <h3>Pomodoro Avançado & Ciclo de Presets (/pomodoro)</h3>
+            <p>
+              Sistema completo de temporização inspirado na arquitetura de blocos do TickTick,
+              integrado ao Design System Barbosa:
+            </p>
             <ul>
               <li>
-                <strong>Vinculação estrita à tarefa:</strong> apenas uma sessão ativa por vez em
-                todo o sistema.
+                <strong>
+                  Página dedicada <code>/pomodoro</code>:
+                </strong>{' '}
+                layout em duas colunas com gerenciador de presets à esquerda (comutador
+                Ativo/Arquivado, criação e edição inline), visão geral analítica à direita (4
+                cartões de esforço acumulado e timeline cronológica de registros) e barra inferior
+                fixa com display digital em Space Mono.
               </li>
               <li>
-                <strong>Ciclo de vida:</strong> iniciar, pausar/retomar, concluir e descartar.
+                <strong>
+                  Presets customizáveis (<code>focus_presets</code>):
+                </strong>{' '}
+                suporte a durações arbitrárias de foco, descanso curto, descanso longo e cadência de
+                blocos antes da pausa estendida (ex.: preset padrão Foco 25/5/15/4, Deep Work 50m,
+                Estudo).
               </li>
               <li>
-                <strong>Persistência entre telas:</strong> o timer continua correndo em segundo
-                plano via contexto React enquanto o usuário navega entre Hoje, Amanhã, Inbox,
-                Histórico ou Documentação.
+                <strong>Ciclos automáticos com Web Audio nativo:</strong> transição fluida entre
+                blocos de trabalho e descansos, com sintetizador harmônico ascendente em Champagne
+                ao concluir o foco e sinal discreto em dois tons ao encerrar o descanso, sem
+                depender de arquivos externos.
               </li>
               <li>
-                <strong>Fechamento e soma contábil:</strong> ao encerrar o timer, a sessão é
-                automaticamente persistida na coleção de sessões (marcada como <code>completa</code>{' '}
-                se atingiu 25 min ou <code>interrompida</code> se menor) e os minutos executados são
-                somados diretamente ao campo <code>actual_minutes</code> da tarefa. Descartar não
-                grava registros.
+                <strong>Contabilidade estrita:</strong> apenas blocos de foco registram sessões na
+                coleção <code>sessions</code> e somam minutos ao <code>actual_minutes</code> da
+                tarefa vinculada. Descansos não gravam registros espúrios.
+              </li>
+              <li>
+                <strong>Timer global persistente:</strong> o temporizador mantém o estado unificado
+                ao navegar por qualquer módulo do sistema (Hoje, Amanhã, Inbox, Histórico, Docs).
               </li>
             </ul>
           </article>
@@ -988,7 +1004,7 @@ export function Docs() {
                   </td>
                   <td>Sim</td>
                   <td>
-                    Enumeração estrita: <code>completa</code> (atingiu os 25 min) ou{' '}
+                    Enumeração estrita: <code>completa</code> (atingiu os minutos do preset) ou{' '}
                     <code>interrompida</code> (concluída prematuramente)
                   </td>
                 </tr>
@@ -1009,6 +1025,136 @@ export function Docs() {
             <span>ÍNDICES:</span> <code>idx_sessions_user (user)</code> ·{' '}
             <code>idx_sessions_task (task)</code> · <code>idx_sessions_date (session_date)</code> ·{' '}
             <code>idx_sessions_user_date (user, session_date)</code>
+          </div>
+        </div>
+
+        {/* COLEÇÃO: focus_presets */}
+        <div className="docs-collection-card">
+          <div className="docs-collection-header">
+            <div>
+              <span className="docs-collection-type">BASE COLLECTION</span>
+              <h3>focus_presets</h3>
+            </div>
+            <div className="docs-rule-badge">
+              <code>@request.auth.id != '' && user.id = @request.auth.id</code>
+            </div>
+          </div>
+          <p className="docs-collection-desc">
+            Configurações e presets de temporização de foco do usuário, permitindo calibrar tempos
+            de foco, descansos e blocos de ciclo.
+          </p>
+          <div className="docs-table-wrap">
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Campo</th>
+                  <th>Tipo</th>
+                  <th>Obrigatório</th>
+                  <th>Descrição / Restrições</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <code>id</code>
+                  </td>
+                  <td>
+                    <code>text</code> (PK)
+                  </td>
+                  <td>Sim</td>
+                  <td>Identificador alfanumérico único do preset (15 chars)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>name</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Nome do preset de foco (máx. 60 caracteres, ex.: &quot;Deep Work&quot;,
+                    &quot;Estudo&quot;)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>user</code>
+                  </td>
+                  <td>
+                    <code>relation</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>FK vinculando ao usuário proprietário (cascadeDelete: true)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>work_minutes</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>Duração do bloco de trabalho em minutos (default 25, mín. 1)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>short_break_minutes</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>Duração do descanso curto em minutos (default 5, mín. 1)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>long_break_minutes</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>Duração do descanso longo em minutos (default 15, mín. 1)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>blocks_before_long_break</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>Quantidade de blocos de foco antes do descanso longo (default 4, mín. 1)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>archived</code>
+                  </td>
+                  <td>
+                    <code>bool</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Indicador de arquivamento para ocultar da lista ativa sem perder histórico
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>created</code> / <code>updated</code>
+                  </td>
+                  <td>
+                    <code>autodate</code>
+                  </td>
+                  <td>Automático</td>
+                  <td>Timestamps de auditoria do preset</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="docs-indices">
+            <span>ÍNDICES:</span> <code>idx_focus_presets_user (user)</code> ·{' '}
+            <code>idx_focus_presets_user_archived (user, archived)</code>
           </div>
         </div>
       </section>
