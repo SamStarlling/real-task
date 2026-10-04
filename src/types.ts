@@ -34,6 +34,7 @@ export interface SessionRecord extends RecordModel {
   duration_minutes: number
   session_date: string
   status: 'completa' | 'interrompida'
+  note?: string
   expand?: { task?: TaskRecord }
 }
 

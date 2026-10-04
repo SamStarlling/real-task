@@ -150,10 +150,11 @@ export async function recordSession(
   endedAt: Date,
   minutes: number,
   status: SessionRecord['status'],
+  note?: string,
 ) {
   const user = pb.authStore.record!.id
   const midnight = new Date(endedAt.getFullYear(), endedAt.getMonth(), endedAt.getDate())
-  const session = await pb.collection<SessionRecord>('sessions').create({
+  const payload: Record<string, unknown> = {
     task: task ? task.id : '',
     user,
     started_at: startedAt.toISOString(),
@@ -161,7 +162,11 @@ export async function recordSession(
     duration_minutes: minutes,
     session_date: midnight.toISOString(),
     status,
-  })
+  }
+  if (note && note.trim()) {
+    payload.note = note.trim().slice(0, 500)
+  }
+  const session = await pb.collection<SessionRecord>('sessions').create(payload)
   if (task) {
     const current = await pb.collection<TaskRecord>('tasks').getOne(task.id)
     await pb
@@ -169,4 +174,10 @@ export async function recordSession(
       .update(task.id, { actual_minutes: Number(current.actual_minutes || 0) + minutes })
   }
   return session
+}
+
+export async function updateSessionNote(sessionId: string, note: string) {
+  return pb.collection<SessionRecord>('sessions').update(sessionId, {
+    note: note.trim().slice(0, 500),
+  })
 }

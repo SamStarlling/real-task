@@ -138,6 +138,14 @@ export function Docs() {
                 tarefa vinculada. Descansos não gravam registros espúrios.
               </li>
               <li>
+                <strong>Notas de sessão pós-foco ("O que foi feito?"):</strong> captura fluida e
+                não-bloqueante ao encerrar naturalmente cada bloco de foco. A pausa inicia
+                imediatamente enquanto um prompt discreto na barra do timer permite descrever a
+                entrega realizada (Enter confirma, Esc ou fechar pula). A nota é persistida no campo{' '}
+                <code>note</code> da sessão e exibida na timeline de /pomodoro, no histórico
+                analítico e no detalhe da tarefa vinculada.
+              </li>
+              <li>
                 <strong>Timer global persistente:</strong> o temporizador mantém o estado unificado
                 ao navegar por qualquer módulo do sistema (Hoje, Amanhã, Inbox, Histórico, Docs).
               </li>
@@ -1006,6 +1014,19 @@ export function Docs() {
                   <td>
                     Enumeração estrita: <code>completa</code> (atingiu os minutos do preset) ou{' '}
                     <code>interrompida</code> (concluída prematuramente)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>note</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Descrição textual opcional do que foi realizado no bloco de foco (máx. 500
+                    caracteres, estilo TickTick)
                   </td>
                 </tr>
                 <tr>

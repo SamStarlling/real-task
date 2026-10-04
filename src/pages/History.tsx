@@ -144,7 +144,16 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
                 <span>{formatMinutes(sum(items || []))}</span>
               </header>
               {(items || []).map((s) => (
-                <button key={s.id} onClick={() => nav(`/?taskId=${s.task}`)}>
+                <button
+                  key={s.id}
+                  onClick={() => nav(`/?taskId=${s.task}`)}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto 1fr auto auto',
+                    gap: '12px',
+                    alignItems: 'center',
+                  }}
+                >
                   <span>
                     {new Date(s.started_at).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
@@ -156,7 +165,22 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
                       minute: '2-digit',
                     })}
                   </span>
-                  <strong>{s.expand?.task?.title || 'Tarefa'}</strong>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                      textAlign: 'left',
+                      minWidth: 0,
+                    }}
+                  >
+                    <strong>{s.expand?.task?.title || 'Tarefa'}</strong>
+                    {s.note && s.note.trim() && (
+                      <span className="session-note-text" style={{ margin: 0 }}>
+                        {s.note}
+                      </span>
+                    )}
+                  </div>
                   <span>{formatMinutes(s.duration_minutes)}</span>
                   <em className={s.status}>{s.status.toUpperCase()}</em>
                 </button>

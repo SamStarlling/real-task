@@ -1146,6 +1146,120 @@ a {
   gap: 10px;
 }
 
+/* Prompt inline de nota de foco ao encerrar bloco */
+.pomodoro-bottom-note-prompt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(197, 168, 128, 0.08);
+  border: 1px solid rgba(197, 168, 128, 0.28);
+  border-radius: 8px;
+  padding: 6px 10px;
+  animation: pomodoroNoteFadeIn 200ms ease;
+}
+
+@keyframes pomodoroNoteFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pomodoro-bottom-note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #c5a880;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pomodoro-bottom-note-input {
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.22);
+  border-radius: 6px;
+  color: #f4f4f6;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  padding: 5px 10px;
+  width: 220px;
+  outline: none;
+  transition: all 150ms ease;
+}
+
+.pomodoro-bottom-note-input:focus {
+  border-color: #c5a880;
+  box-shadow: 0 0 0 1px rgba(197, 168, 128, 0.25);
+}
+
+.pomodoro-bottom-note-confirm-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #c5a880;
+  border: 0;
+  color: #090a0e;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 150ms ease;
+  flex-shrink: 0;
+}
+
+.pomodoro-bottom-note-confirm-btn:hover {
+  background: #d6bc96;
+}
+
+.pomodoro-bottom-note-skip-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  color: #a1a1aa;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 150ms ease;
+  flex-shrink: 0;
+}
+
+.pomodoro-bottom-note-skip-btn:hover {
+  color: #f4f4f6;
+}
+
+/* Descrição de nota na timeline */
+.pomodoro-timeline-note {
+  margin-top: 5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 2px solid rgba(197, 168, 128, 0.35);
+  padding: 4px 8px;
+  border-radius: 0 4px 4px 0;
+  word-break: break-word;
+}
+
+/* Badge de nota no Histórico e TaskDetail */
+.session-note-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  color: #a1a1aa;
+  margin-top: 4px;
+  line-height: 1.4;
+  word-break: break-word;
+  border-left: 2px solid rgba(197, 168, 128, 0.3);
+  padding-left: 6px;
+}
 .pomodoro-bottom-action-btn {
   width: 42px;
   height: 42px;

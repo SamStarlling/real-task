@@ -8,8 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { FocusPresetRecord, TaskRecord } from '@/types'
-import { recordSession, getFocusPresets } from '@/services/data'
+import type { FocusPresetRecord, SessionRecord, TaskRecord } from '@/types'
+import { recordSession, updateSessionNote, getFocusPresets } from '@/services/data'
 import { toast } from '@/hooks/use-toast'
 import { playFocusCompleteSound, playBreakCompleteSound } from '@/lib/sounds'
 
@@ -30,6 +30,14 @@ export const DEFAULT_PRESET: ActivePreset = {
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
   blocksBeforeLongBreak: 4,
+}
+
+export interface PendingSessionNote {
+  sessionId: string
+  taskTitle?: string
+  durationMinutes: number
+  blockNumber: number
+  totalBlocks: number
 }
 
 export interface PomodoroState {
@@ -56,10 +64,13 @@ interface PomodoroContextValue {
     customPreset?: ActivePreset | FocusPresetRecord,
   ) => Promise<void>
   toggle: () => void
-  finish: () => Promise<void>
+  finish: (note?: string) => Promise<SessionRecord | null>
   discard: () => void
   selectTask: (task: TaskRecord | null) => void
   skipToNextPhase: () => Promise<void>
+  pendingNote: PendingSessionNote | null
+  submitPendingNote: (note: string) => Promise<void>
+  dismissPendingNote: () => void
 }
 
 const Context = createContext<PomodoroContextValue | null>(null)
@@ -68,6 +79,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [activePreset, setActivePresetState] = useState<ActivePreset>(DEFAULT_PRESET)
   const [state, setState] = useState<PomodoroState | null>(null)
   const [now, setNow] = useState(Date.now())
+  const [pendingNote, setPendingNote] = useState<PendingSessionNote | null>(null)
 
   const stateRef = useRef(state)
   stateRef.current = state
@@ -137,9 +149,11 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     : activePreset.workMinutes * 60
 
   // Finalização manual ou transição
-  const finish = useCallback(async () => {
+  const finish = useCallback(async (note?: string): Promise<SessionRecord | null> => {
     const current = stateRef.current
-    if (!current) return
+    if (!current) return null
+
+    let savedSession: SessionRecord | null = null
 
     const elapsedInPhase =
       current.focusedSeconds +
@@ -151,12 +165,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     if (current.phase === 'foco' && elapsedInPhase > 0) {
       const minutes = elapsedInPhase / 60
       const isComplete = elapsedInPhase >= current.totalDurationSeconds - 1
-      await recordSession(
+      savedSession = await recordSession(
         current.task,
         current.startedAt,
         new Date(),
         minutes,
         isComplete ? 'completa' : 'interrompida',
+        note,
       )
       const taskLabel = current.task?.title ? ` em '${current.task.title}'` : ''
       toast({
@@ -165,6 +180,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
 
     setState(null)
+    return savedSession
   }, [])
 
   // Transição automática quando o timer zera
@@ -178,14 +194,38 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       // 2. Grava a sessão completa de foco (apenas bloco de foco grava)
       const minutes = current.totalDurationSeconds / 60
-      await recordSession(current.task, current.startedAt, new Date(), minutes, 'completa')
+      let createdSession: SessionRecord | null = null
+      try {
+        createdSession = await recordSession(
+          current.task,
+          current.startedAt,
+          new Date(),
+          minutes,
+          'completa',
+        )
+      } catch {
+        // Ignora erro de gravação para não travar a transição de descanso
+      }
+
       const taskLabel = current.task?.title ? ` em '${current.task.title}'` : ''
       toast({
         title: `Bloco ${current.currentBlock}/${current.totalBlocks} concluído!${taskLabel}`,
-        description: 'Hora do descanso. Respire fundo.',
+        description: 'Hora do descanso. O que foi feito nesse bloco?',
       })
 
-      // 3. Determina se a próxima fase é descanso curto ou descanso longo
+      // 3. Se a sessão foi gravada com sucesso, ativa o prompt discreto de nota
+      // A pausa NÃO trava: ela inicia imediatamente e o prompt de nota fica disponível durante a pausa
+      if (createdSession) {
+        setPendingNote({
+          sessionId: createdSession.id,
+          taskTitle: current.task?.title,
+          durationMinutes: Math.round(minutes),
+          blockNumber: current.currentBlock,
+          totalBlocks: current.totalBlocks,
+        })
+      }
+
+      // 4. Determina se a próxima fase é descanso curto ou descanso longo e inicia imediatamente
       const isLongBreak = current.currentBlock >= current.totalBlocks
       const nextPhase: PomodoroPhase = isLongBreak ? 'descanso_longo' : 'descanso_curto'
       const breakMinutes = isLongBreak
@@ -324,6 +364,34 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setState(null)
   }, [])
 
+  // Envio e descarte da nota pós-foco
+  const submitPendingNote = useCallback(
+    async (noteText: string) => {
+      if (!pendingNote) return
+      const trimmed = noteText.trim()
+      if (trimmed) {
+        try {
+          await updateSessionNote(pendingNote.sessionId, trimmed)
+          toast({
+            title: 'Nota de foco registrada',
+            description: trimmed.length > 50 ? `${trimmed.slice(0, 50)}...` : trimmed,
+          })
+        } catch {
+          toast({
+            title: 'Erro ao salvar nota da sessão',
+            variant: 'destructive',
+          })
+        }
+      }
+      setPendingNote(null)
+    },
+    [pendingNote],
+  )
+
+  const dismissPendingNote = useCallback(() => {
+    setPendingNote(null)
+  }, [])
+
   const skipToNextPhase = useCallback(async () => {
     const current = stateRef.current
     if (!current) return
@@ -390,6 +458,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       discard,
       selectTask,
       skipToNextPhase,
+      pendingNote,
+      submitPendingNote,
+      dismissPendingNote,
     }),
     [
       state,
@@ -402,6 +473,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       discard,
       selectTask,
       skipToNextPhase,
+      pendingNote,
+      submitPendingNote,
+      dismissPendingNote,
     ],
   )
 

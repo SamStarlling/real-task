@@ -80,15 +80,24 @@ export function TaskDetail({
           <h2>Sessões</h2>
           {sessions.length ? (
             sessions.map((s) => (
-              <div key={s.id}>
-                <span>
-                  {new Date(s.started_at).toLocaleDateString('pt-BR', {
-                    weekday: 'short',
-                    day: '2-digit',
-                  })}
-                </span>
-                <span>{formatMinutes(s.duration_minutes)}</span>
-                <span>{s.status.toUpperCase()}</span>
+              <div key={s.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span>
+                    {new Date(s.started_at).toLocaleDateString('pt-BR', {
+                      weekday: 'short',
+                      day: '2-digit',
+                    })}
+                  </span>
+                  <span>{formatMinutes(s.duration_minutes)}</span>
+                  <span>{s.status.toUpperCase()}</span>
+                </div>
+                {s.note && s.note.trim() && (
+                  <div className="session-note-text" title="Descrição da sessão">
+                    {s.note}
+                  </div>
+                )}
               </div>
             ))
           ) : (

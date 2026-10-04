@@ -12,6 +12,8 @@ import {
   Edit2,
   Trash2,
   CheckCircle2,
+  MessageSquare,
+  X as XIcon,
 } from 'lucide-react'
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -57,7 +59,13 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     finish,
     discard,
     selectTask,
+    pendingNote,
+    submitPendingNote,
+    dismissPendingNote,
   } = usePomodoro()
+
+  // Estado do campo inline de nota na barra inferior
+  const [bottomNoteInput, setBottomNoteInput] = useState('')
 
   // Lista de Presets vinda do PocketBase
   const [presets, setPresets] = useState<FocusPresetRecord[]>([])
@@ -497,6 +505,14 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                                 </span>
                               </div>
                               <div className="pomodoro-timeline-task-name">{taskName}</div>
+                              {s.note && s.note.trim() && (
+                                <div
+                                  className="pomodoro-timeline-note"
+                                  title="Nota do bloco de foco"
+                                >
+                                  {s.note}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
@@ -572,6 +588,58 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
 
           <div className="pomodoro-bottom-controls">
+            {/* Prompt discreto de nota pós-foco */}
+            {pendingNote && (
+              <form
+                className="pomodoro-bottom-note-prompt"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  submitPendingNote(bottomNoteInput)
+                  setBottomNoteInput('')
+                  if (refreshSessions) refreshSessions()
+                }}
+              >
+                <span className="pomodoro-bottom-note-label">
+                  <MessageSquare size={12} />
+                  Bloco {pendingNote.blockNumber}:
+                </span>
+                <input
+                  type="text"
+                  autoFocus
+                  maxLength={500}
+                  placeholder="O que foi feito? (opcional)"
+                  value={bottomNoteInput}
+                  onChange={(e) => setBottomNoteInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault()
+                      dismissPendingNote()
+                      setBottomNoteInput('')
+                    }
+                  }}
+                  className="pomodoro-bottom-note-input"
+                />
+                <button
+                  type="submit"
+                  className="pomodoro-bottom-note-confirm-btn"
+                  title="Confirmar nota (Enter)"
+                >
+                  <Check size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dismissPendingNote()
+                    setBottomNoteInput('')
+                  }}
+                  className="pomodoro-bottom-note-skip-btn"
+                  title="Pular nota (Esc)"
+                >
+                  <XIcon size={14} />
+                </button>
+              </form>
+            )}
+
             {/* Botão Play / Pause */}
             <button
               type="button"
@@ -590,7 +658,10 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             <button
               type="button"
               className="pomodoro-bottom-action-btn"
-              onClick={() => finish()}
+              onClick={async () => {
+                await finish()
+                if (refreshSessions) refreshSessions()
+              }}
               disabled={!hasActiveSession}
               title="Encerrar e registrar tempo"
             >
