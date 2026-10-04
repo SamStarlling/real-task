@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T22:30:21.845Z",
+  "generatedAt": "2026-10-04T22:38:18.621Z",
   "collections": [
     {
       "name": "users",
@@ -25,12 +25,6 @@
           "system": false
         },
         {
-          "name": "daily_focus_goal_minutes",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
           "name": "created",
           "type": "autodate",
           "required": false,
@@ -47,6 +41,18 @@
         {
           "name": "daily_focus_goal_minutes",
           "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "daily_focus_goal_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "weekly_focus_goals",
+          "type": "json",
           "required": false,
           "system": false
         }

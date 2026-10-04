@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Sun } from 'lucide-react'
+import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Settings, Sun } from 'lucide-react'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
@@ -57,6 +57,14 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
         </nav>
         <div className="sidebar-footer">
           <NavLink
+            to="/configuracoes"
+            className={({ isActive }) => `sidebar-docs-link ${isActive ? 'active' : ''}`}
+            title="Configurações e Metas de Foco"
+          >
+            <Settings />
+            <span>Configurações</span>
+          </NavLink>
+          <NavLink
             to="/docs"
             className={({ isActive }) => `sidebar-docs-link ${isActive ? 'active' : ''}`}
             title="Documentação do Sistema"
@@ -82,6 +90,9 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
       <header className="mobile-header">
         <Brand compact />
         <div className="mobile-header-actions">
+          <NavLink to="/configuracoes" className="mobile-docs-btn" title="Configurações">
+            <Settings />
+          </NavLink>
           <NavLink to="/docs" className="mobile-docs-btn" title="Documentação">
             <BookOpen />
           </NavLink>

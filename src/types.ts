@@ -1,9 +1,14 @@
 import type { RecordModel } from 'pocketbase'
+export type WeekdayKey = 'seg' | 'ter' | 'qua' | 'qui' | 'sex' | 'sab' | 'dom'
+
+export type WeeklyFocusGoals = Record<WeekdayKey, number>
+
 export interface UserRecord extends RecordModel {
   name: string
   email: string
   avatar?: string
   daily_focus_goal_minutes?: number
+  weekly_focus_goals?: WeeklyFocusGoals
 }
 
 export interface ListRecord extends RecordModel {

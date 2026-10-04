@@ -1,5 +1,86 @@
 import pb from '@/lib/pocketbase/client'
-import type { ListRecord, SessionRecord, TaskRecord } from '@/types'
+import type { ListRecord, SessionRecord, TaskRecord, UserRecord } from '@/types'
+export type { WeekdayKey, WeeklyFocusGoals } from '@/types'
+import type { WeekdayKey, WeeklyFocusGoals } from '@/types'
+
+export const DEFAULT_WEEKLY_GOALS: WeeklyFocusGoals = {
+  dom: 0,
+  seg: 120,
+  ter: 120,
+  qua: 120,
+  qui: 120,
+  sex: 120,
+  sab: 60,
+}
+
+export const WEEKDAY_ORDER: WeekdayKey[] = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+
+export const WEEKDAY_LABELS: Record<WeekdayKey, { short: string; long: string }> = {
+  seg: { short: 'Seg', long: 'Segunda-feira' },
+  ter: { short: 'Ter', long: 'Terça-feira' },
+  qua: { short: 'Qua', long: 'Quarta-feira' },
+  qui: { short: 'Qui', long: 'Quinta-feira' },
+  sex: { short: 'Sex', long: 'Sexta-feira' },
+  sab: { short: 'Sáb', long: 'Sábado' },
+  dom: { short: 'Dom', long: 'Domingo' },
+}
+
+/**
+ * Obtém a chave do dia da semana ('seg'..'dom') a partir de um objeto Date ou número (0=dom, 1=seg, ...).
+ */
+export function getWeekdayKey(date: Date | number = new Date()): WeekdayKey {
+  const day = typeof date === 'number' ? date : date.getDay()
+  const map: Record<number, WeekdayKey> = {
+    0: 'dom',
+    1: 'seg',
+    2: 'ter',
+    3: 'qua',
+    4: 'qui',
+    5: 'sex',
+    6: 'sab',
+  }
+  return map[day] || 'seg'
+}
+
+/**
+ * Retorna as metas semanais resolvidas do usuário com fallback seguro.
+ */
+export function resolveWeeklyGoals(user?: Partial<UserRecord> | null): WeeklyFocusGoals {
+  const fallback = Number(user?.daily_focus_goal_minutes) || 120
+  const raw = user?.weekly_focus_goals
+
+  if (raw && typeof raw === 'object') {
+    return {
+      seg: typeof raw.seg === 'number' ? raw.seg : fallback,
+      ter: typeof raw.ter === 'number' ? raw.ter : fallback,
+      qua: typeof raw.qua === 'number' ? raw.qua : fallback,
+      qui: typeof raw.qui === 'number' ? raw.qui : fallback,
+      sex: typeof raw.sex === 'number' ? raw.sex : fallback,
+      sab: typeof raw.sab === 'number' ? raw.sab : fallback,
+      dom: typeof raw.dom === 'number' ? raw.dom : fallback,
+    }
+  }
+
+  return {
+    seg: fallback,
+    ter: fallback,
+    qua: fallback,
+    qui: fallback,
+    sex: fallback,
+    sab: fallback,
+    dom: fallback,
+  }
+}
+
+/**
+ * Retorna a meta de foco em minutos para uma data específica (ou hoje por padrão).
+ */
+export function getGoalForDate(date: Date = new Date(), user?: Partial<UserRecord> | null): number {
+  const goals = resolveWeeklyGoals(user)
+  const key = getWeekdayKey(date)
+  return goals[key] ?? 0
+}
+
 export const getLists = () => pb.collection<ListRecord>('lists').getFullList({ sort: 'name' })
 export const getTasks = () =>
   pb.collection<TaskRecord>('tasks').getFullList({ sort: '-created', expand: 'list' })
@@ -11,8 +92,19 @@ export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list' })
+
 export const updateUserGoal = async (userId: string, minutes: number) => {
   const updated = await pb.collection('users').update(userId, { daily_focus_goal_minutes: minutes })
+  if (pb.authStore.record?.id === userId) {
+    pb.authStore.save(pb.authStore.token, updated)
+  }
+  return updated
+}
+
+export const updateUserWeeklyGoals = async (userId: string, goals: WeeklyFocusGoals) => {
+  const updated = await pb.collection('users').update(userId, {
+    weekly_focus_goals: goals,
+  })
   if (pb.authStore.record?.id === userId) {
     pb.authStore.save(pb.authStore.token, updated)
   }

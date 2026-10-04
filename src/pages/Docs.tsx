@@ -133,21 +133,21 @@ export function Docs() {
             <p>Auditoria quantitativa do foco acumulado e acompanhamento de metas:</p>
             <ul>
               <li>
-                <strong>Meta diária de foco configurável:</strong> painel destacado no topo do
-                Histórico indicando o progresso de foco de hoje vs. a meta diária (tempo real
-                acumulado pelas sessões de hoje).
+                <strong>Meta diária reativa por dia da semana:</strong> cartão destacado no topo do
+                Histórico exibindo a meta específica configurada para o dia corrente (Seg–Dom), com
+                o tempo real acumulado pelas sessões de hoje.
               </li>
               <li>
-                <strong>Barra de progresso reativa:</strong> preenchimento neutro discreto abaixo da
-                meta e transição automática para Champagne Ouro Fosco (<code>#C5A880</code>) com
-                emblema <code>META ALCANÇADA</code> ao atingir ou superar a meta planejada.
+                <strong>Barra de progresso inteligente:</strong> preenchimento proporcional neutro
+                abaixo da meta e transição automática para Champagne Ouro Fosco (
+                <code>#C5A880</code>) com emblema <code>META ALCANÇADA</code> ao cumprir o objetivo
+                planejado. Em dias com meta zerada (folga), apresenta badge discreto{' '}
+                <code>SEM META (FOLGA)</code> tratando adequadamente divisão por zero.
               </li>
               <li>
-                <strong>Controle direto e persistência real:</strong> ajuste in-line por stepper
-                (−/+ em passos de 15 min, mínimo 15 min e máximo 720 min) ou edição numérica direta
-                ao clicar no valor, persistido imediatamente no campo{' '}
-                <code>daily_focus_goal_minutes</code> da coleção <code>users</code> do usuário
-                autenticado (default inicial de 120 min).
+                <strong>Leitura e atalho para Configurações:</strong> o cartão no Histórico opera em
+                modo de visualização limpa, com botão <code>EDITAR METAS</code> que redireciona à
+                seção dedicada em <code>/configuracoes</code>.
               </li>
               <li>
                 <strong>Resumo numérico:</strong> cartões com totalização de foco para Hoje, Esta
@@ -160,6 +160,33 @@ export function Docs() {
               <li>
                 <strong>Timeline de sessões:</strong> agrupamento por dia com horários de início e
                 término, nome da tarefa relacionada, duração em minutos e etiqueta de status.
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
+            <h3>Central de Configurações (Estilo Todoist)</h3>
+            <p>Painel com navegação em duas colunas para objetivos e conta:</p>
+            <ul>
+              <li>
+                <strong>Metas específicas por dia da semana:</strong> controle individual para os 7
+                dias (Seg, Ter, Qua, Qui, Sex, Sáb, Dom) em <code>/configuracoes</code>, permitindo
+                calibrar rotinas pesadas em dias úteis e períodos leves ou de descanso aos finais de
+                semana.
+              </li>
+              <li>
+                <strong>Controle por stepper e digitação direta:</strong> incremento/decremento de
+                15 min (0 a 720 min por dia), digitação direta do valor numérico, feedback sutil de
+                salvamento <code>SALVO</code> e persistência no campo JSON{' '}
+                <code>weekly_focus_goals</code> da coleção <code>users</code>.
+              </li>
+              <li>
+                <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
+                de Segunda para todos os dias úteis ou sincronizar Sábado e Domingo.
+              </li>
+              <li>
+                <strong>Painel de Conta:</strong> exibição segura de dados cadastrais (nome, e-mail,
+                ID do sistema, provedor e data de criação).
               </li>
             </ul>
           </article>
@@ -604,8 +631,22 @@ export function Docs() {
                   </td>
                   <td>Não</td>
                   <td>
-                    Meta diária de foco pessoal em minutos (default 120, mín. 15, máx. 720,
-                    inteiros). Configurada interativamente na página Histórico.
+                    Meta diária legado/fallback de foco pessoal em minutos (default 120, mín. 15,
+                    máx. 720).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>weekly_focus_goals</code>
+                  </td>
+                  <td>
+                    <code>json</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Metas de foco individualizadas por dia da semana em minutos (objeto com chaves{' '}
+                    <code>dom, seg, ter, qua, qui, sex, sab</code>, inteiros de 0 a 720 min).
+                    Gerenciadas na nova tela <code>/configuracoes</code>.
                   </td>
                 </tr>
                 <tr>
