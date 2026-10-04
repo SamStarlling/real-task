@@ -6,6 +6,7 @@ import { PomodoroProvider } from '@/contexts/PomodoroContext'
 import { Layout } from '@/components/Layout'
 import { Index } from '@/pages/Index'
 import { History } from '@/pages/History'
+import { Docs } from '@/pages/Docs'
 import { AuthPage } from '@/pages/AuthPages'
 import { getSessions, getTasks } from '@/services/data'
 import type { SessionRecord, TaskRecord } from '@/types'
@@ -28,6 +29,7 @@ function Protected() {
       <Route element={<Layout tasks={tasks} refresh={refresh} />}>
         <Route path="/" element={<Index tasks={tasks} refresh={refresh} />} />
         <Route path="/historico" element={<History sessions={sessions} />} />
+        <Route path="/docs" element={<Docs />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

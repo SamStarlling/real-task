@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { ArrowRight, Clock3, Inbox, LogOut, Sun } from 'lucide-react'
+import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Sun } from 'lucide-react'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
@@ -55,22 +55,38 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
             </NavLink>
           ))}
         </nav>
-        <div className="profile">
-          <span className="avatar">{initials}</span>
-          <span>{String(user?.name || 'Usuário')}</span>
-          <button
-            onClick={() => {
-              logout()
-              navigate('/login')
-            }}
+        <div className="sidebar-footer">
+          <NavLink
+            to="/docs"
+            className={({ isActive }) => `sidebar-docs-link ${isActive ? 'active' : ''}`}
+            title="Documentação do Sistema"
           >
-            <LogOut />
-          </button>
+            <BookOpen />
+            <span>Documentação</span>
+          </NavLink>
+          <div className="profile">
+            <span className="avatar">{initials}</span>
+            <span>{String(user?.name || 'Usuário')}</span>
+            <button
+              onClick={() => {
+                logout()
+                navigate('/login')
+              }}
+              title="Encerrar sessão"
+            >
+              <LogOut />
+            </button>
+          </div>
         </div>
       </aside>
       <header className="mobile-header">
         <Brand compact />
-        <span className="avatar">{initials}</span>
+        <div className="mobile-header-actions">
+          <NavLink to="/docs" className="mobile-docs-btn" title="Documentação">
+            <BookOpen />
+          </NavLink>
+          <span className="avatar">{initials}</span>
+        </div>
       </header>
       <nav className="mobile-nav">
         {links.map(([to, label]) => (
