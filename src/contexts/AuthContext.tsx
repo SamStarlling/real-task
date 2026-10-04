@@ -7,6 +7,7 @@ type AuthValue = {
   ready: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  setUser: (user: RecordModel | null) => void
 }
 const AuthContext = createContext<AuthValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         ready: true,
+        setUser,
         login: async (email, password) => {
           await pb.collection('users').authWithPassword(email, password)
         },

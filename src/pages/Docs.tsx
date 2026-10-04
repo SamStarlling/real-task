@@ -129,9 +129,26 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Métricas e Análise Histórica</h3>
-            <p>Auditoria quantitativa do foco acumulado:</p>
+            <h3>Métricas e Análise Histórica com Meta Diária</h3>
+            <p>Auditoria quantitativa do foco acumulado e acompanhamento de metas:</p>
             <ul>
+              <li>
+                <strong>Meta diária de foco configurável:</strong> painel destacado no topo do
+                Histórico indicando o progresso de foco de hoje vs. a meta diária (tempo real
+                acumulado pelas sessões de hoje).
+              </li>
+              <li>
+                <strong>Barra de progresso reativa:</strong> preenchimento neutro discreto abaixo da
+                meta e transição automática para Champagne Ouro Fosco (<code>#C5A880</code>) com
+                emblema <code>META ALCANÇADA</code> ao atingir ou superar a meta planejada.
+              </li>
+              <li>
+                <strong>Controle direto e persistência real:</strong> ajuste in-line por stepper
+                (−/+ em passos de 15 min, mínimo 15 min e máximo 720 min) ou edição numérica direta
+                ao clicar no valor, persistido imediatamente no campo{' '}
+                <code>daily_focus_goal_minutes</code> da coleção <code>users</code> do usuário
+                autenticado (default inicial de 120 min).
+              </li>
               <li>
                 <strong>Resumo numérico:</strong> cartões com totalização de foco para Hoje, Esta
                 Semana e Tempo Total em Space Mono tabular.
@@ -577,6 +594,19 @@ export function Docs() {
                   </td>
                   <td>Não</td>
                   <td>Arquivo de foto de perfil (PNG/JPG)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>daily_focus_goal_minutes</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Meta diária de foco pessoal em minutos (default 120, mín. 15, máx. 720,
+                    inteiros). Configurada interativamente na página Histórico.
+                  </td>
                 </tr>
                 <tr>
                   <td>

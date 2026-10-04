@@ -1,4 +1,11 @@
 import type { RecordModel } from 'pocketbase'
+export interface UserRecord extends RecordModel {
+  name: string
+  email: string
+  avatar?: string
+  daily_focus_goal_minutes?: number
+}
+
 export interface ListRecord extends RecordModel {
   name: string
   user: string

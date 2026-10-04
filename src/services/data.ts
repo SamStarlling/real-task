@@ -11,6 +11,13 @@ export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list' })
+export const updateUserGoal = async (userId: string, minutes: number) => {
+  const updated = await pb.collection('users').update(userId, { daily_focus_goal_minutes: minutes })
+  if (pb.authStore.record?.id === userId) {
+    pb.authStore.save(pb.authStore.token, updated)
+  }
+  return updated
+}
 export const sessionsForTask = (task: string) =>
   pb
     .collection<SessionRecord>('sessions')

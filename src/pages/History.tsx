@@ -1,10 +1,30 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { SessionRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
+import { useAuth } from '@/contexts/AuthContext'
+import { updateUserGoal } from '@/services/data'
+
 export function History({ sessions }: { sessions: SessionRecord[] }) {
   const nav = useNavigate()
+  const { user } = useAuth()
+
+  const defaultGoal = 120
+  const userGoal = Number(user?.daily_focus_goal_minutes) || defaultGoal
+  const [goal, setGoal] = useState<number>(userGoal)
+  const [isEditing, setIsEditing] = useState(false)
+  const [inputValue, setInputValue] = useState(String(userGoal))
+  const [saving, setSaving] = useState(false)
+  const [saveFeedback, setSaveFeedback] = useState(false)
+
+  useEffect(() => {
+    if (user?.daily_focus_goal_minutes) {
+      setGoal(Number(user.daily_focus_goal_minutes))
+      setInputValue(String(user.daily_focus_goal_minutes))
+    }
+  }, [user?.daily_focus_goal_minutes])
+
   const now = new Date()
   const startWeek = new Date(now)
   startWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7))
@@ -12,6 +32,45 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
   const sum = (items: SessionRecord[]) => items.reduce((n, s) => n + Number(s.duration_minutes), 0)
   const today = sessions.filter((s) => s.session_date.slice(0, 10) === localDay())
   const week = sessions.filter((s) => new Date(s.session_date) >= startWeek)
+  const todayTotal = sum(today)
+
+  const persistGoal = async (val: number) => {
+    const clamped = Math.min(720, Math.max(15, Math.round(val)))
+    setGoal(clamped)
+    setInputValue(String(clamped))
+    setIsEditing(false)
+    if (user?.id && clamped !== user?.daily_focus_goal_minutes) {
+      setSaving(true)
+      try {
+        await updateUserGoal(user.id, clamped)
+        setSaveFeedback(true)
+        setTimeout(() => setSaveFeedback(false), 2000)
+      } catch (err) {
+        console.error('Erro ao atualizar meta diária:', err)
+      } finally {
+        setSaving(false)
+      }
+    }
+  }
+
+  const handleStep = (delta: number) => {
+    const next = Math.min(720, Math.max(15, goal + delta))
+    persistGoal(next)
+  }
+
+  const handleInputSubmit = () => {
+    const parsed = parseInt(inputValue, 10)
+    if (!Number.isNaN(parsed)) {
+      persistGoal(parsed)
+    } else {
+      setInputValue(String(goal))
+      setIsEditing(false)
+    }
+  }
+
+  const percentage = goal > 0 ? Math.min(100, Math.round((todayTotal / goal) * 100)) : 0
+  const isGoalReached = todayTotal >= goal && goal > 0
+
   const days = useMemo(
     () =>
       Array.from({ length: 14 }, (_, i) => {
@@ -28,15 +87,107 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
   )
   const max = Math.max(...days.map((d) => d.total), 1)
   const groups = Object.groupBy(sessions, (s) => s.session_date.slice(0, 10))
+
   return (
     <div className="page history">
       <header className="view-title">
         <h1>Histórico</h1>
         <span>TEMPO REAL DE FOCO</span>
       </header>
+
+      {/* BLOCO: META DO DIA */}
+      <section className={`daily-goal-card ${isGoalReached ? 'goal-reached' : ''}`}>
+        <div className="daily-goal-header">
+          <div className="daily-goal-tag">
+            <span>META DO DIA</span>
+            {isGoalReached ? (
+              <span className="goal-status-badge reached">META ALCANÇADA</span>
+            ) : (
+              <span className="goal-status-badge pending">EM PROGRESSO</span>
+            )}
+          </div>
+          <div className="daily-goal-controls">
+            <span className="goal-label">CONFIGURAR META:</span>
+            {isEditing ? (
+              <div className="goal-input-wrap">
+                <input
+                  type="number"
+                  min={15}
+                  max={720}
+                  step={15}
+                  value={inputValue}
+                  autoFocus
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onBlur={handleInputSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleInputSubmit()
+                    if (e.key === 'Escape') {
+                      setInputValue(String(goal))
+                      setIsEditing(false)
+                    }
+                  }}
+                  className="goal-input"
+                />
+                <span className="goal-unit">MIN</span>
+              </div>
+            ) : (
+              <div className="goal-stepper-control">
+                <button
+                  type="button"
+                  onClick={() => handleStep(-15)}
+                  disabled={goal <= 15 || saving}
+                  aria-label="Diminuir meta em 15 minutos"
+                  className="goal-step-btn"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="goal-value-btn"
+                  title="Clique para editar diretamente"
+                >
+                  <b>{formatMinutes(goal)}</b>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStep(15)}
+                  disabled={goal >= 720 || saving}
+                  aria-label="Aumentar meta em 15 minutos"
+                  className="goal-step-btn"
+                >
+                  +
+                </button>
+              </div>
+            )}
+            {saveFeedback && <span className="goal-feedback">SALVO</span>}
+          </div>
+        </div>
+
+        <div className="daily-goal-stats">
+          <div className="daily-goal-progress-info">
+            <span className="goal-current">
+              HOJE: <b>{formatMinutes(todayTotal)}</b>
+            </span>
+            <span className="goal-separator">/</span>
+            <span className="goal-target">
+              META: <b>{formatMinutes(goal)}</b>
+            </span>
+          </div>
+          <span className={`goal-pct ${isGoalReached ? 'reached' : ''}`}>{percentage}%</span>
+        </div>
+
+        <div className="daily-goal-bar-track">
+          <div
+            className={`daily-goal-bar-fill ${isGoalReached ? 'reached' : ''}`}
+            style={{ width: `${Math.min(100, (todayTotal / goal) * 100)}%` }}
+          />
+        </div>
+      </section>
+
       <div className="metrics">
         <span>
-          HOJE<b>{formatMinutes(sum(today))}</b>
+          HOJE<b>{formatMinutes(todayTotal)}</b>
         </span>
         <span>
           ESTA SEMANA<b>{formatMinutes(sum(week))}</b>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T22:14:25.078Z",
+  "generatedAt": "2026-10-04T22:30:21.845Z",
   "collections": [
     {
       "name": "users",
@@ -25,6 +25,12 @@
           "system": false
         },
         {
+          "name": "daily_focus_goal_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
           "name": "created",
           "type": "autodate",
           "required": false,
@@ -37,6 +43,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "daily_focus_goal_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

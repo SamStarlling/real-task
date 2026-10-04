@@ -617,6 +617,206 @@ a {
   place-items: center;
   padding: 0;
 }
+.daily-goal-card {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  transition: border-color 200ms ease;
+}
+.daily-goal-card.goal-reached {
+  border-color: rgba(197, 168, 128, 0.35);
+  background: linear-gradient(180deg, #12141c 0%, #151722 100%);
+}
+.daily-goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.daily-goal-tag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.daily-goal-tag > span:first-child {
+  font: 11px 'Space Mono';
+  letter-spacing: 0.12em;
+  color: #a1a1aa;
+}
+.goal-status-badge {
+  font: 10px 'Space Mono';
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.goal-status-badge.reached {
+  background: rgba(197, 168, 128, 0.14);
+  color: #c5a880;
+  border: 1px solid rgba(197, 168, 128, 0.28);
+}
+.goal-status-badge.pending {
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.daily-goal-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.goal-label {
+  font: 10px 'Space Mono';
+  letter-spacing: 0.08em;
+  color: #71717a;
+}
+.goal-stepper-control {
+  display: inline-flex;
+  align-items: center;
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 32px;
+}
+.goal-step-btn {
+  background: transparent;
+  border: 0;
+  color: #c5a880;
+  width: 28px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font: 14px 'Space Mono';
+  cursor: pointer;
+  transition: background 150ms ease;
+  padding: 0;
+}
+.goal-step-btn:hover:not(:disabled) {
+  background: rgba(197, 168, 128, 0.12);
+}
+.goal-step-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.goal-value-btn {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  color: #f4f4f6;
+  padding: 0 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font: 11px 'Space Mono';
+  letter-spacing: 0.05em;
+  transition: background 150ms ease;
+}
+.goal-value-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.goal-value-btn b {
+  font-weight: 500;
+  color: #f4f4f6;
+}
+.goal-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: #090a0e;
+  border: 1px solid #c5a880;
+  border-radius: 8px;
+  padding: 0 8px;
+  height: 32px;
+}
+.goal-input {
+  width: 54px;
+  background: transparent;
+  border: 0;
+  color: #f4f4f6;
+  font: 11px 'Space Mono';
+  outline: 0;
+  padding: 0;
+}
+.goal-input::-webkit-outer-spin-button,
+.goal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.goal-input[type='number'] {
+  -moz-appearance: textfield;
+}
+.goal-unit {
+  font: 9px 'Space Mono';
+  color: #c5a880;
+}
+.goal-feedback {
+  font: 9px 'Space Mono';
+  letter-spacing: 0.08em;
+  color: #c5a880;
+  animation: enter 0.2s ease;
+}
+.daily-goal-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+.daily-goal-progress-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 11px 'Space Mono';
+  color: #a1a1aa;
+}
+.goal-current b {
+  font-size: 15px;
+  color: #f4f4f6;
+  font-weight: 500;
+  margin-left: 4px;
+}
+.goal-separator {
+  color: rgba(255, 255, 255, 0.2);
+}
+.goal-target b {
+  font-size: 13px;
+  color: #a1a1aa;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.goal-pct {
+  font: 13px 'Space Mono';
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+.goal-pct.reached {
+  color: #c5a880;
+  font-weight: 700;
+}
+.daily-goal-bar-track {
+  height: 6px;
+  background: #1c1e28;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.daily-goal-bar-fill {
+  height: 100%;
+  background: #4a4d5e;
+  border-radius: 3px;
+  transition:
+    width 300ms ease,
+    background-color 300ms ease;
+}
+.daily-goal-bar-fill.reached {
+  background: #c5a880;
+}
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -975,6 +1175,18 @@ a {
   }
   .meta {
     line-height: 1.8;
+  }
+  .daily-goal-card {
+    padding: 16px;
+  }
+  .daily-goal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .daily-goal-controls {
+    width: 100%;
+    justify-content: space-between;
   }
   .metrics span {
     padding: 12px 8px;
