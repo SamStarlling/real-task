@@ -24,17 +24,15 @@ export async function recordSession(
 ) {
   const user = pb.authStore.record!.id
   const midnight = new Date(endedAt.getFullYear(), endedAt.getMonth(), endedAt.getDate())
-  const session = await pb
-    .collection<SessionRecord>('sessions')
-    .create({
-      task: task.id,
-      user,
-      started_at: startedAt.toISOString(),
-      ended_at: endedAt.toISOString(),
-      duration_minutes: minutes,
-      session_date: midnight.toISOString(),
-      status,
-    })
+  const session = await pb.collection<SessionRecord>('sessions').create({
+    task: task.id,
+    user,
+    started_at: startedAt.toISOString(),
+    ended_at: endedAt.toISOString(),
+    duration_minutes: minutes,
+    session_date: midnight.toISOString(),
+    status,
+  })
   const current = await pb.collection<TaskRecord>('tasks').getOne(task.id)
   await pb
     .collection<TaskRecord>('tasks')

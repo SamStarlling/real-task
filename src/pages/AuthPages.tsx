@@ -43,14 +43,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
           setErrors({ password: 'Use no mínimo 8 caracteres.' })
           return
         }
-        await pb
-          .collection('users')
-          .create({
-            name: form.name,
-            email: form.email,
-            password: form.password,
-            passwordConfirm: form.password,
-          })
+        await pb.collection('users').create({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          passwordConfirm: form.password,
+        })
         await pb.collection('users').requestVerification(form.email)
         nav(`/verify-email?email=${encodeURIComponent(form.email)}`)
       }

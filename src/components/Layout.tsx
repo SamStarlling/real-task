@@ -9,9 +9,9 @@ import { localDay } from '@/lib/date-parser'
 import { pbDay } from '@/lib/format'
 
 const links = [
+  ['/?view=inbox', 'Inbox', Inbox],
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
-  ['/?view=inbox', 'Inbox', Inbox],
   ['/historico', 'Histórico', Clock3],
 ] as const
 export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
