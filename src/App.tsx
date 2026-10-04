@@ -7,6 +7,7 @@ import { Layout } from '@/components/Layout'
 import { Index } from '@/pages/Index'
 import { History } from '@/pages/History'
 import { Docs } from '@/pages/Docs'
+import { WeekPage } from '@/pages/Week'
 import { Settings } from '@/pages/Settings'
 import { PomodoroPage } from '@/pages/Pomodoro'
 import { AuthPage } from '@/pages/AuthPages'
@@ -30,6 +31,7 @@ function Protected() {
     <Routes>
       <Route element={<Layout tasks={tasks} refresh={refresh} />}>
         <Route path="/" element={<Index tasks={tasks} refresh={refresh} />} />
+        <Route path="/semana" element={<WeekPage tasks={tasks} refresh={refresh} />} />
         <Route
           path="/pomodoro"
           element={<PomodoroPage sessions={sessions} tasks={tasks} refreshSessions={refresh} />}

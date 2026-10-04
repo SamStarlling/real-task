@@ -172,6 +172,9 @@ a {
   max-width: 816px;
   margin-inline: auto;
 }
+.main > .week-page-container {
+  max-width: 1440px;
+}
 .capture-sticky {
   position: sticky;
   top: 0;
@@ -2903,5 +2906,678 @@ a {
   .docs-table td {
     padding: 10px 12px;
     font-size: 12px;
+  }
+}
+
+/* ==========================================================================
+   VISÃO SEMANA (/semana) - DESIGN SYSTEM QUIET LUXURY
+   ========================================================================== */
+
+.week-page-container {
+  width: 100%;
+  padding: 24px 28px 100px;
+}
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.week-header-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.week-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.1em;
+  color: #c5a880;
+  margin-bottom: 8px;
+}
+
+.week-eyebrow svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.5;
+}
+
+.week-header-title h1 {
+  font:
+    600 32px 'Clash Display',
+    sans-serif;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  color: #f4f4f6;
+}
+
+.week-period {
+  margin: 0;
+  font:
+    11px 'Space Mono',
+    monospace;
+  color: #a1a1aa;
+  letter-spacing: 0.04em;
+}
+
+/* Resumo no topo em Space Mono */
+.week-summary-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.week-metric-card {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.14);
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: border-color 150ms ease;
+}
+
+.week-metric-card:hover {
+  border-color: rgba(197, 168, 128, 0.28);
+}
+
+.metric-label {
+  font:
+    9px 'Space Mono',
+    monospace;
+  letter-spacing: 0.12em;
+  color: #71717a;
+}
+
+.metric-value-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.metric-number {
+  font:
+    500 20px 'Space Mono',
+    monospace;
+  color: #f4f4f6;
+  letter-spacing: -0.02em;
+}
+
+.metric-unit {
+  font:
+    10px 'Space Mono',
+    monospace;
+  color: #c5a880;
+  letter-spacing: 0.06em;
+}
+
+.metric-sub {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+
+.inbox-metric-card {
+  border-style: dashed;
+}
+
+/* Faixa horizontal da Inbox no topo */
+.week-inbox-shelf {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.14);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+}
+
+.inbox-shelf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.inbox-shelf-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  color: #c5a880;
+}
+
+.inbox-shelf-title svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.5;
+}
+
+.inbox-shelf-hint {
+  font-size: 11px;
+  color: #71717a;
+}
+
+.inbox-shelf-cards {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197, 168, 128, 0.25) transparent;
+}
+
+.inbox-shelf-cards::-webkit-scrollbar {
+  height: 4px;
+}
+
+.inbox-shelf-cards::-webkit-scrollbar-thumb {
+  background: rgba(197, 168, 128, 0.25);
+  border-radius: 2px;
+}
+
+.inbox-shelf-item {
+  flex: 0 0 240px;
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.16);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: grab;
+  transition: all 150ms ease;
+  user-select: none;
+}
+
+.inbox-shelf-item:hover {
+  border-color: rgba(197, 168, 128, 0.38);
+  background: #12141c;
+}
+
+.inbox-shelf-item.is-dragging {
+  opacity: 0.7;
+  border-color: #c5a880;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(197, 168, 128, 0.4);
+  transform: translateY(-2px);
+}
+
+.inbox-item-drag-handle {
+  color: #71717a;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+}
+
+.inbox-item-drag-handle svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.5;
+}
+
+.inbox-item-body {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.inbox-item-title {
+  display: block;
+  font-size: 13px;
+  color: #f4f4f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.inbox-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font:
+    10px 'Space Mono',
+    monospace;
+}
+
+.inbox-list-chip {
+  color: #a1a1aa;
+}
+
+.inbox-est-chip {
+  color: #c5a880;
+}
+
+.inbox-item-focus {
+  background: transparent;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  color: #c5a880;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  transition: all 150ms ease;
+}
+
+.inbox-item-focus:hover {
+  background: rgba(197, 168, 128, 0.12);
+  border-color: #c5a880;
+}
+
+.inbox-item-focus svg {
+  width: 11px;
+  height: 11px;
+}
+
+.inbox-shelf-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 0;
+  color: #71717a;
+  font-size: 12px;
+}
+
+.inbox-shelf-empty img {
+  width: 28px;
+  height: 28px;
+  opacity: 0.15;
+}
+
+/* Grade semanal de 7 colunas (Desktop) */
+.week-grid-container {
+  width: 100%;
+}
+
+.week-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.week-column {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+  position: relative;
+}
+
+/* Coluna de hoje com destaque sutil */
+.week-column.is-today-column {
+  border-color: rgba(197, 168, 128, 0.32);
+  background: #13151f;
+  box-shadow: 0 0 24px rgba(197, 168, 128, 0.04);
+}
+
+.week-column.is-today-column .column-header {
+  border-bottom-color: rgba(197, 168, 128, 0.22);
+}
+
+/* Feedback visual de coluna como destino do drop */
+.week-column.column-drop-active {
+  border-color: #c5a880;
+  box-shadow:
+    0 0 0 1px #c5a880,
+    0 8px 32px rgba(197, 168, 128, 0.12);
+  background: #161824;
+}
+
+/* Cabeçalho da coluna */
+.column-header {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.col-header-top {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.col-weekday {
+  font:
+    600 13px 'Space Mono',
+    monospace;
+  color: #f4f4f6;
+  letter-spacing: 0.06em;
+}
+
+.col-weekday.today-accent {
+  color: #c5a880;
+}
+
+.col-date {
+  font:
+    11px 'Space Mono',
+    monospace;
+  color: #71717a;
+}
+
+.today-badge {
+  margin-left: auto;
+  font:
+    9px 'Space Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(197, 168, 128, 0.15);
+  color: #c5a880;
+  border: 1px solid rgba(197, 168, 128, 0.25);
+}
+
+.col-load-metric {
+  font:
+    10px 'Space Mono',
+    monospace;
+  color: #a1a1aa;
+  letter-spacing: 0.04em;
+}
+
+/* Corpo da coluna */
+.column-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Cards dentro da coluna da semana */
+.week-task-card {
+  padding: 12px;
+  gap: 8px;
+  border-radius: 8px;
+  background: #090a0e;
+  border-color: rgba(197, 168, 128, 0.14);
+}
+
+.week-task-card h3 {
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0 0 6px;
+}
+
+.week-task-card .check {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+
+.week-task-card .meta {
+  font-size: 9px;
+  gap: 6px;
+}
+
+.week-task-card .focus {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 9px;
+}
+
+.week-task-card .progress {
+  margin-top: 8px;
+}
+
+.column-empty-dropzone {
+  min-height: 90px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  font:
+    11px 'Space Mono',
+    monospace;
+  gap: 2px;
+  margin: 6px 0;
+  background: rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.column-empty-dropzone small {
+  font-size: 9px;
+  color: #52525b;
+}
+
+/* Concluídas dentro da coluna */
+.column-completed {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.column-completed summary {
+  font:
+    10px 'Space Mono',
+    monospace;
+  color: #71717a;
+  cursor: pointer;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+/* Rodapé da coluna (+ adicionar direto no dia) */
+.column-footer {
+  padding: 8px 10px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.column-add-btn {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px dashed rgba(197, 168, 128, 0.2);
+  border-radius: 6px;
+  color: #a1a1aa;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.column-add-btn:hover {
+  color: #c5a880;
+  border-color: #c5a880;
+  background: rgba(197, 168, 128, 0.06);
+}
+
+.column-add-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.5;
+}
+
+/* Formulário de captura inline na coluna */
+.inline-capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.inline-capture-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-capture-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 12px;
+  color: #f4f4f6;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.inline-cancel-btn {
+  background: transparent;
+  border: 0;
+  color: #71717a;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.inline-cancel-btn:hover {
+  color: #f4f4f6;
+}
+
+.inline-cancel-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.inline-capture-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.inline-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: #12141c;
+}
+
+.inline-stepper button {
+  width: 22px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.inline-stepper span {
+  font:
+    10px 'Space Mono',
+    monospace;
+  color: #f4f4f6;
+  padding: 0 4px;
+}
+
+.inline-confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  background: #c5a880;
+  border: 0;
+  border-radius: 4px;
+  color: #090a0e;
+  font:
+    600 10px 'Space Mono',
+    monospace;
+  cursor: pointer;
+}
+
+.inline-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.inline-confirm-btn svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2;
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE: MOBILE / TABLET PARA VISÃO SEMANA
+   ========================================================================== */
+
+@media (max-width: 1180px) {
+  .week-columns-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .week-column {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .week-page-container {
+    padding: 16px 14px 120px;
+  }
+
+  .week-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .week-summary-cards {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .inbox-metric-card {
+    grid-column: 1 / -1;
+  }
+
+  .inbox-shelf-cards {
+    gap: 8px;
+  }
+
+  .inbox-shelf-item {
+    flex: 0 0 210px;
   }
 }

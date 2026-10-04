@@ -95,6 +95,17 @@ export function Docs() {
                 dia seguinte com ordem de ataque matinal customizada.
               </li>
               <li>
+                <strong>Visão Semana (/semana):</strong> planejamento tático dos 7 dias corridos
+                (hoje + 6 dias subsequentes) em grade desktop fluida ou seções empilhadas no mobile.
+                Apresenta cabeçalhos em Space Mono com a data, dia da semana e carga consolidada
+                (tarefas e minutos estimados), destaque sutil na coluna de hoje e totalizadores no
+                topo. Inclui faixa horizontal de Inbox com tarefas sem data prontas para agendamento
+                por arrastar-e-soltar, reagendamento imediato entre dias ao soltar em outra coluna
+                (persistindo <code>due_date</code> e <code>order</code> no PocketBase) e botão
+                discreto "+" no rodapé de cada coluna para captura inline pré-preenchida para a data
+                específica.
+              </li>
+              <li>
                 <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
                 dias e lista cronológica detalhada.
               </li>
@@ -165,7 +176,8 @@ export function Docs() {
               </li>
               <li>
                 <strong>Timer global persistente:</strong> o temporizador mantém o estado unificado
-                ao navegar por qualquer módulo do sistema (Hoje, Amanhã, Inbox, Histórico, Docs).
+                ao navegar por qualquer módulo do sistema (Hoje, Amanhã, Semana, Inbox, Histórico,
+                Docs).
               </li>
             </ul>
           </article>

@@ -1,5 +1,15 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Clock3, Inbox, LogOut, Settings, Sun, Timer } from 'lucide-react'
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Clock3,
+  Inbox,
+  LogOut,
+  Settings,
+  Sun,
+  Timer,
+} from 'lucide-react'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
@@ -13,6 +23,7 @@ const links = [
   ['/?view=inbox', 'Inbox', Inbox],
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
+  ['/semana', 'Semana', CalendarDays],
   ['/pomodoro', 'Pomodoro', Timer],
   ['/historico', 'Histórico', Clock3],
 ] as const
@@ -23,6 +34,7 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
   const isPomodoroPage = location.pathname === '/pomodoro'
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
+  const day6 = localDay(new Date(Date.now() + 6 * 86400000))
   const count = (label: string) =>
     tasks.filter(
       (t) =>
@@ -31,9 +43,11 @@ export function Layout({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () =>
           ? pbDay(t.due_date) <= today && !!t.due_date
           : label === 'Amanhã'
             ? pbDay(t.due_date) === tomorrow
-            : label === 'Inbox'
-              ? !t.due_date
-              : false),
+            : label === 'Semana'
+              ? !!t.due_date && pbDay(t.due_date) >= today && pbDay(t.due_date) <= day6
+              : label === 'Inbox'
+                ? !t.due_date
+                : false),
     ).length
   const initials = String(user?.name || user?.email || 'U')
     .split(' ')
