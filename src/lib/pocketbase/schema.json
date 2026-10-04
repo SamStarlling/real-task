@@ -1,0 +1,253 @@
+{
+  "generatedAt": "2026-10-04T22:00:24.865Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "lists",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user.id = @request.auth.id",
+        "view": "@request.auth.id != '' && user.id = @request.auth.id",
+        "create": "@request.auth.id != '' && user.id = @request.auth.id",
+        "update": "@request.auth.id != '' && user.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_lists_user_name ON lists (user, name)",
+        "CREATE INDEX idx_lists_user ON lists (user)"
+      ]
+    },
+    {
+      "name": "tasks",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user.id = @request.auth.id",
+        "view": "@request.auth.id != '' && user.id = @request.auth.id",
+        "create": "@request.auth.id != '' && user.id = @request.auth.id",
+        "update": "@request.auth.id != '' && user.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "list",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "lists"
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "done",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "estimated_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "actual_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_tasks_user ON tasks (user)",
+        "CREATE INDEX idx_tasks_due_date ON tasks (due_date)",
+        "CREATE INDEX idx_tasks_done ON tasks (done)",
+        "CREATE INDEX idx_tasks_user_done_due ON tasks (user, done, due_date)"
+      ]
+    },
+    {
+      "name": "sessions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user.id = @request.auth.id",
+        "view": "@request.auth.id != '' && user.id = @request.auth.id",
+        "create": "@request.auth.id != '' && user.id = @request.auth.id",
+        "update": "@request.auth.id != '' && user.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "task",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "tasks"
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "started_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "ended_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "duration_minutes",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "session_date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["completa", "interrompida"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_sessions_user ON sessions (user)",
+        "CREATE INDEX idx_sessions_task ON sessions (task)",
+        "CREATE INDEX idx_sessions_date ON sessions (session_date)",
+        "CREATE INDEX idx_sessions_user_date ON sessions (user, session_date)"
+      ]
+    }
+  ]
+}
