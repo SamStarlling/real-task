@@ -6,12 +6,17 @@ export function PomodoroWidget() {
   const {
     state,
     seconds,
+    overtimeSeconds,
+    isOvertime,
     toggle,
     finish,
     discard,
+    startBreakFromOvertime,
+    startNextBlockFromBreak,
     pendingNote,
     submitPendingNote,
     dismissPendingNote,
+    isReadOnlyTab,
   } = usePomodoro()
   const [noteInput, setNoteInput] = useState('')
 
@@ -19,18 +24,23 @@ export function PomodoroWidget() {
 
   const minutes = Math.floor(seconds / 60)
   const remainingSec = seconds % 60
-  const value = `${String(minutes).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`
-  const progressRatio =
-    state.totalDurationSeconds > 0
+  const timerDisplay = isOvertime
+    ? `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
+    : `${String(minutes).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`
+
+  const progressRatio = state
+    ? state.totalDurationSeconds > 0
       ? Math.max(0, Math.min(1, 1 - seconds / state.totalDurationSeconds))
       : 0
+    : 0
 
-  const phaseLabel =
-    state.phase === 'foco'
-      ? `FOCO · BLOCO ${state.currentBlock}/${state.totalBlocks}`
+  const phaseLabel = state
+    ? state.phase === 'foco'
+      ? `FOCO · BLOCO ${state.currentBlock}/${state.totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
       : state.phase === 'descanso_longo'
-        ? 'DESCANSO LONGO'
-        : 'DESCANSO CURTO'
+        ? `DESCANSO LONGO${isOvertime ? ' (EXCESSO)' : ''}`
+        : `DESCANSO CURTO${isOvertime ? ' (EXCESSO)' : ''}`
+    : ''
 
   const handleConfirmNote = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -142,26 +152,102 @@ export function PomodoroWidget() {
             <span style={{ opacity: 0.7 }}>{state.preset.name}</span>
           </div>
           <strong>{state.task?.title || 'Sem tarefa vinculada'}</strong>
+          {isReadOnlyTab && (
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: '10px',
+                color: '#C5A880',
+                letterSpacing: '0.06em',
+                background: 'rgba(197, 168, 128, 0.1)',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                margin: '4px 0 6px',
+              }}
+            >
+              Timer ativo em outra aba (somente leitura)
+            </div>
+          )}
+
+          {/* Botão de transição manual em modo de excesso */}
+          {isOvertime && !isReadOnlyTab && (
+            <div style={{ margin: '6px 0' }}>
+              {state.phase === 'foco' ? (
+                <button
+                  type="button"
+                  onClick={startBreakFromOvertime}
+                  style={{
+                    width: '100%',
+                    padding: '6px 12px',
+                    background: '#C5A880',
+                    color: '#090A0E',
+                    border: 0,
+                    borderRadius: '6px',
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Iniciar Pausa
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startNextBlockFromBreak}
+                  style={{
+                    width: '100%',
+                    padding: '6px 12px',
+                    background: '#C5A880',
+                    color: '#090A0E',
+                    border: 0,
+                    borderRadius: '6px',
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Iniciar Próximo Bloco
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="pomodoro-row">
             <div
-              className="timer"
-              style={{ '--progress': `${progressRatio * 360}deg` } as React.CSSProperties}
+              className={`timer ${isOvertime ? 'overtime' : ''}`}
+              style={
+                {
+                  '--progress': `${(isOvertime ? 1 : progressRatio) * 360}deg`,
+                  color: isOvertime ? '#C5A880' : undefined,
+                } as React.CSSProperties
+              }
             >
-              <span>{value}</span>
+              <span>{timerDisplay}</span>
             </div>
-            <button
-              className="primary icon"
-              onClick={toggle}
-              title={state.status === 'rodando' ? 'Pausar' : 'Retomar'}
-            >
-              {state.status === 'rodando' ? <Pause /> : <Play />}
-            </button>
-            <button className="icon" onClick={() => finish()} title="Encerrar e registrar">
-              <Square />
-            </button>
-            <button className="icon" onClick={discard} title="Descartar">
-              <X />
-            </button>
+            {!isReadOnlyTab && (
+              <>
+                <button
+                  className="primary icon"
+                  onClick={toggle}
+                  title={state.status === 'rodando' ? 'Pausar' : 'Retomar'}
+                >
+                  {state.status === 'rodando' ? <Pause /> : <Play />}
+                </button>
+                <button className="icon" onClick={() => finish()} title="Encerrar e registrar">
+                  <Square />
+                </button>
+                <button className="icon" onClick={discard} title="Descartar">
+                  <X />
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

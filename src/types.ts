@@ -68,9 +68,9 @@ export interface SessionRecord extends RecordModel {
 export interface FocusPresetRecord extends RecordModel {
   name: string
   user: string
-  work_minutes: number
-  short_break_minutes: number
-  long_break_minutes: number
-  blocks_before_long_break: number
+  work_minutes: number // mínimo 5 min
+  short_break_minutes: number // mínimo 5 min
+  long_break_minutes: number // mínimo 5 min
+  blocks_before_long_break: number // mínimo 1
   archived?: boolean
 }

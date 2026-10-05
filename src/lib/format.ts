@@ -1,5 +1,6 @@
 export const formatMinutes = (value: number) => {
-  const mins = Math.round(value)
+  const numeric = Number(value) || 0
+  const mins = Math.round(numeric)
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return h ? `${h}H${m ? ` ${m}MIN` : ''}` : `${m} MIN`

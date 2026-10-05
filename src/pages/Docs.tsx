@@ -233,10 +233,10 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Pomodoro Avançado & Ciclo de Presets (/pomodoro)</h3>
+            <h3>Pomodoro Avançado, Excesso & Transições Manuais (/pomodoro)</h3>
             <p>
-              Sistema completo de temporização inspirado na arquitetura de blocos do TickTick,
-              integrado ao Design System Barbosa:
+              Sistema completo de temporização inspirado na arquitetura de blocos do TickTick e
+              regras estritas de foco, integrado ao Design System Barbosa:
             </p>
             <ul>
               <li>
@@ -244,41 +244,63 @@ export function Docs() {
                   Página dedicada <code>/pomodoro</code>:
                 </strong>{' '}
                 layout em duas colunas com gerenciador de presets à esquerda (comutador
-                Ativo/Arquivado, criação e edição inline), visão geral analítica à direita (4
-                cartões de esforço acumulado e timeline cronológica de registros) e barra inferior
-                fixa com display digital em Space Mono.
+                Ativo/Arquivado, criação e edição com validação rigorosa de mínimo 5 min), visão
+                geral analítica à direita (4 cartões de esforço acumulado e timeline cronológica de
+                registros) e barra inferior fixa com display digital em Space Mono.
               </li>
               <li>
                 <strong>
-                  Presets customizáveis (<code>focus_presets</code>):
+                  Presets customizáveis validados (<code>focus_presets</code>):
                 </strong>{' '}
-                suporte a durações arbitrárias de foco, descanso curto, descanso longo e cadência de
-                blocos antes da pausa estendida (ex.: preset padrão Foco 25/5/15/4, Deep Work 50m,
-                Estudo).
+                regras que impedem salvar blocos de foco ou descansos menores que 5 minutos (foco ≥
+                5 min, descanso curto ≥ 5 min, descanso longo ≥ 5 min e blocos para pausa longa ≥
+                1), garantindo rigor metodológico e consistência no banco.
               </li>
               <li>
-                <strong>Ciclos automáticos com Web Audio nativo:</strong> transição fluida entre
-                blocos de trabalho e descansos, com sintetizador harmônico ascendente em Champagne
-                ao concluir o foco e sinal discreto em dois tons ao encerrar o descanso, sem
-                depender de arquivos externos.
+                <strong>Contagem de Excesso & Sem Transição Automática:</strong> ao zerar o tempo de
+                foco previsto, o timer toca o som de dever cumprido e continua ativo em 00:00
+                contando tempo excedente (<code>+00:01</code>, <code>+00:02</code>...) em Champagne
+                Ouro Fosco. A pausa nunca se inicia sozinha: o usuário clica expressamente em{' '}
+                <code>INICIAR PAUSA</code>, registrando a sessão com o tempo total (previsto +
+                excesso) como <code>completa</code>.
               </li>
               <li>
-                <strong>Contabilidade estrita:</strong> apenas blocos de foco registram sessões na
-                coleção <code>sessions</code> e somam minutos ao <code>actual_minutes</code> da
-                tarefa vinculada. Descansos não gravam registros espúrios.
+                <strong>Pausa com Retomada Sob Demanda:</strong> quando a pausa zera, o som suave de
+                volta ao trabalho é emitido, a pausa passa a contar excesso e nada inicia sozinho. O
+                próximo bloco de foco só começa com a ação do usuário no botão{' '}
+                <code>INICIAR PRÓXIMO BLOCO</code>.
               </li>
               <li>
-                <strong>Notas de sessão pós-foco ("O que foi feito?"):</strong> captura fluida e
-                não-bloqueante ao encerrar naturalmente cada bloco de foco. A pausa inicia
-                imediatamente enquanto um prompt discreto na barra do timer permite descrever a
-                entrega realizada (Enter confirma, Esc ou fechar pula). A nota é persistida no campo{' '}
-                <code>note</code> da sessão e exibida na timeline de /pomodoro, no histórico
-                analítico e no detalhe da tarefa vinculada.
+                <strong>Três Sons Web Audio Nativos Destravados:</strong> inicialização suave do
+                AudioContext no gesto do usuário (clique de Play / Iniciar) prevenindo suspensão
+                silenciosa dos navegadores: acorde de início de foco (A4-C#5-E5), acorde de
+                conclusão de foco (C5-E5-G5) e acorde de encerramento da pausa (G5-C5).
               </li>
               <li>
-                <strong>Timer global persistente:</strong> o temporizador mantém o estado unificado
-                ao navegar por qualquer módulo do sistema (Hoje, Amanhã, Semana, Inbox, Histórico,
-                Docs).
+                <strong>Trava Multi-Abas com Sincronização (BroadcastChannel):</strong> impede a
+                execução de dois cronômetros simultâneos em abas distintas. Ao ligar o timer em uma
+                aba, as demais entram imediatamente em modo somente leitura com aviso discreto (
+                <em>Timer ativo em outra aba</em>) e exibição do tempo espelhado em tempo real.
+              </li>
+              <li>
+                <strong>Contador no Título da Aba & Favicon Dinâmico:</strong> o{' '}
+                <code>document.title</code>
+                reflete a cada segundo o tempo restante ou em excesso (ex.:{' '}
+                <code>24:59 · Foco — Barbosa System</code>), e o favicon é renderizado via Canvas
+                com anel de progresso circular dinâmico em Champagne, sendo restaurado para o ícone
+                padrão ao finalizar.
+              </li>
+              <li>
+                <strong>Notificações Nativas em Segundo Plano:</strong> se a aba estiver oculta (
+                <code>document.hidden</code>) ao zerar o foco ou o descanso, uma notificação de
+                backup do navegador é disparada alertando o usuário para iniciar a pausa ou o
+                próximo bloco, reutilizando a permissão de notificações do sistema.
+              </li>
+              <li>
+                <strong>Contabilidade e Notas de Sessão:</strong> apenas blocos de foco gravam
+                sessões na coleção <code>sessions</code> e somam minutos ao{' '}
+                <code>actual_minutes</code> da tarefa vinculada. O prompt não-bloqueante "O que foi
+                feito?" fica disponível durante o descanso para registro de notas.
               </li>
             </ul>
           </article>
@@ -1447,7 +1469,7 @@ export function Docs() {
                     <code>number</code>
                   </td>
                   <td>Sim</td>
-                  <td>Duração do bloco de trabalho em minutos (default 25, mín. 1)</td>
+                  <td>Duração do bloco de trabalho em minutos (default 25, mín. 5)</td>
                 </tr>
                 <tr>
                   <td>
@@ -1457,7 +1479,7 @@ export function Docs() {
                     <code>number</code>
                   </td>
                   <td>Sim</td>
-                  <td>Duração do descanso curto em minutos (default 5, mín. 1)</td>
+                  <td>Duração do descanso curto em minutos (default 5, mín. 5)</td>
                 </tr>
                 <tr>
                   <td>
@@ -1467,7 +1489,7 @@ export function Docs() {
                     <code>number</code>
                   </td>
                   <td>Sim</td>
-                  <td>Duração do descanso longo em minutos (default 15, mín. 1)</td>
+                  <td>Duração do descanso longo em minutos (default 15, mín. 5)</td>
                 </tr>
                 <tr>
                   <td>

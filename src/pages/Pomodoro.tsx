@@ -52,6 +52,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const {
     state,
     seconds,
+    overtimeSeconds,
+    isOvertime,
     activePreset,
     setActivePreset,
     start,
@@ -59,9 +61,12 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     finish,
     discard,
     selectTask,
+    startBreakFromOvertime,
+    startNextBlockFromBreak,
     pendingNote,
     submitPendingNote,
     dismissPendingNote,
+    isReadOnlyTab,
   } = usePomodoro()
 
   // Estado do campo inline de nota na barra inferior
@@ -145,14 +150,48 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
       return
     }
 
+    // Validação estrita: mínimo de 5 min para foco e pausas; blocos >= 1
+    if (presetForm.workMinutes < 5) {
+      toast({
+        title: 'Tempo de foco inválido',
+        description: 'O tempo de foco deve ser de no mínimo 5 minutos.',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (presetForm.shortBreakMinutes < 5) {
+      toast({
+        title: 'Descanso curto inválido',
+        description: 'O descanso curto deve ser de no mínimo 5 minutos.',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (presetForm.longBreakMinutes < 5) {
+      toast({
+        title: 'Descanso longo inválido',
+        description: 'O descanso longo deve ser de no mínimo 5 minutos.',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (presetForm.blocksBeforeLongBreak < 1) {
+      toast({
+        title: 'Quantidade de blocos inválida',
+        description: 'A quantidade de blocos antes do descanso longo deve ser de pelo menos 1.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setSavingPreset(true)
     try {
       if (editingPreset) {
         const updated = await updateFocusPreset(editingPreset.id, {
           name: presetForm.name.trim(),
-          work_minutes: Math.max(1, Math.round(presetForm.workMinutes)),
-          short_break_minutes: Math.max(1, Math.round(presetForm.shortBreakMinutes)),
-          long_break_minutes: Math.max(1, Math.round(presetForm.longBreakMinutes)),
+          work_minutes: Math.max(5, Math.round(presetForm.workMinutes)),
+          short_break_minutes: Math.max(5, Math.round(presetForm.shortBreakMinutes)),
+          long_break_minutes: Math.max(5, Math.round(presetForm.longBreakMinutes)),
           blocks_before_long_break: Math.max(1, Math.round(presetForm.blocksBeforeLongBreak)),
         })
         toast({ title: `Preset '${updated.name}' atualizado` })
@@ -163,9 +202,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
         const created = await createFocusPreset({
           name: presetForm.name.trim(),
           user: user.id,
-          work_minutes: Math.max(1, Math.round(presetForm.workMinutes)),
-          short_break_minutes: Math.max(1, Math.round(presetForm.shortBreakMinutes)),
-          long_break_minutes: Math.max(1, Math.round(presetForm.longBreakMinutes)),
+          work_minutes: Math.max(5, Math.round(presetForm.workMinutes)),
+          short_break_minutes: Math.max(5, Math.round(presetForm.shortBreakMinutes)),
+          long_break_minutes: Math.max(5, Math.round(presetForm.longBreakMinutes)),
           blocks_before_long_break: Math.max(1, Math.round(presetForm.blocksBeforeLongBreak)),
           archived: false,
         })
@@ -269,7 +308,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   // Helper de minutos / segundos do timer da barra fixa
   const timerMinutes = Math.floor(seconds / 60)
   const timerSeconds = seconds % 60
-  const formattedTimer = `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
+  const formattedTimer = isOvertime
+    ? `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
+    : `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
 
   const isRunning = state?.status === 'rodando'
   const isPaused = state?.status === 'pausado'
@@ -280,11 +321,11 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const totalBlocks = state?.totalBlocks ?? activePreset.blocksBeforeLongBreak
   const phaseLabel =
     state?.phase === 'foco'
-      ? `FOCO · BLOCO ${currentBlock}/${totalBlocks}`
+      ? `FOCO · BLOCO ${currentBlock}/${totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
       : state?.phase === 'descanso_longo'
-        ? `DESCANSO LONGO · BLOCO ${currentBlock}/${totalBlocks}`
+        ? `DESCANSO LONGO · BLOCO ${currentBlock}/${totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
         : state?.phase === 'descanso_curto'
-          ? `DESCANSO CURTO · BLOCO ${currentBlock}/${totalBlocks}`
+          ? `DESCANSO CURTO · BLOCO ${currentBlock}/${totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
           : `FOCO · ${activePreset.name.toUpperCase()}`
 
   return (
@@ -541,7 +582,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             <div className="pomodoro-bottom-meta">
               <span className="pomodoro-bottom-eyebrow">{phaseLabel}</span>
               <div className="pomodoro-bottom-time-row">
-                <span className="pomodoro-bottom-digits">{formattedTimer}</span>
+                <span className={`pomodoro-bottom-digits ${isOvertime ? 'is-overtime' : ''}`}>
+                  {formattedTimer}
+                </span>
 
                 {/* Seletor de tarefa para vinculação */}
                 <DropdownMenu open={taskPickerOpen} onOpenChange={setTaskPickerOpen}>
@@ -588,6 +631,44 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
 
           <div className="pomodoro-bottom-controls">
+            {/* Aviso discreto de trava de abas */}
+            {isReadOnlyTab && (
+              <span className="pomodoro-readonly-badge">
+                Timer ativo em outra aba (somente leitura)
+              </span>
+            )}
+
+            {/* Botão de transição manual exigido pelo usuário */}
+            {isOvertime && !isReadOnlyTab && (
+              <>
+                {state?.phase === 'foco' ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await startBreakFromOvertime()
+                      if (refreshSessions) refreshSessions()
+                    }}
+                    className="pomodoro-transition-btn"
+                    title="Encerrar foco, registrar sessão e iniciar descanso"
+                  >
+                    Iniciar Pausa
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await startNextBlockFromBreak()
+                      if (refreshSessions) refreshSessions()
+                    }}
+                    className="pomodoro-transition-btn"
+                    title="Iniciar o próximo bloco de foco"
+                  >
+                    Iniciar Próximo Bloco
+                  </button>
+                )}
+              </>
+            )}
+
             {/* Prompt discreto de nota pós-foco */}
             {pendingNote && (
               <form
@@ -640,44 +721,48 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
               </form>
             )}
 
-            {/* Botão Play / Pause */}
-            <button
-              type="button"
-              className="pomodoro-bottom-action-btn primary"
-              onClick={toggle}
-              title={isRunning ? 'Pausar foco' : 'Iniciar foco'}
-            >
-              {isRunning ? (
-                <Pause size={18} fill="currentColor" />
-              ) : (
-                <Play size={18} fill="currentColor" />
-              )}
-            </button>
+            {!isReadOnlyTab && (
+              <>
+                {/* Botão Play / Pause */}
+                <button
+                  type="button"
+                  className="pomodoro-bottom-action-btn primary"
+                  onClick={toggle}
+                  title={isRunning ? 'Pausar foco' : 'Iniciar foco'}
+                >
+                  {isRunning ? (
+                    <Pause size={18} fill="currentColor" />
+                  ) : (
+                    <Play size={18} fill="currentColor" />
+                  )}
+                </button>
 
-            {/* Botão Encerrar e Registrar */}
-            <button
-              type="button"
-              className="pomodoro-bottom-action-btn"
-              onClick={async () => {
-                await finish()
-                if (refreshSessions) refreshSessions()
-              }}
-              disabled={!hasActiveSession}
-              title="Encerrar e registrar tempo"
-            >
-              <Square size={16} />
-            </button>
+                {/* Botão Encerrar e Registrar */}
+                <button
+                  type="button"
+                  className="pomodoro-bottom-action-btn"
+                  onClick={async () => {
+                    await finish()
+                    if (refreshSessions) refreshSessions()
+                  }}
+                  disabled={!hasActiveSession}
+                  title="Encerrar e registrar tempo"
+                >
+                  <Square size={16} />
+                </button>
 
-            {/* Botão Descartar sem registrar */}
-            {hasActiveSession && (
-              <button
-                type="button"
-                className="pomodoro-bottom-action-btn text-muted"
-                onClick={discard}
-                title="Descartar timer sem registrar"
-              >
-                <RotateCcw size={15} />
-              </button>
+                {/* Botão Descartar sem registrar */}
+                {hasActiveSession && (
+                  <button
+                    type="button"
+                    className="pomodoro-bottom-action-btn text-muted"
+                    onClick={discard}
+                    title="Descartar timer sem registrar"
+                  >
+                    <RotateCcw size={15} />
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -715,7 +800,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={5}
                   max={240}
                   required
                   value={presetForm.workMinutes}
@@ -724,6 +809,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
+                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                  Mínimo 5 min
+                </span>
               </div>
 
               <div>
@@ -732,7 +820,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={5}
                   max={60}
                   required
                   value={presetForm.shortBreakMinutes}
@@ -741,6 +829,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
+                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                  Mínimo 5 min
+                </span>
               </div>
 
               <div>
@@ -749,7 +840,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={5}
                   max={120}
                   required
                   value={presetForm.longBreakMinutes}
@@ -758,6 +849,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
+                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                  Mínimo 5 min
+                </span>
               </div>
 
               <div>
@@ -778,6 +872,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
+                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                  Mínimo 1 bloco
+                </span>
               </div>
             </div>
 

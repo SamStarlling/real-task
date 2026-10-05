@@ -1982,6 +1982,59 @@ a {
   color: #f4f4f6;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+  transition: color 200ms ease;
+}
+
+.pomodoro-bottom-digits.is-overtime {
+  color: #c5a880;
+}
+
+.pomodoro-readonly-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 6px;
+  padding: 6px 12px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pomodoro-transition-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #c5a880;
+  color: #090a0e;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(197, 168, 128, 0.25);
+  transition: all 150ms ease;
+  white-space: nowrap;
+  animation: pomodoroPulseTransition 2s infinite ease-in-out;
+}
+
+.pomodoro-transition-btn:hover {
+  background: #d6bc96;
+  box-shadow: 0 0 18px rgba(197, 168, 128, 0.4);
+}
+
+@keyframes pomodoroPulseTransition {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
 }
 
 .pomodoro-bottom-task-tag {
