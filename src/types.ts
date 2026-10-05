@@ -22,6 +22,9 @@ export interface TagRecord extends RecordModel {
   color: string
 }
 
+export type RecurrenceType = 'none' | 'daily' | 'weekly_days' | 'weekly' | 'monthly'
+export type RecurrenceMode = 'from_date' | 'from_completion'
+
 export interface TaskRecord extends RecordModel {
   title: string
   user: string
@@ -33,6 +36,10 @@ export interface TaskRecord extends RecordModel {
   completed_at?: string
   order?: number
   tags?: string[]
+  recurrence_type?: RecurrenceType
+  recurrence_interval?: number
+  recurrence_weekdays?: number[]
+  recurrence_mode?: RecurrenceMode
   expand?: {
     list?: ListRecord
     tags?: TagRecord[]

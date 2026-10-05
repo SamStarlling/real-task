@@ -130,6 +130,44 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
+            <h3>Recorrência de Tarefas (Estilo TickTick)</h3>
+            <p>
+              Mecanismo robusto de hábitos e tarefas periódicas com criação automática da próxima
+              instância:
+            </p>
+            <ul>
+              <li>
+                <strong>Seletor completo de repetição:</strong> configurável no painel lateral de
+                detalhes e acessível rapidamente via botão de repetição na barra de captura do topo.
+                Suporta quatro modalidades: <code>Diária</code> (a cada N dias),{' '}
+                <code>Dias da semana</code> (multi-seleção Seg–Dom, a cada N semanas),{' '}
+                <code>Semanal</code> (a cada N semanas no mesmo dia da semana) e <code>Mensal</code>{' '}
+                (dia fixo do mês com clamp inteligente para o último dia de meses curtos).
+              </li>
+              <li>
+                <strong>Dois modos de base de cálculo:</strong> <code>A partir da data</code> (a
+                próxima data é computada rigidamente a partir do prazo original — ideal para
+                vencimentos e compromissos) e <code>A partir da conclusão</code> (a próxima data
+                avança a partir do momento em que você marca a tarefa como feita — ideal para
+                rotinas flexíveis, cuidados e hábitos).
+              </li>
+              <li>
+                <strong>Criação automática ao concluir:</strong> ao marcar a caixa de seleção da
+                tarefa em qualquer visão (Hoje, Amanhã, Inbox e Semana), a tarefa concluída é
+                preservada com <code>completed_at</code> para o histórico auditável e uma nova
+                instância idêntica é imediatamente gerada com a nova <code>due_date</code>, mantendo
+                título, lista, tags e tempo estimado.
+              </li>
+              <li>
+                <strong>Indicador visual discreto:</strong> ícone de setas circulares (
+                <code>lucide Repeat</code>) em traço fino Champagne no cabeçalho do cartão e
+                etiqueta textual amigável em pt-BR (ex.: <em>repete · seg, qua, sex</em>,{' '}
+                <em>repete · a cada 2 dias</em>, <em>repete · mensal (dia 15)</em>).
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
             <h3>Comparativo de Precisão Temporal</h3>
             <p>Controle estrito de acurácia entre planejamento e execução:</p>
             <ul>
@@ -1053,6 +1091,57 @@ export function Docs() {
                   <td>
                     Relação múltipla referenciando a coleção <code>tags</code> (maxSelect: 20,
                     cascadeDelete: false)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>recurrence_type</code>
+                  </td>
+                  <td>
+                    <code>select</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Modalidade de recorrência: <code>none</code>, <code>daily</code>,{' '}
+                    <code>weekly_days</code>, <code>weekly</code> ou <code>monthly</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>recurrence_interval</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Intervalo numérico da periodicidade (mínimo 1, default 1, apenas inteiros)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>recurrence_weekdays</code>
+                  </td>
+                  <td>
+                    <code>json</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Lista de números correspondentes aos dias da semana (0=dom, 1=seg ... 6=sáb)
+                    quando a modalidade é <code>weekly_days</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>recurrence_mode</code>
+                  </td>
+                  <td>
+                    <code>select</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Origem do cálculo da próxima data: <code>from_date</code> (a partir do prazo) ou{' '}
+                    <code>from_completion</code> (a partir da data em que foi concluída)
                   </td>
                 </tr>
                 <tr>

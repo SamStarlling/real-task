@@ -12,6 +12,7 @@ import {
   ListTodo,
   Play,
   Plus,
+  Repeat,
   Sparkles,
   X,
 } from 'lucide-react'
@@ -20,7 +21,13 @@ import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
-import { createTask, reorderTasks, updateTask } from '@/services/data'
+import {
+  createTask,
+  formatRecurrenceRule,
+  reorderTasks,
+  toggleTaskDone,
+  updateTask,
+} from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
@@ -625,7 +632,17 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                     })
                   }}
                 >
-                  <span className="inbox-item-title">{task.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="inbox-item-title">{task.title}</span>
+                    {task.recurrence_type && task.recurrence_type !== 'none' && (
+                      <span
+                        className="recurrence-indicator"
+                        title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
+                      >
+                        <Repeat className="w-3 h-3 text-[#C5A880]" />
+                      </span>
+                    )}
+                  </div>
                   <div className="inbox-item-meta">
                     {task.expand?.list && (
                       <span className="inbox-list-chip">#{task.expand.list.name}</span>
@@ -643,6 +660,18 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                           @{tag.name}
                         </span>
                       ))}
+                    {task.recurrence_type && task.recurrence_type !== 'none' && (
+                      <span
+                        className="tag-chip recurrence-chip"
+                        style={{
+                          borderColor: 'rgba(197, 168, 128, 0.35)',
+                          color: '#C5A880',
+                        }}
+                      >
+                        <Repeat className="w-2.5 h-2.5 inline mr-1" />
+                        {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                      </span>
+                    )}
                     <span className="inbox-est-chip">
                       EST. {formatMinutes(task.estimated_minutes)}
                     </span>
@@ -748,11 +777,9 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                         type="button"
                         className="check"
                         aria-label="Concluir"
-                        onClick={async () => {
-                          await updateTask(task.id, {
-                            done: true,
-                            completed_at: new Date().toISOString(),
-                          })
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          await toggleTaskDone(task, true)
                           refresh()
                         }}
                       >
@@ -770,7 +797,17 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                           })
                         }}
                       >
-                        <h3>{task.title}</h3>
+                        <div className="task-title-row">
+                          <h3>{task.title}</h3>
+                          {task.recurrence_type && task.recurrence_type !== 'none' && (
+                            <span
+                              className="recurrence-indicator"
+                              title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
+                            >
+                              <Repeat className="w-3.5 h-3.5" />
+                            </span>
+                          )}
+                        </div>
                         <div className="meta">
                           {task.expand?.list && <span>#{task.expand.list.name}</span>}
                           {task.expand?.tags &&
@@ -786,6 +823,19 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                                 @{tag.name}
                               </span>
                             ))}
+                          {task.recurrence_type && task.recurrence_type !== 'none' && (
+                            <span
+                              className="tag-chip recurrence-chip"
+                              style={{
+                                borderColor: 'rgba(197, 168, 128, 0.35)',
+                                color: '#C5A880',
+                              }}
+                              title={`Regra: ${formatRecurrenceRule(task)}`}
+                            >
+                              <Repeat className="w-2.5 h-2.5 inline mr-1" />
+                              {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                            </span>
+                          )}
                           <span>
                             EST. {formatMinutes(task.estimated_minutes)} ·{' '}
                             <b
@@ -842,11 +892,9 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                             type="button"
                             className="check"
                             aria-label="Reabrir tarefa"
-                            onClick={async () => {
-                              await updateTask(task.id, {
-                                done: false,
-                                completed_at: '',
-                              })
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await toggleTaskDone(task, false)
                               refresh()
                             }}
                           >

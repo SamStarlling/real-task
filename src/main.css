@@ -354,6 +354,322 @@ a {
   border-color: rgba(197, 168, 128, 0.28);
 }
 
+/* Recorrência de tarefas (TickTick quiet luxury) */
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.task-title-row h3 {
+  margin: 0;
+}
+.recurrence-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #c5a880;
+  opacity: 0.85;
+  flex: none;
+  transition: opacity 150ms ease;
+}
+.recurrence-indicator:hover {
+  opacity: 1;
+}
+.recurrence-chip {
+  background-color: rgba(197, 168, 128, 0.08) !important;
+}
+
+/* Painel de recorrência no TaskDetail */
+.detail-recurrence-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #c5a880;
+  margin-left: 10px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.recurrence-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 10px;
+  padding: 12px;
+}
+.recurrence-type-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.active-recurrence-btn {
+  background: #c5a880 !important;
+  color: #090a0e !important;
+  border-color: #c5a880 !important;
+  font-weight: 600;
+}
+.recurrence-details-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.recurrence-interval-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.recurrence-sublabel {
+  font-size: 11px;
+  color: #a1a1aa;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.recurrence-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.recurrence-stepper.mini {
+  transform: scale(0.9);
+}
+.recurrence-stepper button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: #f4f4f6;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.recurrence-stepper button:hover {
+  background: rgba(197, 168, 128, 0.15);
+  color: #c5a880;
+}
+.recurrence-stepper span {
+  min-width: 26px;
+  text-align: center;
+  font:
+    11px 'Space Mono',
+    monospace;
+  color: #f4f4f6;
+}
+.recurrence-unit-text {
+  font-size: 12px;
+  color: #f4f4f6;
+}
+.recurrence-weekdays-picker {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.recurrence-weekdays-picker.mini {
+  gap: 3px;
+}
+.recurrence-day-btn {
+  padding: 4px 8px;
+  font:
+    10px 'Space Mono',
+    monospace;
+  border-radius: 6px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 150ms ease;
+}
+.recurrence-day-btn:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+  color: #f4f4f6;
+}
+.recurrence-day-btn.selected {
+  background: rgba(197, 168, 128, 0.18);
+  border-color: #c5a880;
+  color: #c5a880;
+  font-weight: 600;
+}
+.recurrence-monthly-hint {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+.recurrence-mode-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recurrence-mode-toggle {
+  display: flex;
+  gap: 6px;
+}
+.recurrence-mode-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 11px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  border-radius: 6px;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.recurrence-mode-btn:hover {
+  border-color: rgba(197, 168, 128, 0.35);
+  color: #f4f4f6;
+}
+.recurrence-mode-btn.active {
+  background: rgba(197, 168, 128, 0.15);
+  border-color: #c5a880;
+  color: #c5a880;
+  font-weight: 500;
+}
+.recurrence-mode-desc {
+  font-size: 10px;
+  color: #71717a;
+  line-height: 1.4;
+}
+
+/* Gatilho e popover de recorrência na barra de captura rápida */
+.capture-recurrence-trigger {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  flex: none;
+  transition: all 150ms ease;
+}
+.capture-recurrence-trigger:hover,
+.capture-recurrence-trigger.is-active {
+  border-color: #c5a880;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.08);
+}
+.capture-recurrence-trigger svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.5;
+}
+.capture-recurrence-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 60;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  animation: enter 0.2s both;
+}
+.capture-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.capture-popover-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #f4f4f6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.capture-popover-close {
+  background: transparent;
+  border: 0;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+.capture-popover-close:hover {
+  color: #f4f4f6;
+}
+.capture-popover-types {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.capture-popover-pill {
+  padding: 5px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.capture-popover-pill:hover {
+  border-color: rgba(197, 168, 128, 0.35);
+  color: #f4f4f6;
+}
+.capture-popover-pill.active {
+  background: #c5a880;
+  border-color: #c5a880;
+  color: #090a0e;
+  font-weight: 600;
+}
+.capture-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.capture-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.capture-popover-mode {
+  display: flex;
+  gap: 6px;
+}
+.capture-mode-btn {
+  flex: 1;
+  padding: 5px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  border-radius: 6px;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+.capture-mode-btn.active {
+  background: rgba(197, 168, 128, 0.15);
+  border-color: #c5a880;
+  color: #c5a880;
+}
+.capture-popover-done-btn {
+  align-self: flex-end;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #c5a880;
+  color: #090a0e;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 /* Arrastar e soltar (Drag and drop) - Quiet Luxury */
 .task-drag-handle {
   display: flex;

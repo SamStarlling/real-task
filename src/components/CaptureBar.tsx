@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { ArrowRight, Folder, Minus, Plus, Tag as TagIcon, X } from 'lucide-react'
+import { ArrowRight, Folder, Minus, Plus, Repeat, Tag as TagIcon, X } from 'lucide-react'
 import { cleanDateToken, parsePortugueseDate, toPocketDate } from '@/lib/date-parser'
 import { formatShortDate } from '@/lib/format'
 import {
   createList,
   createTag,
   createTask,
+  formatRecurrenceRule,
   getLists,
   getNextTagColor,
   getTags,
 } from '@/services/data'
-import type { ListRecord, TagRecord } from '@/types'
+import type { ListRecord, RecurrenceMode, RecurrenceType, TagRecord } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
 
@@ -22,6 +23,11 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const [tags, setTags] = useState<TagRecord[]>([])
   const [selectedList, setSelectedList] = useState<ListRecord | null>(null)
   const [selectedTags, setSelectedTags] = useState<TagRecord[]>([])
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1)
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([1, 3, 5])
+  const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>('from_date')
+  const [isRecurrencePopoverOpen, setIsRecurrencePopoverOpen] = useState(false)
   const [active, setActive] = useState(0)
   const input = useRef<HTMLInputElement>(null)
 
@@ -142,12 +148,34 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       estimated_minutes: minutes,
       actual_minutes: 0,
       order: 0,
+      recurrence_type: recurrenceType,
+      recurrence_interval: recurrenceInterval,
+      recurrence_weekdays: recurrenceType === 'weekly_days' ? recurrenceWeekdays : null,
+      recurrence_mode: recurrenceMode,
     })
 
-    toast({ title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : 'Inbox'}` })
+    const recurrenceSuffix =
+      recurrenceType !== 'none'
+        ? ` · ${formatRecurrenceRule({
+            recurrence_type: recurrenceType,
+            recurrence_interval: recurrenceInterval,
+            recurrence_weekdays: recurrenceWeekdays,
+            recurrence_mode: recurrenceMode,
+            due_date: parsed ? toPocketDate(parsed.date) : '',
+          })}`
+        : ''
+
+    toast({
+      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : 'Inbox'}${recurrenceSuffix}`,
+    })
     setText('')
     setSelectedList(null)
     setSelectedTags([])
+    setRecurrenceType('none')
+    setRecurrenceInterval(1)
+    setRecurrenceWeekdays([1, 3, 5])
+    setRecurrenceMode('from_date')
+    setIsRecurrencePopoverOpen(false)
     setMinutes(25)
     onCreated()
     setTimeout(() => input.current?.focus(), 0)
@@ -224,7 +252,54 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               <X className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100" />
             </span>
           ))}
+          {recurrenceType !== 'none' && (
+            <span
+              className="tag-chip inline-flex items-center gap-1 cursor-pointer"
+              style={{
+                borderColor: '#C5A880',
+                color: '#C5A880',
+                backgroundColor: 'rgba(197, 168, 128, 0.12)',
+              }}
+              title="Recorrência ativa (clique para alterar)"
+              onClick={() => setIsRecurrencePopoverOpen(!isRecurrencePopoverOpen)}
+            >
+              <Repeat className="w-2.5 h-2.5" />
+              {recurrenceType === 'daily' &&
+                (recurrenceInterval === 1 ? 'Diária' : `${recurrenceInterval}d`)}
+              {recurrenceType === 'weekly' &&
+                (recurrenceInterval === 1 ? 'Semanal' : `${recurrenceInterval}sem`)}
+              {recurrenceType === 'weekly_days' && 'Dias da sem.'}
+              {recurrenceType === 'monthly' &&
+                (recurrenceInterval === 1 ? 'Mensal' : `${recurrenceInterval}m`)}
+              <X
+                className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setRecurrenceType('none')
+                }}
+              />
+            </span>
+          )}
         </div>
+        {/* Botão de recorrência rápida na barra de captura */}
+        <button
+          type="button"
+          className={`capture-recurrence-trigger ${recurrenceType !== 'none' ? 'is-active' : ''}`}
+          title={
+            recurrenceType !== 'none'
+              ? `Recorrência configurada: ${formatRecurrenceRule({
+                  recurrence_type: recurrenceType,
+                  recurrence_interval: recurrenceInterval,
+                  recurrence_weekdays: recurrenceWeekdays,
+                  recurrence_mode: recurrenceMode,
+                })}`
+              : 'Configurar repetição da tarefa'
+          }
+          onClick={() => setIsRecurrencePopoverOpen(!isRecurrencePopoverOpen)}
+        >
+          <Repeat />
+        </button>
+
         <div className="stepper">
           <button onClick={() => setMinutes(Math.max(5, minutes - 5))}>
             <Minus />
@@ -238,6 +313,144 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           <ArrowRight />
         </button>
       </div>
+
+      {/* Popover flutuante de recorrência na captura rápida */}
+      {isRecurrencePopoverOpen && (
+        <div className="capture-recurrence-popover">
+          <div className="capture-popover-header">
+            <span className="capture-popover-title">
+              <Repeat className="w-3.5 h-3.5 inline mr-1 text-[#C5A880]" />
+              Repetir Tarefa
+            </span>
+            <button
+              type="button"
+              className="capture-popover-close"
+              onClick={() => setIsRecurrencePopoverOpen(false)}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="capture-popover-types">
+            {[
+              { type: 'none', label: 'Nunca' },
+              { type: 'daily', label: 'Diária' },
+              { type: 'weekly', label: 'Semanal' },
+              { type: 'weekly_days', label: 'Dias úteis' },
+              { type: 'monthly', label: 'Mensal' },
+            ].map((opt) => (
+              <button
+                key={opt.type}
+                type="button"
+                className={`capture-popover-pill ${recurrenceType === opt.type ? 'active' : ''}`}
+                onClick={() => {
+                  setRecurrenceType(opt.type as RecurrenceType)
+                  if (opt.type === 'weekly_days' && recurrenceWeekdays.length === 0) {
+                    setRecurrenceWeekdays([1, 2, 3, 4, 5])
+                  }
+                  if (opt.type === 'none') {
+                    setIsRecurrencePopoverOpen(false)
+                  }
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {recurrenceType !== 'none' && (
+            <div className="capture-popover-body">
+              <div className="capture-popover-row">
+                <span className="text-xs text-[#a1a1aa]">A cada</span>
+                <div className="recurrence-stepper mini">
+                  <button
+                    type="button"
+                    onClick={() => setRecurrenceInterval(Math.max(1, recurrenceInterval - 1))}
+                  >
+                    −
+                  </button>
+                  <span>{recurrenceInterval}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRecurrenceInterval(recurrenceInterval + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-xs text-[#a1a1aa]">
+                  {recurrenceType === 'daily' && (recurrenceInterval === 1 ? 'dia' : 'dias')}
+                  {recurrenceType === 'weekly' && (recurrenceInterval === 1 ? 'semana' : 'semanas')}
+                  {recurrenceType === 'weekly_days' && 'semanas'}
+                  {recurrenceType === 'monthly' && (recurrenceInterval === 1 ? 'mês' : 'meses')}
+                </span>
+              </div>
+
+              {recurrenceType === 'weekly_days' && (
+                <div className="recurrence-weekdays-picker mini">
+                  {[
+                    { idx: 1, label: 'seg' },
+                    { idx: 2, label: 'ter' },
+                    { idx: 3, label: 'qua' },
+                    { idx: 4, label: 'qui' },
+                    { idx: 5, label: 'sex' },
+                    { idx: 6, label: 'sáb' },
+                    { idx: 0, label: 'dom' },
+                  ].map((d) => {
+                    const sel = recurrenceWeekdays.includes(d.idx)
+                    return (
+                      <button
+                        key={d.idx}
+                        type="button"
+                        className={`recurrence-day-btn ${sel ? 'selected' : ''}`}
+                        onClick={() => {
+                          const exists = recurrenceWeekdays.includes(d.idx)
+                          if (exists) {
+                            const next = recurrenceWeekdays.filter((x) => x !== d.idx)
+                            setRecurrenceWeekdays(next.length ? next : [d.idx])
+                          } else {
+                            setRecurrenceWeekdays(
+                              [...recurrenceWeekdays, d.idx].sort((a, b) => a - b),
+                            )
+                          }
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="capture-popover-mode">
+                <button
+                  type="button"
+                  className={`capture-mode-btn ${recurrenceMode === 'from_date' ? 'active' : ''}`}
+                  onClick={() => setRecurrenceMode('from_date')}
+                >
+                  Da data
+                </button>
+                <button
+                  type="button"
+                  className={`capture-mode-btn ${
+                    recurrenceMode === 'from_completion' ? 'active' : ''
+                  }`}
+                  onClick={() => setRecurrenceMode('from_completion')}
+                >
+                  Da conclusão
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="capture-popover-done-btn"
+                onClick={() => setIsRecurrencePopoverOpen(false)}
+              >
+                Concluir
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Menu suspenso para # Listas */}
       {isHashOpen && (

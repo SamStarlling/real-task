@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
-import { X, Play, Tag as TagIcon, Plus } from 'lucide-react'
-import type { SessionRecord, TagRecord, TaskRecord } from '@/types'
+import { X, Play, Tag as TagIcon, Plus, Repeat } from 'lucide-react'
+import type { RecurrenceMode, RecurrenceType, SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
-import { createTag, getNextTagColor, getTags, sessionsForTask, updateTask } from '@/services/data'
+import {
+  createTag,
+  formatRecurrenceRule,
+  getNextTagColor,
+  getTags,
+  sessionsForTask,
+  updateTask,
+} from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -23,7 +30,28 @@ export function TaskDetail({
   const [userTags, setUserTags] = useState<TagRecord[]>([])
   const [newTagName, setNewTagName] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(
+    task.recurrence_type || 'none',
+  )
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number>(
+    Math.max(1, Number(task.recurrence_interval) || 1),
+  )
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>(
+    Array.isArray(task.recurrence_weekdays) ? task.recurrence_weekdays : [],
+  )
+  const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>(
+    task.recurrence_mode || 'from_date',
+  )
   const { start } = usePomodoro()
+
+  useEffect(() => {
+    setTitle(task.title)
+    setEstimate(task.estimated_minutes)
+    setRecurrenceType(task.recurrence_type || 'none')
+    setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval) || 1))
+    setRecurrenceWeekdays(Array.isArray(task.recurrence_weekdays) ? task.recurrence_weekdays : [])
+    setRecurrenceMode(task.recurrence_mode || 'from_date')
+  }, [task])
 
   useEffect(() => {
     sessionsForTask(task.id).then(setSessions)
@@ -77,6 +105,48 @@ export function TaskDetail({
       console.error('Erro ao criar etiqueta no detalhe:', err)
     }
   }
+  const handleRecurrenceChange = async (
+    nextType: RecurrenceType,
+    nextInterval: number = recurrenceInterval,
+    nextWeekdays: number[] = recurrenceWeekdays,
+    nextMode: RecurrenceMode = recurrenceMode,
+  ) => {
+    setRecurrenceType(nextType)
+    setRecurrenceInterval(nextInterval)
+    setRecurrenceWeekdays(nextWeekdays)
+    setRecurrenceMode(nextMode)
+
+    await save({
+      recurrence_type: nextType,
+      recurrence_interval: nextInterval,
+      recurrence_weekdays: nextType === 'weekly_days' ? nextWeekdays : null,
+      recurrence_mode: nextMode,
+    })
+  }
+
+  const toggleWeekday = async (dayIndex: number) => {
+    const current = [...recurrenceWeekdays]
+    const exists = current.includes(dayIndex)
+    let next: number[]
+    if (exists) {
+      next = current.filter((d) => d !== dayIndex)
+      // Garante ao menos 1 dia selecionado se estiver em weekly_days
+      if (next.length === 0) next = [dayIndex]
+    } else {
+      next = [...current, dayIndex].sort((a, b) => a - b)
+    }
+    setRecurrenceWeekdays(next)
+    await save({ recurrence_weekdays: next })
+  }
+
+  const readableRecurrence = formatRecurrenceRule({
+    due_date: task.due_date,
+    recurrence_type: recurrenceType,
+    recurrence_interval: recurrenceInterval,
+    recurrence_weekdays: recurrenceWeekdays,
+    recurrence_mode: recurrenceMode,
+  })
+
   const date = (delta: number) => {
     const d = new Date()
     d.setDate(d.getDate() + delta)
@@ -213,6 +283,186 @@ export function TaskDetail({
               <TagIcon className="w-3.5 h-3.5" />
               <span>Gerenciar / Adicionar Etiqueta</span>
             </button>
+          )}
+        </div>
+
+        {/* SEÇÃO RECORRÊNCIA ESTILO TICKTICK */}
+        <label className="detail-label">
+          RECORRÊNCIA
+          {readableRecurrence && (
+            <span className="detail-recurrence-badge">
+              <Repeat className="w-3 h-3 inline mr-1" />
+              {readableRecurrence}
+            </span>
+          )}
+        </label>
+        <div className="recurrence-box">
+          {/* Seletor do tipo de repetição */}
+          <div className="option-row recurrence-type-row">
+            <button
+              type="button"
+              className={recurrenceType === 'none' ? 'active-recurrence-btn' : ''}
+              onClick={() => handleRecurrenceChange('none')}
+            >
+              Nunca
+            </button>
+            <button
+              type="button"
+              className={recurrenceType === 'daily' ? 'active-recurrence-btn' : ''}
+              onClick={() => handleRecurrenceChange('daily')}
+            >
+              Diária
+            </button>
+            <button
+              type="button"
+              className={recurrenceType === 'weekly' ? 'active-recurrence-btn' : ''}
+              onClick={() => handleRecurrenceChange('weekly')}
+            >
+              Semanal
+            </button>
+            <button
+              type="button"
+              className={recurrenceType === 'weekly_days' ? 'active-recurrence-btn' : ''}
+              onClick={() => {
+                const initialWeekdays =
+                  recurrenceWeekdays.length > 0 ? recurrenceWeekdays : [1, 3, 5] // seg, qua, sex por padrão amigável
+                handleRecurrenceChange('weekly_days', recurrenceInterval, initialWeekdays)
+              }}
+            >
+              Dias da semana
+            </button>
+            <button
+              type="button"
+              className={recurrenceType === 'monthly' ? 'active-recurrence-btn' : ''}
+              onClick={() => handleRecurrenceChange('monthly')}
+            >
+              Mensal
+            </button>
+          </div>
+
+          {/* Configurações contextuais quando há repetição ativa */}
+          {recurrenceType !== 'none' && (
+            <div className="recurrence-details-panel">
+              {/* Intervalo "A cada N ..." */}
+              <div className="recurrence-interval-row">
+                <span className="recurrence-sublabel">A cada</span>
+                <div className="recurrence-stepper">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(1, recurrenceInterval - 1)
+                      handleRecurrenceChange(recurrenceType, next)
+                    }}
+                  >
+                    −
+                  </button>
+                  <span>{recurrenceInterval}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = recurrenceInterval + 1
+                      handleRecurrenceChange(recurrenceType, next)
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="recurrence-unit-text">
+                  {recurrenceType === 'daily' && (recurrenceInterval === 1 ? 'dia' : 'dias')}
+                  {recurrenceType === 'weekly' && (recurrenceInterval === 1 ? 'semana' : 'semanas')}
+                  {recurrenceType === 'weekly_days' &&
+                    (recurrenceInterval === 1 ? 'semana nos dias:' : 'semanas nos dias:')}
+                  {recurrenceType === 'monthly' && (recurrenceInterval === 1 ? 'mês' : 'meses')}
+                </span>
+              </div>
+
+              {/* Seletor multi-seleção de dias da semana (quando weekly_days) */}
+              {recurrenceType === 'weekly_days' && (
+                <div className="recurrence-weekdays-picker">
+                  {[
+                    { idx: 1, label: 'seg' },
+                    { idx: 2, label: 'ter' },
+                    { idx: 3, label: 'qua' },
+                    { idx: 4, label: 'qui' },
+                    { idx: 5, label: 'sex' },
+                    { idx: 6, label: 'sáb' },
+                    { idx: 0, label: 'dom' },
+                  ].map((day) => {
+                    const isSelected = recurrenceWeekdays.includes(day.idx)
+                    return (
+                      <button
+                        key={day.idx}
+                        type="button"
+                        className={`recurrence-day-btn ${isSelected ? 'selected' : ''}`}
+                        onClick={() => toggleWeekday(day.idx)}
+                      >
+                        {day.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Mensagem informativa sobre dia do mês se mensal */}
+              {recurrenceType === 'monthly' && (
+                <div className="recurrence-monthly-hint">
+                  {task.due_date ? (
+                    <span>
+                      Repete no dia {new Date(task.due_date).getUTCDate()} de cada mês (com ajuste
+                      para meses curtos).
+                    </span>
+                  ) : (
+                    <span className="italic text-muted-foreground">
+                      Defina uma data acima para fixar o dia do mês.
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Modo de base (estilo TickTick: a partir da data vs da conclusão) */}
+              <div className="recurrence-mode-section">
+                <span className="recurrence-sublabel">Modo de cálculo</span>
+                <div className="recurrence-mode-toggle">
+                  <button
+                    type="button"
+                    className={`recurrence-mode-btn ${
+                      recurrenceMode === 'from_date' ? 'active' : ''
+                    }`}
+                    onClick={() =>
+                      handleRecurrenceChange(
+                        recurrenceType,
+                        recurrenceInterval,
+                        recurrenceWeekdays,
+                        'from_date',
+                      )
+                    }
+                  >
+                    A partir da data
+                  </button>
+                  <button
+                    type="button"
+                    className={`recurrence-mode-btn ${
+                      recurrenceMode === 'from_completion' ? 'active' : ''
+                    }`}
+                    onClick={() =>
+                      handleRecurrenceChange(
+                        recurrenceType,
+                        recurrenceInterval,
+                        recurrenceWeekdays,
+                        'from_completion',
+                      )
+                    }
+                  >
+                    A partir da conclusão
+                  </button>
+                </div>
+                <small className="recurrence-mode-desc">
+                  {recurrenceMode === 'from_date'
+                    ? 'A próxima data é calculada a partir do prazo agendado (ideal para prazos fixos).'
+                    : 'A próxima data é calculada após você concluir a tarefa (ideal para hábitos e rotinas).'}
+                </small>
+              </div>
+            </div>
           )}
         </div>
 

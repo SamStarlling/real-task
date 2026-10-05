@@ -1,8 +1,8 @@
-import { GripVertical, Play } from 'lucide-react'
+import { GripVertical, Play, Repeat } from 'lucide-react'
 import type { TaskRecord } from '@/types'
 import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
-import { updateTask } from '@/services/data'
+import { formatRecurrenceRule, toggleTaskDone } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 
 export interface TaskCardProps {
@@ -38,6 +38,8 @@ export function TaskCard({
   const today = localDay()
   const ratio = Math.min(100, (task.actual_minutes / task.estimated_minutes) * 100)
   const overdue = !task.done && pbDay(task.due_date) < today
+  const isRecurrent = task.recurrence_type && task.recurrence_type !== 'none'
+  const recurrenceLabel = isRecurrent ? formatRecurrenceRule(task) : ''
 
   return (
     <article
@@ -64,18 +66,23 @@ export function TaskCard({
       <button
         className="check"
         aria-label="Concluir"
-        onClick={async () => {
-          await updateTask(task.id, {
-            done: !task.done,
-            completed_at: !task.done ? new Date().toISOString() : '',
-          })
+        onClick={async (e) => {
+          e.stopPropagation()
+          await toggleTaskDone(task)
           onChange()
         }}
       >
         {task.done ? '✓' : ''}
       </button>
       <button className="task-body" onClick={onOpen}>
-        <h3>{task.title}</h3>
+        <div className="task-title-row">
+          <h3>{task.title}</h3>
+          {isRecurrent && (
+            <span className="recurrence-indicator" title={recurrenceLabel || 'Tarefa recorrente'}>
+              <Repeat className="w-3.5 h-3.5" />
+            </span>
+          )}
+        </div>
         <div className="meta">
           {task.expand?.list && <span>#{task.expand.list.name}</span>}
           {task.expand?.tags &&
@@ -91,6 +98,19 @@ export function TaskCard({
                 @{tag.name}
               </span>
             ))}
+          {isRecurrent && recurrenceLabel && (
+            <span
+              className="tag-chip recurrence-chip"
+              style={{
+                borderColor: 'rgba(197, 168, 128, 0.35)',
+                color: '#C5A880',
+              }}
+              title={`Regra: ${recurrenceLabel}`}
+            >
+              <Repeat className="w-2.5 h-2.5 inline mr-1" />
+              {recurrenceLabel.replace(/^repete\s*·\s*/, '')}
+            </span>
+          )}
           <span className={overdue ? 'overdue' : ''}>
             {overdue
               ? 'ATRASADA'
