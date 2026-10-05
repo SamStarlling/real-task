@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Play, Tag as TagIcon, Plus, Repeat } from 'lucide-react'
+import { X, Play, Tag as TagIcon, Plus, Repeat, Clock } from 'lucide-react'
 import type { RecurrenceMode, RecurrenceType, SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
@@ -42,6 +42,7 @@ export function TaskDetail({
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>(
     task.recurrence_mode || 'from_date',
   )
+  const [dueTime, setDueTime] = useState<string>(task.due_time || '')
   const { start } = usePomodoro()
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export function TaskDetail({
     setEstimate(task.estimated_minutes)
     setRecurrenceType(task.recurrence_type || 'none')
     setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval) || 1))
+    setDueTime(task.due_time || '')
     setRecurrenceWeekdays(Array.isArray(task.recurrence_weekdays) ? task.recurrence_weekdays : [])
     setRecurrenceMode(task.recurrence_mode || 'from_date')
   }, [task])
@@ -180,6 +182,57 @@ export function TaskDetail({
             />
           </label>
           <button onClick={() => save({ due_date: '' })}>Remover</button>
+        </div>
+
+        {/* HORÁRIO (ETAPA 3) */}
+        <label className="detail-label flex items-center justify-between">
+          <span>HORÁRIO ESPECÍFICO</span>
+          {dueTime && (
+            <span className="detail-due-time-badge">
+              <Clock className="w-3 h-3 inline mr-1" />
+              {dueTime}
+            </span>
+          )}
+        </label>
+        <div className="option-row due-time-row">
+          <div className="due-time-input-wrap">
+            <input
+              type="time"
+              value={dueTime}
+              onChange={(e) => {
+                const val = e.target.value
+                setDueTime(val)
+                save({ due_time: val })
+              }}
+              className="detail-time-input"
+            />
+          </div>
+          {['09:00', '14:00', '18:00'].map((presetTime) => (
+            <button
+              key={presetTime}
+              type="button"
+              className={dueTime === presetTime ? 'active-recurrence-btn' : ''}
+              onClick={() => {
+                setDueTime(presetTime)
+                save({ due_time: presetTime })
+              }}
+            >
+              {presetTime}
+            </button>
+          ))}
+          {dueTime && (
+            <button
+              type="button"
+              onClick={() => {
+                setDueTime('')
+                save({ due_time: '' })
+              }}
+              className="due-time-clear-btn"
+              title="Remover horário agendado"
+            >
+              Remover
+            </button>
+          )}
         </div>
         <label className="detail-label">ETIQUETAS</label>
         <div className="detail-tags-section">

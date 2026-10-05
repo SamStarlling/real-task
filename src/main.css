@@ -225,6 +225,258 @@ a {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.overdue {
+  background: rgba(179, 125, 107, 0.16) !important;
+  color: #b37d6b !important;
+  border: 1px solid rgba(179, 125, 107, 0.3) !important;
+}
+
+/* Marcação de tarefa atrasada no card (quiet luxury - terracota) */
+.task-card.is-overdue-card {
+  border-color: rgba(179, 125, 107, 0.35);
+  background: linear-gradient(90deg, rgba(179, 125, 107, 0.04) 0%, #12141c 100%);
+}
+.task-card.is-overdue-card:hover {
+  border-color: rgba(179, 125, 107, 0.55);
+}
+
+/* Chip de horário no card */
+.time-chip {
+  background: rgba(197, 168, 128, 0.08) !important;
+  border-color: rgba(197, 168, 128, 0.3) !important;
+  color: #c5a880 !important;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+}
+.time-chip.overdue-time-chip {
+  background: rgba(179, 125, 107, 0.12) !important;
+  border-color: rgba(179, 125, 107, 0.4) !important;
+  color: #b37d6b !important;
+}
+
+/* Chip de horário na captura rápida */
+.time-capture-chip {
+  background: rgba(197, 168, 128, 0.15) !important;
+  color: #c5a880 !important;
+  border: 1px solid rgba(197, 168, 128, 0.3) !important;
+}
+
+/* Banner de lembretes in-app na visão Hoje */
+.in-app-reminders-banner {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.in-app-reminders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.in-app-reminders-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #c5a880;
+  text-transform: uppercase;
+}
+.in-app-reminders-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #a1a1aa;
+}
+.in-app-reminders-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.in-app-reminder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(197, 168, 128, 0.15);
+  color: #f4f4f6;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 150ms ease;
+}
+.in-app-reminder-chip:hover {
+  border-color: #c5a880;
+  background: rgba(197, 168, 128, 0.08);
+}
+.in-app-reminder-chip.overdue {
+  border-color: rgba(179, 125, 107, 0.35);
+  background: rgba(179, 125, 107, 0.08);
+}
+.in-app-reminder-chip.overdue:hover {
+  border-color: rgba(179, 125, 107, 0.6);
+}
+.in-app-reminder-chip .time-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #c5a880;
+}
+.in-app-reminder-chip.overdue .time-badge {
+  color: #b37d6b;
+}
+.in-app-reminder-chip .task-title-truncate {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campo de horário no detalhe da tarefa */
+.detail-due-time-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #c5a880;
+}
+.due-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.due-time-input-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+.detail-time-input {
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: #f4f4f6;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  outline: none;
+}
+.detail-time-input:focus {
+  border-color: #c5a880;
+}
+.due-time-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.due-time-clear-btn:hover {
+  border-color: rgba(179, 125, 107, 0.4);
+  color: #b37d6b;
+}
+
+/* Estilos de Configurações para Alertas & Notificações */
+.notif-section-card {
+  margin-top: 24px;
+}
+.notif-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+.notif-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.notif-control-row:last-child {
+  border-bottom: 0;
+}
+.notif-control-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.notif-control-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f4f4f6;
+}
+.notif-control-sub {
+  font-size: 11px;
+  color: #a1a1aa;
+}
+.notif-permit-btn {
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+}
+.notif-toggle-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.notif-toggle-btn:hover {
+  border-color: #c5a880;
+  color: #f4f4f6;
+}
+.notif-toggle-btn.active {
+  background: #c5a880;
+  color: #090a0e;
+  border-color: #c5a880;
+  font-weight: 600;
+}
+.notif-pills-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.notif-lead-pill {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.notif-lead-pill:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+  color: #f4f4f6;
+}
+.notif-lead-pill.active {
+  background: rgba(197, 168, 128, 0.15);
+  border-color: #c5a880;
+  color: #c5a880;
+  font-weight: 500;
+}
+.notif-test-sound-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.notif-test-sound-btn:hover {
+  border-color: #c5a880;
+  color: #c5a880;
+}
 .stepper {
   display: flex;
   align-items: center;

@@ -1,8 +1,8 @@
-import { GripVertical, Play, Repeat } from 'lucide-react'
+import { Clock, GripVertical, Play, Repeat } from 'lucide-react'
 import type { TaskRecord } from '@/types'
 import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
-import { formatRecurrenceRule, toggleTaskDone } from '@/services/data'
+import { formatRecurrenceRule, isTaskOverdue, toggleTaskDone } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 
 export interface TaskCardProps {
@@ -37,16 +37,19 @@ export function TaskCard({
   const { start } = usePomodoro()
   const today = localDay()
   const ratio = Math.min(100, (task.actual_minutes / task.estimated_minutes) * 100)
-  const overdue = !task.done && pbDay(task.due_date) < today
+  const overdue = isTaskOverdue(task)
   const isRecurrent = task.recurrence_type && task.recurrence_type !== 'none'
   const recurrenceLabel = isRecurrent ? formatRecurrenceRule(task) : ''
+  const hasTime = !!(task.due_time && task.due_time.trim())
 
   return (
     <article
       data-task-id={task.id}
-      className={`task-card ${task.done ? 'done' : ''} ${isDragging ? 'is-dragging' : ''} ${
-        isDropTarget === 'before' ? 'drop-target-before' : ''
-      } ${isDropTarget === 'after' ? 'drop-target-after' : ''}`}
+      className={`task-card ${task.done ? 'done' : ''} ${overdue ? 'is-overdue-card' : ''} ${
+        isDragging ? 'is-dragging' : ''
+      } ${isDropTarget === 'before' ? 'drop-target-before' : ''} ${
+        isDropTarget === 'after' ? 'drop-target-after' : ''
+      }`}
       style={{ animationDelay: `${index * 40}ms` }}
       draggable={draggable && !task.done}
       onDragStart={onDragStart}
@@ -111,13 +114,24 @@ export function TaskCard({
               {recurrenceLabel.replace(/^repete\s*·\s*/, '')}
             </span>
           )}
+          {hasTime && (
+            <span
+              className={`tag-chip time-chip ${overdue ? 'overdue-time-chip' : ''}`}
+              title={`Horário agendado: ${task.due_time}`}
+            >
+              <Clock className="w-2.5 h-2.5 inline mr-1" />
+              {task.due_time}
+            </span>
+          )}
           <span className={overdue ? 'overdue' : ''}>
             {overdue
               ? 'ATRASADA'
               : pbDay(task.due_date) === today
                 ? 'HOJE'
                 : task.due_date
-                  ? 'AMANHÃ'
+                  ? pbDay(task.due_date) > today
+                    ? 'AGENDADA'
+                    : 'AMANHÃ'
                   : 'INBOX'}
           </span>
           <span>

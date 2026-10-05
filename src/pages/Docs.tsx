@@ -130,6 +130,52 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
+            <h3>Horário de Tarefas e Alertas (Etapa 3)</h3>
+            <p>
+              Agendamento horário e sistema de lembretes em dois níveis (in-app e navegador) com
+              estética <em>quiet luxury</em>:
+            </p>
+            <ul>
+              <li>
+                <strong>
+                  Campo <code>due_time</code>:
+                </strong>{' '}
+                horário opcional em formato HH:MM (ex.: "14:00", "09:30") persistido no banco de
+                dados e exibido em fonte Space Mono uppercase ao lado de estimativas e etiquetas.
+              </li>
+              <li>
+                <strong>Ordenação estrita por hora:</strong> dentro de um mesmo dia (visões Hoje,
+                Amanhã e colunas da Semana), tarefas <em>com horário</em> ordenam prioritariamente
+                antes das tarefas sem horário, com desempate por hora cronológica e preservação do
+                campo <code>order</code> manual como critério secundário.
+              </li>
+              <li>
+                <strong>Captura inteligente em português:</strong> a barra de captura reconhece
+                expressões naturais como <code>reunião 14:00</code>, <code>dentista às 9h30</code>,{' '}
+                <code>treino 7h</code>, preenchendo automaticamente <code>due_time</code> com chip
+                visual e botão de remoção rápida.
+              </li>
+              <li>
+                <strong>Marcação visual de atrasadas:</strong> tarefas cujo horário de vencimento
+                tenha passado no dia de hoje (ou em datas passadas) recebem contorno e badge em tom
+                terracota quente da casa (<code>#B37D6B</code>), mantendo a sobriedade sem cores
+                neon.
+              </li>
+              <li>
+                <strong>Lembrete In-App na visão Hoje:</strong> banner discreto no topo da visão
+                Hoje listando as próximas tarefas do dia e pendências atrasadas com atualização a
+                cada minuto, sem depender de permissões do navegador.
+              </li>
+              <li>
+                <strong>Notificações do Navegador & Som Web Audio:</strong> avisos nativos via
+                Notification API quando o app está aberto na aba, com antecedência configurável (na
+                hora exata, 5, 10 ou 15 min antes), acorde sonoro suave e preferências salvas no
+                perfil do usuário (<code>notification_preferences</code>).
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
             <h3>Recorrência de Tarefas (Estilo TickTick)</h3>
             <p>
               Mecanismo robusto de hábitos e tarefas periódicas com criação automática da próxima
@@ -760,6 +806,20 @@ export function Docs() {
                 </tr>
                 <tr>
                   <td>
+                    <code>notification_preferences</code>
+                  </td>
+                  <td>
+                    <code>json</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Preferências de alerta do usuário (objeto com <code>enabled</code>,{' '}
+                    <code>lead_minutes</code> e <code>sound_enabled</code>). Gerenciadas em{' '}
+                    <code>/configuracoes</code> (seção Produtividade & Alertas).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
                     <code>created</code> / <code>updated</code>
                   </td>
                   <td>
@@ -1142,6 +1202,19 @@ export function Docs() {
                   <td>
                     Origem do cálculo da próxima data: <code>from_date</code> (a partir do prazo) ou{' '}
                     <code>from_completion</code> (a partir da data em que foi concluída)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>due_time</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Horário agendado da tarefa em formato HH:MM (ex.: <code>14:30</code>,{' '}
+                    <code>09:00</code>), utilizado para ordenação prioritária e disparos de alertas.
                   </td>
                 </tr>
                 <tr>

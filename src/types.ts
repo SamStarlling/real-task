@@ -3,12 +3,19 @@ export type WeekdayKey = 'seg' | 'ter' | 'qua' | 'qui' | 'sex' | 'sab' | 'dom'
 
 export type WeeklyFocusGoals = Record<WeekdayKey, number>
 
+export interface NotificationPreferences {
+  enabled: boolean
+  lead_minutes: number // Antecedência em minutos (padrão 5)
+  sound_enabled: boolean
+}
+
 export interface UserRecord extends RecordModel {
   name: string
   email: string
   avatar?: string
   daily_focus_goal_minutes?: number
   weekly_focus_goals?: WeeklyFocusGoals
+  notification_preferences?: NotificationPreferences
 }
 
 export interface ListRecord extends RecordModel {
@@ -40,6 +47,7 @@ export interface TaskRecord extends RecordModel {
   recurrence_interval?: number
   recurrence_weekdays?: number[]
   recurrence_mode?: RecurrenceMode
+  due_time?: string // Formato "HH:MM"
   expand?: {
     list?: ListRecord
     tags?: TagRecord[]

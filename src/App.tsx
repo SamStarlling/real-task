@@ -14,6 +14,8 @@ import { AuthPage } from '@/pages/AuthPages'
 import { getSessions, getTasks } from '@/services/data'
 import type { SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useTaskNotifications } from '@/hooks/use-task-notifications'
+
 function Protected() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<TaskRecord[]>([])
@@ -27,6 +29,10 @@ function Protected() {
   useRealtime<TaskRecord>('tasks', refresh, !!user)
   useRealtime<SessionRecord>('sessions', refresh, !!user)
   useRealtime<TagRecord>('tags', refresh, !!user)
+
+  // Alertas nativos e som Web Audio em background enquanto o app estiver aberto
+  useTaskNotifications(tasks, user)
+
   if (!user) return <Navigate to="/login" replace />
   return (
     <Routes>

@@ -6,15 +6,25 @@ import { localDay } from '@/lib/date-parser'
 import { TaskCard } from '@/components/TaskCard'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
-import { reorderTasks } from '@/services/data'
+import { compareTasksWithinDay, isTaskOverdue, reorderTasks } from '@/services/data'
+import { AlertCircle, Clock } from 'lucide-react'
 
 export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
   const [params, setParams] = useSearchParams()
   const [selected, setSelected] = useState<TaskRecord | null>(null)
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
+  const [nowMinute, setNowMinute] = useState(() => new Date())
   const view = params.get('view') || 'hoje'
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
+
+  // Atualização a cada minuto para o lembrete in-app e status de atraso em tempo real
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowMinute(new Date())
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     const id = params.get('taskId')
@@ -65,17 +75,22 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     [viewTasks, activeTagId],
   )
 
-  // Separar concluídas e pendentes com ordenação estável por order e created
+  // Separar concluídas e pendentes com ordenação estável por due_time, order e created
   const serverPending = useMemo(() => {
     return filtered
       .filter((t) => !t.done)
       .sort((a, b) => {
+        // Se a visão for hoje ou amanhã, aplicamos a regra de horário (com horário primeiro)
+        if (view === 'hoje' || view === 'amanha') {
+          return compareTasksWithinDay(a, b)
+        }
+        // Para Inbox, apenas order e data de criação
         const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
         const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
         if (orderA !== orderB) return orderA - orderB
         return new Date(b.created).getTime() - new Date(a.created).getTime()
       })
-  }, [filtered])
+  }, [filtered, view])
 
   const done = useMemo(() => {
     return filtered.filter((t) => t.done)
@@ -232,6 +247,15 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
   const estimated = optimisticPending.reduce((n, t) => n + t.estimated_minutes, 0),
     actual = filtered.reduce((n, t) => n + t.actual_minutes, 0)
 
+  // Resumo de tarefas do dia com horário (para o banner in-app)
+  const todayTimedTasks = useMemo(() => {
+    if (view !== 'hoje') return { upcoming: [], overdue: [] }
+    const timed = optimisticPending.filter((t) => !!(t.due_time && t.due_time.trim()))
+    const overdueList = timed.filter((t) => isTaskOverdue(t, nowMinute))
+    const upcomingList = timed.filter((t) => !isTaskOverdue(t, nowMinute))
+    return { upcoming: upcomingList, overdue: overdueList }
+  }, [view, optimisticPending, nowMinute])
+
   return (
     <div className="page">
       <header className="view-title">
@@ -248,6 +272,66 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
           </div>
         </div>
       )}
+
+      {/* BANNER / LINHA DISCRETA DE LEMBRETE IN-APP NA VISÃO HOJE */}
+      {view === 'hoje' &&
+        (todayTimedTasks.upcoming.length > 0 || todayTimedTasks.overdue.length > 0) && (
+          <div className="in-app-reminders-banner">
+            <div className="in-app-reminders-header">
+              <span className="in-app-reminders-title">
+                <Clock className="w-3.5 h-3.5 inline mr-1 text-[#C5A880]" />
+                AGENDA DO DIA COM HORÁRIO
+              </span>
+              <span className="in-app-reminders-sub">
+                {todayTimedTasks.upcoming.length} programada
+                {todayTimedTasks.upcoming.length === 1 ? '' : 's'}
+                {todayTimedTasks.overdue.length > 0 &&
+                  ` · ${todayTimedTasks.overdue.length} atrasada${todayTimedTasks.overdue.length === 1 ? '' : 's'}`}
+              </span>
+            </div>
+
+            <div className="in-app-reminders-chips">
+              {todayTimedTasks.overdue.map((task) => (
+                <button
+                  key={task.id}
+                  type="button"
+                  className="in-app-reminder-chip overdue"
+                  onClick={() => {
+                    setSelected(task)
+                    setParams((p) => {
+                      p.set('taskId', task.id)
+                      return p
+                    })
+                  }}
+                  title={`Atrasada: ${task.title} (era às ${task.due_time})`}
+                >
+                  <AlertCircle className="w-3 h-3 text-[#B37D6B]" />
+                  <span className="time-badge">{task.due_time}</span>
+                  <span className="task-title-truncate">{task.title}</span>
+                </button>
+              ))}
+
+              {todayTimedTasks.upcoming.map((task) => (
+                <button
+                  key={task.id}
+                  type="button"
+                  className="in-app-reminder-chip upcoming"
+                  onClick={() => {
+                    setSelected(task)
+                    setParams((p) => {
+                      p.set('taskId', task.id)
+                      return p
+                    })
+                  }}
+                  title={`Próxima: ${task.title} (às ${task.due_time})`}
+                >
+                  <span className="time-badge">{task.due_time}</span>
+                  <span className="task-title-truncate">{task.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
       {/* Fileira discreta de filtro por etiqueta */}
       {availableTagsInView.length > 0 && (

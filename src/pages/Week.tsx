@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Clock,
   Clock3,
   GripHorizontal,
   GripVertical,
@@ -22,8 +23,10 @@ import { localDay, toPocketDate } from '@/lib/date-parser'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
 import {
+  compareTasksWithinDay,
   createTask,
   formatRecurrenceRule,
+  isTaskOverdue,
   reorderTasks,
   toggleTaskDone,
   updateTask,
@@ -176,13 +179,10 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
       }
     }
 
-    // Ordenação interna estável de cada dia por order e created
+    // Ordenação interna estável de cada dia por due_time (com horário primeiro), order e created
     for (const key of Object.keys(map)) {
       map[key].pending.sort((a, b) => {
-        const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
-        const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
-        if (orderA !== orderB) return orderA - orderB
-        return new Date(b.created).getTime() - new Date(a.created).getTime()
+        return compareTasksWithinDay(a, b)
       })
     }
 
@@ -745,7 +745,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                     <article
                       key={task.id}
                       data-task-id={task.id}
-                      className={`task-card week-task-card ${
+                      className={`task-card week-task-card ${isTaskOverdue(task) ? 'is-overdue-card' : ''} ${
                         draggingTaskId === task.id ? 'is-dragging' : ''
                       } ${
                         dropTargetInsideCol?.id === task.id
@@ -834,6 +834,15 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                             >
                               <Repeat className="w-2.5 h-2.5 inline mr-1" />
                               {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                            </span>
+                          )}
+                          {task.due_time && (
+                            <span
+                              className={`tag-chip time-chip ${isTaskOverdue(task) ? 'overdue-time-chip' : ''}`}
+                              title={`Horário agendado: ${task.due_time}`}
+                            >
+                              <Clock className="w-2.5 h-2.5 inline mr-1" />
+                              {task.due_time}
                             </span>
                           )}
                           <span>

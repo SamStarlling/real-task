@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { ArrowRight, Folder, Minus, Plus, Repeat, Tag as TagIcon, X } from 'lucide-react'
-import { cleanDateToken, parsePortugueseDate, toPocketDate } from '@/lib/date-parser'
+import { ArrowRight, Clock, Folder, Minus, Plus, Repeat, Tag as TagIcon, X } from 'lucide-react'
+import {
+  cleanDateToken,
+  cleanTimeToken,
+  localDay,
+  parsePortugueseDate,
+  parsePortugueseTime,
+  toPocketDate,
+} from '@/lib/date-parser'
 import { formatShortDate } from '@/lib/format'
 import {
   createList,
@@ -29,6 +36,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>('from_date')
   const [isRecurrencePopoverOpen, setIsRecurrencePopoverOpen] = useState(false)
   const [active, setActive] = useState(0)
+  const [manualTime, setManualTime] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -39,6 +47,8 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   }, [user])
 
   const parsed = parsePortugueseDate(text)
+  const parsedTime = parsePortugueseTime(text)
+  const effectiveTime = manualTime !== null ? manualTime : parsedTime?.time || null
 
   // Detecção de # (Listas)
   const hashMatch = text.match(/(?:^|\s)#([^\s]*)$/)
@@ -101,6 +111,10 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
 
   const submit = async () => {
     let title = cleanDateToken(text, parsed)
+    if (parsedTime) {
+      title = cleanTimeToken(title, parsedTime)
+    }
+    title = title
       .replace(/(?:^|\s)#[^\s]+/g, '')
       .replace(/(?:^|\s)@[^\s]+/g, '')
       .trim()
@@ -138,12 +152,20 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     }
     setTags(updatedTagsList)
 
+    // Se o usuário digitou um horário mas nenhuma data específica, assume hoje
+    const effectiveDueDate = parsed
+      ? toPocketDate(parsed.date)
+      : effectiveTime
+        ? toPocketDate(new Date())
+        : ''
+
     await createTask({
       title,
       user: user!.id,
       list: list?.id || '',
       tags: finalTagIds,
-      due_date: parsed ? toPocketDate(parsed.date) : '',
+      due_date: effectiveDueDate,
+      due_time: effectiveTime || '',
       done: false,
       estimated_minutes: minutes,
       actual_minutes: 0,
@@ -164,13 +186,15 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
             due_date: parsed ? toPocketDate(parsed.date) : '',
           })}`
         : ''
+    const timeSuffix = effectiveTime ? ` às ${effectiveTime}` : ''
 
     toast({
-      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : 'Inbox'}${recurrenceSuffix}`,
+      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : effectiveTime ? 'Hoje' : 'Inbox'}${timeSuffix}${recurrenceSuffix}`,
     })
     setText('')
     setSelectedList(null)
     setSelectedTags([])
+    setManualTime(null)
     setRecurrenceType('none')
     setRecurrenceInterval(1)
     setRecurrenceWeekdays([1, 3, 5])
@@ -231,6 +255,22 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
             placeholder="O que precisa ser feito? (@tag, #lista, amanhã...)"
           />
           {parsed && <span className="chip">{formatShortDate(parsed.date)}</span>}
+          {effectiveTime && (
+            <span
+              className="chip time-capture-chip inline-flex items-center gap-1"
+              title="Horário identificado (clique no X para remover)"
+            >
+              <Clock className="w-2.5 h-2.5" />
+              {effectiveTime}
+              <X
+                className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setManualTime('')
+                }}
+              />
+            </span>
+          )}
           {selectedList && (
             <span className="chip" title="Lista selecionada">
               #{selectedList.name}

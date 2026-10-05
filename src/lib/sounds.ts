@@ -58,6 +58,37 @@ export function playFocusCompleteSound() {
  * Dois tons harmônicos descendentes e suaves chamando de volta à ação (G5 -> C5):
  * claro, discreto e não estridente.
  */
+/**
+ * Toca quando um lembrete/alerta de tarefa dispara.
+ * Acorde suave em dois tons discretos e cristalinos (F5 -> A5):
+ * elegante, não invasivo, estética quiet luxury.
+ */
+export function playReminderSound() {
+  const ctx = getAudioContext()
+  if (!ctx) return
+
+  const now = ctx.currentTime
+  const notes = [698.46, 880.0] // F5, A5
+
+  notes.forEach((freq, idx) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(freq, now + idx * 0.14)
+
+    gain.gain.setValueAtTime(0.0001, now + idx * 0.14)
+    gain.gain.exponentialRampToValueAtTime(0.12, now + idx * 0.14 + 0.03)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.14 + 0.6)
+
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    osc.start(now + idx * 0.14)
+    osc.stop(now + idx * 0.14 + 0.65)
+  })
+}
+
 export function playBreakCompleteSound() {
   const ctx = getAudioContext()
   if (!ctx) return

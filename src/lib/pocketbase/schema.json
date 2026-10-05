@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T00:09:01.410Z",
+  "generatedAt": "2026-10-05T00:38:42.783Z",
   "collections": [
     {
       "name": "users",
@@ -46,6 +46,12 @@
         },
         {
           "name": "weekly_focus_goals",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notification_preferences",
           "type": "json",
           "required": false,
           "system": false
@@ -213,6 +219,12 @@
           "required": false,
           "system": false,
           "selectValues": ["from_date", "from_completion"]
+        },
+        {
+          "name": "due_time",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [

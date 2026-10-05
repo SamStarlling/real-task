@@ -10,17 +10,24 @@ import {
   ShieldCheck,
   Mail,
   Sliders,
+  Bell,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
+  resolveNotificationPreferences,
   resolveWeeklyGoals,
+  updateUserNotificationPreferences,
   updateUserWeeklyGoals,
   WEEKDAY_ORDER,
   WEEKDAY_LABELS,
+  type NotificationPreferences,
   type WeekdayKey,
   type WeeklyFocusGoals,
 } from '@/services/data'
 import { formatMinutes } from '@/lib/format'
+import { playReminderSound } from '@/lib/sounds'
 
 type SettingsTab = 'produtividade' | 'conta'
 
@@ -39,11 +46,62 @@ export function Settings() {
   const [savedFeedback, setSavedFeedback] = useState<WeekdayKey | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null)
 
+  // Estado de Notificações / Alertas (Etapa 3)
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(() =>
+    resolveNotificationPreferences(user),
+  )
+  const [browserPermission, setBrowserPermission] = useState<NotificationPermission>(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission
+    }
+    return 'default'
+  })
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifFeedback, setNotifFeedback] = useState<string | null>(null)
+
   useEffect(() => {
     if (user) {
       setGoals(resolveWeeklyGoals(user))
+      setNotifPrefs(resolveNotificationPreferences(user))
+    }
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setBrowserPermission(Notification.permission)
     }
   }, [user])
+
+  const persistNotifPrefs = async (updated: NotificationPreferences) => {
+    setNotifPrefs(updated)
+    if (!user?.id) return
+    setNotifSaving(true)
+    try {
+      await updateUserNotificationPreferences(user.id, updated)
+      setNotifFeedback('Preferências salvas')
+      setTimeout(() => setNotifFeedback(null), 2000)
+    } catch (err) {
+      console.error('Erro ao salvar preferências de notificação:', err)
+    } finally {
+      setNotifSaving(false)
+    }
+  }
+
+  const handleRequestPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      alert('Seu navegador não suporta a Notification API.')
+      return
+    }
+
+    try {
+      const perm = await Notification.requestPermission()
+      setBrowserPermission(perm)
+      if (perm === 'granted') {
+        persistNotifPrefs({ ...notifPrefs, enabled: true })
+      } else if (perm === 'denied') {
+        persistNotifPrefs({ ...notifPrefs, enabled: false })
+      }
+    } catch (err) {
+      console.error('Erro ao pedir permissão de notificação:', err)
+    }
+  }
 
   const persistWeeklyGoals = async (updated: WeeklyFocusGoals, specificDay?: WeekdayKey) => {
     setGoals(updated)
@@ -139,8 +197,8 @@ export function Settings() {
   const sections = [
     {
       id: 'produtividade' as SettingsTab,
-      label: 'Produtividade',
-      desc: 'Metas diárias de foco por dia da semana',
+      label: 'Produtividade & Alertas',
+      desc: 'Metas de foco, horários e notificações',
       icon: TrendingUp,
     },
     {
@@ -264,6 +322,7 @@ export function Settings() {
                     </p>
                   </div>
                   <div className="bulk-actions">
+                    {' '}
                     <button
                       type="button"
                       onClick={applyToWeekdays}
@@ -369,6 +428,139 @@ export function Settings() {
                       </div>
                     )
                   })}
+                </div>
+              </div>
+
+              {/* SEÇÃO ALERTAS E NOTIFICAÇÕES (ETAPA 3) */}
+              <div className="settings-section-card notif-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">ALERTAS & NOTIFICAÇÕES (ETAPA 3)</div>
+                    <h3>Lembretes do Navegador & Som</h3>
+                    <p>
+                      Receba avisos pontuais de tarefas com horário quando o Barbosa System estiver
+                      aberto na aba. Inclui alerta nativo do navegador e áudio suave Web Audio.
+                    </p>
+                  </div>
+                  {notifFeedback && <span className="goal-feedback">{notifFeedback}</span>}
+                </div>
+
+                <div className="notif-controls-list">
+                  {/* Item 1: Ativação / Permissão */}
+                  <div className="notif-control-row">
+                    <div className="notif-control-info">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-[#C5A880]" />
+                        <span className="notif-control-title">Notificações do Navegador</span>
+                      </div>
+                      <span className="notif-control-sub">
+                        Status de permissão no navegador:{' '}
+                        <strong className="uppercase">
+                          {browserPermission === 'granted'
+                            ? 'Permitido'
+                            : browserPermission === 'denied'
+                              ? 'Bloqueado no navegador'
+                              : 'Pendente de autorização'}
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="notif-control-action">
+                      {browserPermission !== 'granted' ? (
+                        <button
+                          type="button"
+                          className="primary notif-permit-btn"
+                          onClick={handleRequestPermission}
+                        >
+                          Autorizar no navegador
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`notif-toggle-btn ${notifPrefs.enabled ? 'active' : ''}`}
+                          onClick={() =>
+                            persistNotifPrefs({ ...notifPrefs, enabled: !notifPrefs.enabled })
+                          }
+                          disabled={notifSaving}
+                        >
+                          {notifPrefs.enabled ? 'ATIVADO' : 'DESATIVADO'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Item 2: Antecedência configurável */}
+                  <div className="notif-control-row">
+                    <div className="notif-control-info">
+                      <span className="notif-control-title">Antecedência do Lembrete</span>
+                      <span className="notif-control-sub">
+                        Tempo antes do horário agendado da tarefa em que o aviso será disparado.
+                      </span>
+                    </div>
+
+                    <div className="notif-pills-row">
+                      {[
+                        { val: 0, label: 'Na hora exata' },
+                        { val: 5, label: '5 min antes' },
+                        { val: 10, label: '10 min antes' },
+                        { val: 15, label: '15 min antes' },
+                      ].map((item) => {
+                        const isSel = notifPrefs.lead_minutes === item.val
+                        return (
+                          <button
+                            key={item.val}
+                            type="button"
+                            className={`notif-lead-pill ${isSel ? 'active' : ''}`}
+                            onClick={() =>
+                              persistNotifPrefs({ ...notifPrefs, lead_minutes: item.val })
+                            }
+                          >
+                            {item.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Item 3: Som Web Audio */}
+                  <div className="notif-control-row">
+                    <div className="notif-control-info">
+                      <div className="flex items-center gap-2">
+                        {notifPrefs.sound_enabled ? (
+                          <Volume2 className="w-4 h-4 text-[#C5A880]" />
+                        ) : (
+                          <VolumeX className="w-4 h-4 text-[#a1a1aa]" />
+                        )}
+                        <span className="notif-control-title">Efeito Sonoro Suave (Web Audio)</span>
+                      </div>
+                      <span className="notif-control-sub">
+                        Toca um acorde harmônico suave e discreto quando a notificação disparar.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="notif-test-sound-btn"
+                        onClick={() => playReminderSound()}
+                        title="Ouvir som de lembrete agora"
+                      >
+                        Testar som
+                      </button>
+                      <button
+                        type="button"
+                        className={`notif-toggle-btn ${notifPrefs.sound_enabled ? 'active' : ''}`}
+                        onClick={() =>
+                          persistNotifPrefs({
+                            ...notifPrefs,
+                            sound_enabled: !notifPrefs.sound_enabled,
+                          })
+                        }
+                      >
+                        {notifPrefs.sound_enabled ? 'SOM LIGADO' : 'MUDO'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

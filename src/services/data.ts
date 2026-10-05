@@ -2,6 +2,7 @@ import pb from '@/lib/pocketbase/client'
 import type {
   FocusPresetRecord,
   ListRecord,
+  NotificationPreferences,
   RecurrenceMode,
   RecurrenceType,
   SessionRecord,
@@ -12,6 +13,7 @@ import type {
   WeeklyFocusGoals,
 } from '@/types'
 export type {
+  NotificationPreferences,
   RecurrenceMode,
   RecurrenceType,
   TagRecord,
@@ -51,6 +53,46 @@ export const DEFAULT_WEEKLY_GOALS: WeeklyFocusGoals = {
   qui: 120,
   sex: 120,
   sab: 60,
+}
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  enabled: false,
+  lead_minutes: 5,
+  sound_enabled: true,
+}
+
+export function resolveNotificationPreferences(
+  user?: Partial<UserRecord> | null,
+): NotificationPreferences {
+  const raw = user?.notification_preferences
+  if (raw && typeof raw === 'object') {
+    return {
+      enabled:
+        typeof raw.enabled === 'boolean' ? raw.enabled : DEFAULT_NOTIFICATION_PREFERENCES.enabled,
+      lead_minutes:
+        typeof raw.lead_minutes === 'number'
+          ? raw.lead_minutes
+          : DEFAULT_NOTIFICATION_PREFERENCES.lead_minutes,
+      sound_enabled:
+        typeof raw.sound_enabled === 'boolean'
+          ? raw.sound_enabled
+          : DEFAULT_NOTIFICATION_PREFERENCES.sound_enabled,
+    }
+  }
+  return DEFAULT_NOTIFICATION_PREFERENCES
+}
+
+export const updateUserNotificationPreferences = async (
+  userId: string,
+  prefs: NotificationPreferences,
+) => {
+  const updated = await pb.collection('users').update(userId, {
+    notification_preferences: prefs,
+  })
+  if (pb.authStore.record?.id === userId) {
+    pb.authStore.save(pb.authStore.token, updated)
+  }
+  return updated
 }
 
 export const WEEKDAY_ORDER: WeekdayKey[] = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
@@ -240,6 +282,61 @@ export async function updateSessionNote(sessionId: string, note: string) {
  * Retorna uma descrição legível em pt-BR da regra de recorrência da tarefa.
  * Ex.: "repete · diária", "repete · a cada 2 dias", "repete · seg, qua, sex", "repete · mensal (dia 15)"
  */
+/**
+ * Função utilitária de comparação para ordenação estável de tarefas dentro de um mesmo dia:
+ * 1. Tarefas COM horário (due_time) ordenam ANTES das tarefas sem horário.
+ * 2. Entre as COM horário, ordena crescentemente pela hora ("08:00" < "14:30").
+ * 3. Preserva o campo `order` como critério de desempate/ordem manual dentro de cada grupo.
+ * 4. Por fim, critério cronológico de criação (-created).
+ */
+export function compareTasksWithinDay(a: TaskRecord, b: TaskRecord): number {
+  const hasTimeA = !!(a.due_time && a.due_time.trim())
+  const hasTimeB = !!(b.due_time && b.due_time.trim())
+
+  if (hasTimeA && !hasTimeB) return -1
+  if (!hasTimeA && hasTimeB) return 1
+
+  if (hasTimeA && hasTimeB) {
+    const timeCompare = (a.due_time || '').localeCompare(b.due_time || '')
+    if (timeCompare !== 0) return timeCompare
+  }
+
+  // Desempate por order manual (valores > 0 válidos, 999999 para sem ordem)
+  const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
+  const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
+  if (orderA !== orderB) return orderA - orderB
+
+  return new Date(b.created).getTime() - new Date(a.created).getTime()
+}
+
+/**
+ * Verifica se uma tarefa está atrasada considerando tanto a data (due_date) quanto o horário (due_time).
+ * Retorna true se:
+ * - done = false E
+ * - (due_date < hoje) OU (due_date == hoje E due_time definido E horário atual > due_time)
+ */
+export function isTaskOverdue(task: TaskRecord, now = new Date()): boolean {
+  if (task.done || !task.due_date) return false
+
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const taskDay = task.due_date.slice(0, 10)
+
+  if (taskDay < todayStr) return true
+  if (taskDay > todayStr) return false
+
+  // Se é hoje e tem horário definido:
+  if (task.due_time && task.due_time.trim()) {
+    const [taskH, taskM] = task.due_time.split(':').map(Number)
+    const currentH = now.getHours()
+    const currentM = now.getMinutes()
+    if (currentH > taskH || (currentH === taskH && currentM > taskM)) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export function formatRecurrenceRule(task: Partial<TaskRecord>): string {
   const type = task.recurrence_type || 'none'
   if (type === 'none') return ''
@@ -463,6 +560,7 @@ export async function toggleTaskDone(
         recurrence_interval: task.recurrence_interval || 1,
         recurrence_weekdays: task.recurrence_weekdays || null,
         recurrence_mode: task.recurrence_mode || 'from_date',
+        due_time: task.due_time || '',
       }
 
       try {

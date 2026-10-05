@@ -1,4 +1,5 @@
 export type ParsedDate = { date: Date; token: string; start: number; end: number }
+export type ParsedTime = { time: string; token: string; start: number; end: number } // time no formato HH:MM
 
 const normalize = (value: string) =>
   value
@@ -83,3 +84,49 @@ export const toPocketDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} 12:00:00.000Z`
 export const localDay = (date = new Date()) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+/**
+ * Reconhece horário em português do Brasil:
+ * - "14:30", "09:00", "9:00"
+ * - "às 14:30", "as 9h30", "às 9h"
+ * - "14h30", "14h", "9h", "18h00"
+ * Retorna HH:MM normalizado (24 horas) e o token para remoção do texto da tarefa.
+ */
+export function parsePortugueseTime(text: string): ParsedTime | null {
+  const clean = normalize(text)
+
+  // Padrão 1: "às/as HH:MM" ou "às/as H:MM" ou "HH:MM" (com dois pontos)
+  const colonRegex = /\b(?:as\s+|as\s*)?([01]?\d|2[0-3]):([0-5]\d)\b/
+  const colonMatch = clean.match(colonRegex)
+  if (colonMatch?.index !== undefined) {
+    const hours = String(Number(colonMatch[1])).padStart(2, '0')
+    const minutes = colonMatch[2]
+    return {
+      time: `${hours}:${minutes}`,
+      token: text.slice(colonMatch.index, colonMatch.index + colonMatch[0].length),
+      start: colonMatch.index,
+      end: colonMatch.index + colonMatch[0].length,
+    }
+  }
+
+  // Padrão 2: "às/as 9h30", "14h30", "9h", "18h", "às 18h"
+  const hRegex = /\b(?:as\s+|as\s*)?([01]?\d|2[0-3])h([0-5]\d)?\b/
+  const hMatch = clean.match(hRegex)
+  if (hMatch?.index !== undefined) {
+    const hours = String(Number(hMatch[1])).padStart(2, '0')
+    const minutes = hMatch[2] ? hMatch[2] : '00'
+    return {
+      time: `${hours}:${minutes}`,
+      token: text.slice(hMatch.index, hMatch.index + hMatch[0].length),
+      start: hMatch.index,
+      end: hMatch.index + hMatch[0].length,
+    }
+  }
+
+  return null
+}
+
+export const cleanTimeToken = (text: string, parsed: ParsedTime | null) =>
+  parsed
+    ? `${text.slice(0, parsed.start)} ${text.slice(parsed.end)}`.replace(/\s+/g, ' ').trim()
+    : text.trim()
