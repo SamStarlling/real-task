@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { X, Play } from 'lucide-react'
-import type { SessionRecord, TaskRecord } from '@/types'
+import { X, Play, Tag as TagIcon, Plus } from 'lucide-react'
+import type { SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
-import { sessionsForTask, updateTask } from '@/services/data'
+import { createTag, getNextTagColor, getTags, sessionsForTask, updateTask } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
+import { useAuth } from '@/contexts/AuthContext'
+
 export function TaskDetail({
   task,
   onClose,
@@ -14,16 +16,66 @@ export function TaskDetail({
   onClose: () => void
   onChange: () => void
 }) {
+  const { user } = useAuth()
   const [title, setTitle] = useState(task.title)
   const [estimate, setEstimate] = useState(task.estimated_minutes)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
+  const [userTags, setUserTags] = useState<TagRecord[]>([])
+  const [newTagName, setNewTagName] = useState('')
+  const [isAddingTag, setIsAddingTag] = useState(false)
   const { start } = usePomodoro()
+
   useEffect(() => {
     sessionsForTask(task.id).then(setSessions)
+    getTags().then(setUserTags)
   }, [task.id])
+
+  // Lista dos IDs das tags associadas à tarefa
+  const assignedTagIds = task.tags || []
+  const assignedTags = userTags.filter((t) => assignedTagIds.includes(t.id))
+  const unassignedTags = userTags.filter((t) => !assignedTagIds.includes(t.id))
+
   const save = async (data: Record<string, unknown>) => {
     await updateTask(task.id, data)
     onChange()
+  }
+
+  const handleToggleTag = async (tagId: string) => {
+    const isCurrentlyAssigned = assignedTagIds.includes(tagId)
+    const nextTagIds = isCurrentlyAssigned
+      ? assignedTagIds.filter((id) => id !== tagId)
+      : [...assignedTagIds, tagId]
+
+    await save({ tags: nextTagIds })
+  }
+
+  const handleCreateAndAssignTag = async () => {
+    const trimmed = newTagName.trim()
+    if (!trimmed || !user) return
+
+    try {
+      const existing = userTags.find((t) => t.name.toLowerCase() === trimmed.toLowerCase())
+      let tagToAssignId = existing?.id
+
+      if (!tagToAssignId) {
+        const nextColor = getNextTagColor(userTags.length)
+        const created = await createTag({
+          name: trimmed.slice(0, 30),
+          user: user.id,
+          color: nextColor,
+        })
+        setUserTags((prev) => [...prev, created])
+        tagToAssignId = created.id
+      }
+
+      if (tagToAssignId && !assignedTagIds.includes(tagToAssignId)) {
+        await save({ tags: [...assignedTagIds, tagToAssignId] })
+      }
+      setNewTagName('')
+      setIsAddingTag(false)
+    } catch (err) {
+      console.error('Erro ao criar etiqueta no detalhe:', err)
+    }
   }
   const date = (delta: number) => {
     const d = new Date()
@@ -59,6 +111,111 @@ export function TaskDetail({
           </label>
           <button onClick={() => save({ due_date: '' })}>Remover</button>
         </div>
+        <label className="detail-label">ETIQUETAS</label>
+        <div className="detail-tags-section">
+          <div className="detail-tags-list">
+            {assignedTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="tag-chip active-tag-chip inline-flex items-center gap-1.5"
+                style={{
+                  borderColor: tag.color,
+                  color: tag.color,
+                  backgroundColor: `${tag.color}14`,
+                }}
+              >
+                <TagIcon className="w-3 h-3" />@{tag.name}
+                <button
+                  type="button"
+                  className="tag-remove-btn"
+                  title="Remover etiqueta da tarefa"
+                  onClick={() => handleToggleTag(tag.id)}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            {!assignedTags.length && !isAddingTag && (
+              <span className="text-xs text-muted-foreground italic">
+                Nenhuma etiqueta associada
+              </span>
+            )}
+          </div>
+
+          {/* Adicionar / Criar etiqueta */}
+          {isAddingTag ? (
+            <div className="detail-add-tag-box">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Nome da etiqueta..."
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleCreateAndAssignTag()
+                    } else if (e.key === 'Escape') {
+                      setIsAddingTag(false)
+                      setNewTagName('')
+                    }
+                  }}
+                  autoFocus
+                  className="detail-tag-input"
+                />
+                <button
+                  type="button"
+                  className="detail-tag-confirm-btn"
+                  onClick={handleCreateAndAssignTag}
+                >
+                  Adicionar
+                </button>
+                <button
+                  type="button"
+                  className="detail-tag-cancel-btn"
+                  onClick={() => {
+                    setIsAddingTag(false)
+                    setNewTagName('')
+                  }}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {unassignedTags.length > 0 && (
+                <div className="detail-unassigned-tags-wrap">
+                  <span className="detail-tags-hint">Ou escolha existente:</span>
+                  <div className="detail-tags-list">
+                    {unassignedTags.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className="tag-chip tag-picker-item inline-flex items-center gap-1"
+                        style={{
+                          borderColor: `${t.color}60`,
+                          color: t.color,
+                        }}
+                        onClick={() => handleToggleTag(t.id)}
+                      >
+                        <Plus className="w-2.5 h-2.5" />@{t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="detail-add-tag-trigger"
+              onClick={() => setIsAddingTag(true)}
+            >
+              <TagIcon className="w-3.5 h-3.5" />
+              <span>Gerenciar / Adicionar Etiqueta</span>
+            </button>
+          )}
+        </div>
+
         <label className="detail-label">ESTIMATIVA</label>
         <div className="estimate">
           <button onClick={() => setEstimate(Math.max(5, estimate - 5))}>−</button>

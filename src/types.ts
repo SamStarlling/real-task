@@ -15,6 +15,13 @@ export interface ListRecord extends RecordModel {
   name: string
   user: string
 }
+
+export interface TagRecord extends RecordModel {
+  name: string
+  user: string
+  color: string
+}
+
 export interface TaskRecord extends RecordModel {
   title: string
   user: string
@@ -25,7 +32,11 @@ export interface TaskRecord extends RecordModel {
   actual_minutes: number
   completed_at?: string
   order?: number
-  expand?: { list?: ListRecord }
+  tags?: string[]
+  expand?: {
+    list?: ListRecord
+    tags?: TagRecord[]
+  }
 }
 export interface SessionRecord extends RecordModel {
   task: string

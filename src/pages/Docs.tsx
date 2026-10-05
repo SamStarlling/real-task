@@ -53,6 +53,16 @@ export function Docs() {
                 instantânea de criar nova lista ao digitar.
               </li>
               <li>
+                <strong>
+                  Categorização rápida por etiquetas via <code>@</code>:
+                </strong>{' '}
+                digitar <code>@</code> abre autocomplete instantâneo de etiquetas do usuário com
+                busca em tempo real, suporte a criação imediata ao pressionar Enter e atribuição
+                automática da próxima cor discreta da paleta da casa (Champagne Ouro, Verde-Oliva,
+                Azul-Ardósia, Terracota, Vinho, Cinza-Azulado, etc.). As tags são removidas do
+                título capturado e persistidas na relação da tarefa.
+              </li>
+              <li>
                 <strong>Seletor de minutos previstos:</strong> controle de passo (stepper) ajustável
                 em intervalos de 5 min (mínimo 5 min, padrão 25 min, máximo 240 min).
               </li>
@@ -104,6 +114,13 @@ export function Docs() {
                 (persistindo <code>due_date</code> e <code>order</code> no PocketBase) e botão
                 discreto "+" no rodapé de cada coluna para captura inline pré-preenchida para a data
                 específica.
+              </li>
+              <li>
+                <strong>Filtro por Etiquetas em Todas as Visões:</strong> fileira discreta de chips
+                no topo das visões Hoje, Amanhã, Inbox e Semana. Exibe somente as etiquetas que
+                possuem tarefas ativas naquela visualização com contador; clicar em um chip filtra a
+                lista instantaneamente e clicar novamente ou no botão &quot;Limpar filtro&quot;
+                restaura a visualização integral sem recarregar a tela.
               </li>
               <li>
                 <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
@@ -718,6 +735,101 @@ export function Docs() {
           </div>
         </div>
 
+        {/* COLEÇÃO: tags */}
+        <div className="docs-collection-card">
+          <div className="docs-collection-header">
+            <div>
+              <span className="docs-collection-type">BASE COLLECTION</span>
+              <h3>tags</h3>
+            </div>
+            <div className="docs-rule-badge">
+              <code>@request.auth.id != '' && user.id = @request.auth.id</code>
+            </div>
+          </div>
+          <p className="docs-collection-desc">
+            Etiquetas transversais de categorização criadas e associadas às tarefas via{' '}
+            <code>@etiqueta</code> na captura rápida ou no painel lateral de detalhes.
+          </p>
+          <div className="docs-table-wrap">
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Campo</th>
+                  <th>Tipo</th>
+                  <th>Obrigatório</th>
+                  <th>Descrição / Restrições</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <code>id</code>
+                  </td>
+                  <td>
+                    <code>text</code> (PK)
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Identificador primário único alfanumérico da etiqueta gerado pelo PocketBase
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>name</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Nome identificador da etiqueta (máx. 30 caracteres, ex.: <code>trabalho</code>,{' '}
+                    <code>urgente</code>, <code>saude</code>)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>user</code>
+                  </td>
+                  <td>
+                    <code>relation</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    FK referenciando <code>users.id</code> (cascadeDelete: true, maxSelect: 1)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>color</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Código hex da cor discreta <em>quiet luxury</em> da paleta Barbosa System (ex.:{' '}
+                    <code>#C5A880</code>, <code>#8F9E82</code>, <code>#7E92A2</code>)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>created</code> / <code>updated</code>
+                  </td>
+                  <td>
+                    <code>autodate</code>
+                  </td>
+                  <td>Automático</td>
+                  <td>Timestamps de criação e última modificação da etiqueta</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="docs-indices">
+            <span>ÍNDICES:</span> <code>idx_tags_user_name (UNIQUE: user, name)</code> ·{' '}
+            <code>idx_tags_user (user)</code>
+          </div>
+        </div>
+
         {/* COLEÇÃO: lists */}
         <div className="docs-collection-card">
           <div className="docs-collection-header">
@@ -928,6 +1040,19 @@ export function Docs() {
                   <td>
                     Índice sequencial de priorização manual definida via arrastar-e-soltar nas
                     visões Hoje, Amanhã e Inbox
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>tags</code>
+                  </td>
+                  <td>
+                    <code>relation</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Relação múltipla referenciando a coleção <code>tags</code> (maxSelect: 20,
+                    cascadeDelete: false)
                   </td>
                 </tr>
                 <tr>

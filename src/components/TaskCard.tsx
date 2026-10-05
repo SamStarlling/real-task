@@ -78,6 +78,19 @@ export function TaskCard({
         <h3>{task.title}</h3>
         <div className="meta">
           {task.expand?.list && <span>#{task.expand.list.name}</span>}
+          {task.expand?.tags &&
+            task.expand.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="tag-chip"
+                style={{
+                  borderColor: tag.color,
+                  color: tag.color,
+                }}
+              >
+                @{tag.name}
+              </span>
+            ))}
           <span className={overdue ? 'overdue' : ''}>
             {overdue
               ? 'ATRASADA'

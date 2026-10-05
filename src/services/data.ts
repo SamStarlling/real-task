@@ -3,12 +3,36 @@ import type {
   FocusPresetRecord,
   ListRecord,
   SessionRecord,
+  TagRecord,
   TaskRecord,
   UserRecord,
   WeekdayKey,
   WeeklyFocusGoals,
 } from '@/types'
-export type { WeekdayKey, WeeklyFocusGoals } from '@/types'
+export type { TagRecord, WeekdayKey, WeeklyFocusGoals } from '@/types'
+
+/**
+ * Paleta de cores discretas (quiet luxury) Barbosa System para etiquetas.
+ * Tons nobres, elegantes, nada de neon / arco-íris estridente.
+ */
+export const TAG_PALETTE = [
+  { name: 'Champagne Ouro', color: '#C5A880' },
+  { name: 'Verde-Oliva Suave', color: '#8F9E82' },
+  { name: 'Azul-Ardósia', color: '#7E92A2' },
+  { name: 'Terracota Queimada', color: '#B37D6B' },
+  { name: 'Vinho Aveludado', color: '#9B6C7B' },
+  { name: 'Cinza-Azulado', color: '#7D8899' },
+  { name: 'Âmbar Antigo', color: '#BFA16F' },
+  { name: 'Sálvia Escura', color: '#7A8C80' },
+] as const
+
+/**
+ * Sugere a próxima cor cíclica para uma nova etiqueta com base na contagem existente.
+ */
+export function getNextTagColor(existingCount: number = 0): string {
+  const index = Math.abs(existingCount) % TAG_PALETTE.length
+  return TAG_PALETTE[index].color
+}
 
 export const DEFAULT_WEEKLY_GOALS: WeeklyFocusGoals = {
   dom: 0,
@@ -89,16 +113,20 @@ export function getGoalForDate(date: Date = new Date(), user?: Partial<UserRecor
 }
 
 export const getLists = () => pb.collection<ListRecord>('lists').getFullList({ sort: 'name' })
+export const getTags = () => pb.collection<TagRecord>('tags').getFullList({ sort: 'name' })
 export const getTasks = () =>
-  pb.collection<TaskRecord>('tasks').getFullList({ sort: 'order,-created', expand: 'list' })
+  pb.collection<TaskRecord>('tasks').getFullList({ sort: 'order,-created', expand: 'list,tags' })
 export const getSessions = () =>
   pb.collection<SessionRecord>('sessions').getFullList({ sort: '-started_at', expand: 'task' })
 export const createList = (name: string, user: string) =>
   pb.collection<ListRecord>('lists').create({ name, user })
+export const createTag = (data: { name: string; user: string; color: string }) =>
+  pb.collection<TagRecord>('tags').create(data)
+export const deleteTag = (id: string) => pb.collection<TagRecord>('tags').delete(id)
 export const createTask = (data: Record<string, unknown>) =>
-  pb.collection<TaskRecord>('tasks').create(data, { expand: 'list' })
+  pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
-  pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list' })
+  pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list,tags' })
 
 /**
  * Reordena uma lista ordenada de tarefas afetadas, persistindo o novo índice sequencial no banco.

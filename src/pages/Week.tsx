@@ -40,6 +40,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
   const { start } = usePomodoro()
   const [params, setParams] = useSearchParams()
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
+  const [activeTagId, setActiveTagId] = useState<string | null>(null)
 
   // Sincroniza seleção de tarefa com a URL ?taskId=...
   useEffect(() => {
@@ -91,27 +92,45 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
   const todayStr = days[0]?.dateKey || localDay()
   const lastDayStr = days[days.length - 1]?.dateKey || todayStr
 
-  // Tarefas da Inbox: sem due_date e não concluídas
+  // Etiquetas que têm tarefas nesta semana (Inbox ou agendadas nos 7 dias)
+  const availableTagsInWeek = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string; count: number }>()
+    for (const t of tasks) {
+      // Verificar se a tarefa pertence ao período da semana ou ao Inbox
+      const isInbox = !t.due_date && !t.done
+      const day = t.due_date ? pbDay(t.due_date) : ''
+      const isWeek = day >= todayStr && day <= lastDayStr
+      if (isInbox || isWeek) {
+        const tagsList = t.expand?.tags || []
+        for (const tag of tagsList) {
+          if (!map.has(tag.id)) {
+            map.set(tag.id, { id: tag.id, name: tag.name, color: tag.color, count: 1 })
+          } else {
+            map.get(tag.id)!.count++
+          }
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [tasks, todayStr, lastDayStr])
+
+  // Tarefas da Inbox filtradas por etiqueta se ativa
   const inboxTasks = useMemo(() => {
     return tasks
-      .filter((t) => !t.due_date && !t.done)
+      .filter((t) => {
+        if (t.due_date || t.done) return false
+        if (!activeTagId) return true
+        const tagIds = t.tags || []
+        const expandedTagIds = t.expand?.tags?.map((tag) => tag.id) || []
+        return tagIds.includes(activeTagId) || expandedTagIds.includes(activeTagId)
+      })
       .sort((a, b) => {
         const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
         const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
         if (orderA !== orderB) return orderA - orderB
         return new Date(b.created).getTime() - new Date(a.created).getTime()
       })
-  }, [tasks])
-
-  // Tarefas da semana (filtradas pela janela dos 7 dias, incluindo atrasadas alocadas para hoje se due_date <= hoje)
-  const weekTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      if (!t.due_date) return false
-      const day = pbDay(t.due_date)
-      // Se for atrasada (< hoje), na visão de 7 dias agrupamos no primeiro dia (hoje) para manter o foco acionável
-      return day >= todayStr && day <= lastDayStr
-    })
-  }, [tasks, todayStr, lastDayStr])
+  }, [tasks, activeTagId])
 
   // Mapa de tarefas organizadas por dia (dateKey -> { pending: TaskRecord[], done: TaskRecord[] })
   // Também acolhe tarefas atrasadas pendentes no dia de "hoje"
@@ -123,6 +142,16 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
 
     for (const t of tasks) {
       if (!t.due_date) continue
+
+      // Filtro ativo de etiqueta
+      if (activeTagId) {
+        const tagIds = t.tags || []
+        const expandedTagIds = t.expand?.tags?.map((tag) => tag.id) || []
+        if (!tagIds.includes(activeTagId) && !expandedTagIds.includes(activeTagId)) {
+          continue
+        }
+      }
+
       const day = pbDay(t.due_date)
       let targetDayKey = day
 
@@ -151,7 +180,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
     }
 
     return map
-  }, [days, tasks, todayStr])
+  }, [days, tasks, todayStr, activeTagId])
 
   // Totalizadores da semana inteira
   const summary = useMemo(() => {
@@ -517,6 +546,44 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
         </div>
       </header>
 
+      {/* FILTRO DISCRETO DE ETIQUETAS NA SEMANA */}
+      {availableTagsInWeek.length > 0 && (
+        <div className="tags-filter-bar week-tags-filter-bar">
+          <span className="tags-filter-label">ETIQUETAS NA SEMANA:</span>
+          <div className="tags-filter-chips">
+            {availableTagsInWeek.map((tag) => {
+              const isSelected = activeTagId === tag.id
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={`tag-filter-chip ${isSelected ? 'active' : ''}`}
+                  style={{
+                    borderColor: tag.color,
+                    color: isSelected ? '#090A0E' : tag.color,
+                    backgroundColor: isSelected ? tag.color : `${tag.color}14`,
+                  }}
+                  onClick={() => setActiveTagId(isSelected ? null : tag.id)}
+                  title={isSelected ? 'Clique para limpar filtro' : `Filtrar por @${tag.name}`}
+                >
+                  @{tag.name}
+                  <span className="tag-filter-count">({tag.count})</span>
+                </button>
+              )
+            })}
+            {activeTagId && (
+              <button
+                type="button"
+                className="tag-filter-clear-btn"
+                onClick={() => setActiveTagId(null)}
+              >
+                Limpar filtro
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* FAIXA DO INBOX NO TOPO (Item 4 do escopo) */}
       <section className="week-inbox-shelf">
         <div className="inbox-shelf-header">
@@ -563,6 +630,19 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                     {task.expand?.list && (
                       <span className="inbox-list-chip">#{task.expand.list.name}</span>
                     )}
+                    {task.expand?.tags &&
+                      task.expand.tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="tag-chip"
+                          style={{
+                            borderColor: tag.color,
+                            color: tag.color,
+                          }}
+                        >
+                          @{tag.name}
+                        </span>
+                      ))}
                     <span className="inbox-est-chip">
                       EST. {formatMinutes(task.estimated_minutes)}
                     </span>
@@ -693,6 +773,19 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                         <h3>{task.title}</h3>
                         <div className="meta">
                           {task.expand?.list && <span>#{task.expand.list.name}</span>}
+                          {task.expand?.tags &&
+                            task.expand.tags.map((tag) => (
+                              <span
+                                key={tag.id}
+                                className="tag-chip"
+                                style={{
+                                  borderColor: tag.color,
+                                  color: tag.color,
+                                }}
+                              >
+                                @{tag.name}
+                              </span>
+                            ))}
                           <span>
                             EST. {formatMinutes(task.estimated_minutes)} ·{' '}
                             <b

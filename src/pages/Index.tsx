@@ -11,6 +11,7 @@ import { reorderTasks } from '@/services/data'
 export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
   const [params, setParams] = useSearchParams()
   const [selected, setSelected] = useState<TaskRecord | null>(null)
+  const [activeTagId, setActiveTagId] = useState<string | null>(null)
   const view = params.get('view') || 'hoje'
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
@@ -23,8 +24,8 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     }
   }, [params, tasks])
 
-  // Filtragem da visão ativa
-  const filtered = useMemo(
+  // Tarefas da visão ativa antes do filtro de etiqueta
+  const viewTasks = useMemo(
     () =>
       tasks.filter((t) =>
         view === 'hoje'
@@ -34,6 +35,34 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
             : !t.due_date,
       ),
     [tasks, view, today, tomorrow],
+  )
+
+  // Etiquetas que possuem tarefas nesta visão específica
+  const availableTagsInView = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string; count: number }>()
+    for (const task of viewTasks) {
+      const tagsList = task.expand?.tags || []
+      for (const tag of tagsList) {
+        if (!map.has(tag.id)) {
+          map.set(tag.id, { id: tag.id, name: tag.name, color: tag.color, count: 1 })
+        } else {
+          map.get(tag.id)!.count++
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [viewTasks])
+
+  // Filtragem adicional por etiqueta se selecionada
+  const filtered = useMemo(
+    () =>
+      viewTasks.filter((t) => {
+        if (!activeTagId) return true
+        const tagIds = t.tags || []
+        const expandedTagIds = t.expand?.tags?.map((tag) => tag.id) || []
+        return tagIds.includes(activeTagId) || expandedTagIds.includes(activeTagId)
+      }),
+    [viewTasks, activeTagId],
   )
 
   // Separar concluídas e pendentes com ordenação estável por order e created
@@ -219,6 +248,45 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
           </div>
         </div>
       )}
+
+      {/* Fileira discreta de filtro por etiqueta */}
+      {availableTagsInView.length > 0 && (
+        <div className="tags-filter-bar">
+          <span className="tags-filter-label">ETIQUETAS:</span>
+          <div className="tags-filter-chips">
+            {availableTagsInView.map((tag) => {
+              const isSelected = activeTagId === tag.id
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={`tag-filter-chip ${isSelected ? 'active' : ''}`}
+                  style={{
+                    borderColor: tag.color,
+                    color: isSelected ? '#090A0E' : tag.color,
+                    backgroundColor: isSelected ? tag.color : `${tag.color}14`,
+                  }}
+                  onClick={() => setActiveTagId(isSelected ? null : tag.id)}
+                  title={isSelected ? 'Clique para limpar filtro' : `Filtrar por @${tag.name}`}
+                >
+                  @{tag.name}
+                  <span className="tag-filter-count">({tag.count})</span>
+                </button>
+              )
+            })}
+            {activeTagId && (
+              <button
+                type="button"
+                className="tag-filter-clear-btn"
+                onClick={() => setActiveTagId(null)}
+              >
+                Limpar filtro
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <section className="tasks" ref={tasksContainerRef}>
         {optimisticPending.map((task, i) => (
           <TaskCard

@@ -12,7 +12,7 @@ import { Settings } from '@/pages/Settings'
 import { PomodoroPage } from '@/pages/Pomodoro'
 import { AuthPage } from '@/pages/AuthPages'
 import { getSessions, getTasks } from '@/services/data'
-import type { SessionRecord, TaskRecord } from '@/types'
+import type { SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { useRealtime } from '@/hooks/use-realtime'
 function Protected() {
   const { user } = useAuth()
@@ -26,6 +26,7 @@ function Protected() {
   useEffect(refresh, [refresh])
   useRealtime<TaskRecord>('tasks', refresh, !!user)
   useRealtime<SessionRecord>('sessions', refresh, !!user)
+  useRealtime<TagRecord>('tags', refresh, !!user)
   if (!user) return <Navigate to="/login" replace />
   return (
     <Routes>

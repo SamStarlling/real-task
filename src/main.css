@@ -740,6 +740,241 @@ a {
   gap: 8px;
 }
 
+/* ========================================================
+   TAGS / ETIQUETAS — QUIET LUXURY DESIGN SYSTEM BARBOSA
+   ======================================================== */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font:
+    11px 'Space Mono',
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid currentColor;
+  background: transparent;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 140ms ease;
+}
+
+.tags-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 10px 14px;
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.week-tags-filter-bar {
+  margin-bottom: 24px;
+}
+
+.tags-filter-label {
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  text-transform: uppercase;
+}
+
+.tags-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  background: transparent;
+  transition: all 140ms ease;
+}
+
+.tag-filter-chip:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.tag-filter-count {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.tag-filter-clear-btn {
+  background: transparent;
+  border: 0;
+  color: #a1a1aa;
+  font:
+    11px 'Space Mono',
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  transition: color 140ms ease;
+}
+
+.tag-filter-clear-btn:hover {
+  color: #c5a880;
+}
+
+/* Detalhe da Tarefa - Gestão de Etiquetas */
+.detail-tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.detail-tags-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag-remove-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.tag-remove-btn:hover {
+  opacity: 1;
+}
+
+.detail-add-tag-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  background: transparent;
+  border: 1px dashed rgba(197, 168, 128, 0.25);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 140ms ease;
+}
+
+.detail-add-tag-trigger:hover {
+  color: #c5a880;
+  border-color: rgba(197, 168, 128, 0.5);
+  background: rgba(197, 168, 128, 0.05);
+}
+
+.detail-add-tag-box {
+  background: #171924;
+  border: 1px solid rgba(197, 168, 128, 0.16);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-tag-input {
+  flex: 1;
+  background: #090a0e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #f4f4f6;
+  outline: 0;
+}
+
+.detail-tag-input:focus {
+  border-color: #c5a880;
+}
+
+.detail-tag-confirm-btn {
+  background: #c5a880;
+  color: #090a0e;
+  border: 0;
+  font:
+    11px 'Space Mono',
+    monospace;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.detail-tag-cancel-btn {
+  background: transparent;
+  border: 0;
+  color: #71717a;
+  cursor: pointer;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+}
+
+.detail-tag-cancel-btn:hover {
+  color: #f4f4f6;
+}
+
+.detail-unassigned-tags-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 8px;
+}
+
+.detail-tags-hint {
+  font:
+    10px 'Space Mono',
+    monospace;
+  color: #71717a;
+  text-transform: uppercase;
+}
+
+.tag-picker-item {
+  cursor: pointer;
+  background: transparent;
+  border-radius: 6px;
+}
+
+.tag-picker-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 /* Chips Ativo / Arquivado */
 .pomodoro-tab-chips {
   display: inline-flex;
