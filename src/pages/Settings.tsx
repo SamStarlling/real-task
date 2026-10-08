@@ -68,7 +68,7 @@ export function Settings() {
   const [tagsLoading, setTagsLoading] = useState(false)
   const [tagSearch, setTagSearch] = useState('')
   const [newTagName, setNewTagName] = useState('')
-  const [newTagColor, setNewTagColor] = useState(TAG_PALETTE[0].color)
+  const [newTagColor, setNewTagColor] = useState<string>(TAG_PALETTE[0].color)
   const [tagCreating, setTagCreating] = useState(false)
   const [editingTagId, setEditingTagId] = useState<string | null>(null)
   const [editingTagName, setEditingTagName] = useState('')

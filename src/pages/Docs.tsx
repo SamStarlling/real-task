@@ -297,12 +297,13 @@ export function Docs() {
                 próximo bloco, reutilizando a permissão de notificações do sistema.
               </li>
               <li>
-                <strong>Contabilidade e Notas de Sessão:</strong> apenas blocos de foco gravam
-                sessões na coleção <code>sessions</code> e somam minutos ao{' '}
-                <code>actual_minutes</code> da tarefa vinculada. O prompt não-bloqueante "O que foi
-                feito?" fica disponível durante o descanso para registro de notas, salvando de forma
-                resiliente tanto para tarefas específicas quanto para sessões de foco autônomo (sem
-                tarefa associada).
+                <strong>Contabilidade e Notas de Sessão (com ou sem tarefa vinculada):</strong>{' '}
+                apenas blocos de foco gravam sessões na coleção <code>sessions</code> e, havendo
+                tarefa vinculada, somam minutos ao seu <code>actual_minutes</code>. O prompt de nota
+                &quot;O que foi feito?&quot; funciona de forma 100% não-bloqueante durante a pausa
+                ou na barra inferior, sendo gravado de modo resiliente tanto para sessões atreladas
+                a tarefas quanto para sessões de foco livre (sem tarefa vinculada, onde o campo
+                relacional <code>task</code> permanece nulo/opcional no banco).
               </li>
             </ul>
           </article>
@@ -360,10 +361,13 @@ export function Docs() {
                 <code>weekly_focus_goals</code> da coleção <code>users</code>.
               </li>
               <li>
-                <strong>Gerenciamento Completo de Etiquetas:</strong> seção dedicada para
-                visualização, criação, edição e exclusão de etiquetas da coleção <code>tags</code>.
-                Exibe o código HEX, paleta recomendada, contagem em tempo real de tarefas vinculadas
-                a cada etiqueta e desassociação segura em cascata ao remover.
+                <strong>Gerenciamento Completo de Etiquetas (/configuracoes):</strong> aba dedicada
+                para administração integral das etiquetas da coleção <code>tags</code>. Permite
+                criar com seletor visual da paleta <em>quiet luxury</em>, renomear inline com tecla
+                Enter/Esc, alterar cor, inspecionar o código HEX e acompanhar o contador em tempo
+                real de tarefas vinculadas a cada tag. Na exclusão, executa desassociação segura em
+                cascata, removendo a referência do array de tags de todas as tarefas afetadas antes
+                de deletar o registro.
               </li>
               <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
@@ -1311,8 +1315,13 @@ export function Docs() {
                   <td>
                     <code>relation</code>
                   </td>
-                  <td>Sim</td>
-                  <td>FK vinculando a sessão à tarefa executada (cascadeDelete: true)</td>
+                  <td>Não</td>
+                  <td>
+                    FK opcional vinculando a sessão à tarefa executada (cascadeDelete: true,
+                    maxSelect: 1). Sessões de foco autônomo / livre são gravadas com{' '}
+                    <code>task</code> nulo, permitindo anotação de notas e auditoria mesmo sem
+                    vínculo com uma tarefa específica.
+                  </td>
                 </tr>
                 <tr>
                   <td>
@@ -1386,8 +1395,10 @@ export function Docs() {
                   </td>
                   <td>Não</td>
                   <td>
-                    Descrição textual opcional do que foi realizado no bloco de foco (máx. 500
-                    caracteres, estilo TickTick)
+                    Descrição textual opcional do que foi realizado no bloco de foco gravada pelo
+                    campo &quot;O que foi feito?&quot; (máx. 500 caracteres, estilo TickTick),
+                    persistida tanto em sessões vinculadas a tarefas quanto em sessões de foco
+                    autônomo.
                   </td>
                 </tr>
                 <tr>
