@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   CalendarDays,
   Check,
+  CheckSquare,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -28,6 +29,7 @@ import {
   createTask,
   formatRecurrenceRule,
   getPriorityMeta,
+  getSubtaskProgress,
   isTaskOverdue,
   reorderTasks,
   toggleTaskDone,
@@ -612,6 +614,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
               const priorityClass = priorityMeta
                 ? `priority-${priorityMeta.code.toLowerCase()}`
                 : ''
+              const subtaskProgress = getSubtaskProgress(task.subtasks)
               return (
                 <div
                   key={task.id}
@@ -696,6 +699,15 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                           {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
                         </span>
                       )}
+                      {subtaskProgress.total > 0 && (
+                        <span
+                          className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
+                          title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
+                        >
+                          <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+                          {subtaskProgress.completed}/{subtaskProgress.total}
+                        </span>
+                      )}
                       <span className="inbox-est-chip">
                         EST. {formatMinutes(task.estimated_minutes)}
                       </span>
@@ -772,6 +784,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                       ? `priority-${priorityMeta.code.toLowerCase()}`
                       : ''
                     const isOverdue = isTaskOverdue(task)
+                    const subtaskProgress = getSubtaskProgress(task.subtasks)
 
                     return (
                       <article
@@ -895,6 +908,15 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                                 {task.due_time}
                               </span>
                             )}
+                            {subtaskProgress.total > 0 && (
+                              <span
+                                className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
+                                title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
+                              >
+                                <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+                                {subtaskProgress.completed}/{subtaskProgress.total}
+                              </span>
+                            )}
                             <span>
                               EST. {formatMinutes(task.estimated_minutes)} ·{' '}
                               <b
@@ -919,6 +941,17 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                               }}
                             />
                           </div>
+                          {subtaskProgress.total > 0 && (
+                            <div
+                              className="subtask-card-progress"
+                              title={`Checklist: ${subtaskProgress.completed}/${subtaskProgress.total} (${Math.round(subtaskProgress.ratio)}%)`}
+                            >
+                              <i
+                                style={{ width: `${subtaskProgress.ratio}%` }}
+                                className={subtaskProgress.allDone ? 'all-done' : ''}
+                              />
+                            </div>
+                          )}
                         </button>
 
                         <button

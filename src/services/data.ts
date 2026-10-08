@@ -6,6 +6,7 @@ import type {
   RecurrenceMode,
   RecurrenceType,
   SessionRecord,
+  SubtaskItem,
   TagRecord,
   TaskPriority,
   TaskRecord,
@@ -17,6 +18,7 @@ export type {
   NotificationPreferences,
   RecurrenceMode,
   RecurrenceType,
+  SubtaskItem,
   TagRecord,
   TaskPriority,
   WeekdayKey,
@@ -633,10 +635,46 @@ export function computeNextDueDate(
 }
 
 /**
+ * Reseta o status das sub-tarefas para done=false preservando ids, títulos e ordem.
+ * Utilizado ao herdar a checklist para a próxima instância de uma tarefa recorrente.
+ */
+export function resetSubtasksForRecurrence(subtasks?: SubtaskItem[] | null): SubtaskItem[] {
+  if (!Array.isArray(subtasks) || subtasks.length === 0) return []
+  return subtasks.map((st) => ({
+    id: st.id || Math.random().toString(36).substring(2, 9),
+    title: st.title || '',
+    done: false,
+  }))
+}
+
+/**
+ * Calcula o progresso de uma lista de sub-tarefas.
+ */
+export function getSubtaskProgress(subtasks?: SubtaskItem[] | null): {
+  total: number
+  completed: number
+  allDone: boolean
+  ratio: number
+} {
+  if (!Array.isArray(subtasks) || subtasks.length === 0) {
+    return { total: 0, completed: 0, allDone: false, ratio: 0 }
+  }
+  const total = subtasks.length
+  const completed = subtasks.filter((s) => s.done).length
+  return {
+    total,
+    completed,
+    allDone: total > 0 && completed === total,
+    ratio: total > 0 ? (completed / total) * 100 : 0,
+  }
+}
+
+/**
  * Conclui ou reabre uma tarefa.
  * Se estiver marcando como concluída (done=true) e a tarefa possuir regra de recorrência
  * ativa (recurrence_type !== 'none'), cria automaticamente a próxima instância no PocketBase
- * com o mesmo título, lista, tags, estimated_minutes e nova due_date calculada,
+ * com o mesmo título, lista, tags, estimated_minutes, prioridade, horário e sub-tarefas
+ * (resetadas como não concluídas) e nova due_date calculada,
  * preservando a tarefa concluída para o histórico.
  */
 export async function toggleTaskDone(
@@ -668,6 +706,9 @@ export async function toggleTaskDone(
       // Obter tags atuais
       const tagIds = task.tags || task.expand?.tags?.map((t) => t.id) || []
 
+      // Sub-tarefas herdadas limpas (resetadas para não concluídas)
+      const inheritedSubtasks = resetSubtasksForRecurrence(task.subtasks)
+
       // Preparar payload da próxima instância com a mesma regra de recorrência
       const nextTaskPayload: Record<string, unknown> = {
         title: task.title,
@@ -685,6 +726,7 @@ export async function toggleTaskDone(
         recurrence_mode: task.recurrence_mode || 'from_date',
         due_time: task.due_time || '',
         priority: task.priority || 0,
+        subtasks: inheritedSubtasks,
       }
 
       try {

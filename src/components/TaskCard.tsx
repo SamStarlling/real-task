@@ -1,10 +1,11 @@
-import { Clock, Flag, GripVertical, Play, Repeat } from 'lucide-react'
+import { CheckSquare, Clock, Flag, GripVertical, Play, Repeat } from 'lucide-react'
 import type { TaskRecord } from '@/types'
 import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
 import {
   formatRecurrenceRule,
   getPriorityMeta,
+  getSubtaskProgress,
   isTaskOverdue,
   toggleTaskDone,
 } from '@/services/data'
@@ -48,6 +49,7 @@ export function TaskCard({
   const hasTime = !!(task.due_time && task.due_time.trim())
   const priorityMeta = getPriorityMeta(task.priority)
   const priorityClass = priorityMeta ? `priority-${priorityMeta.code.toLowerCase()}` : ''
+  const subtaskProgress = getSubtaskProgress(task.subtasks)
 
   return (
     <article
@@ -147,6 +149,15 @@ export function TaskCard({
               {task.due_time}
             </span>
           )}
+          {subtaskProgress.total > 0 && (
+            <span
+              className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
+              title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
+            >
+              <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+              {subtaskProgress.completed}/{subtaskProgress.total}
+            </span>
+          )}
           <span className={overdue ? 'overdue' : ''}>
             {overdue
               ? 'ATRASADA'
@@ -171,6 +182,17 @@ export function TaskCard({
         >
           <i style={{ width: `${ratio}%` }} />
         </div>
+        {subtaskProgress.total > 0 && (
+          <div
+            className="subtask-card-progress"
+            title={`Checklist: ${subtaskProgress.completed}/${subtaskProgress.total} (${Math.round(subtaskProgress.ratio)}%)`}
+          >
+            <i
+              style={{ width: `${subtaskProgress.ratio}%` }}
+              className={subtaskProgress.allDone ? 'all-done' : ''}
+            />
+          </div>
+        )}
       </button>
       <button className="focus" onClick={() => start(task)}>
         <Play />

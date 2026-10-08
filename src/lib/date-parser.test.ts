@@ -6,7 +6,13 @@ import {
   cleanTimeToken,
   cleanRecurrenceToken,
 } from './date-parser'
-import { parsePriorityToken, cleanPriorityToken } from '@/services/data'
+import {
+  parsePriorityToken,
+  cleanPriorityToken,
+  getSubtaskProgress,
+  resetSubtasksForRecurrence,
+} from '@/services/data'
+import type { SubtaskItem } from '@/types'
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -204,6 +210,51 @@ export function runDateParserTests() {
     assert(prio !== null, 'Prioridade via !')
     assertEquals(prio?.priority, 2, '!! deve ser P2')
     assertEquals(cleanPriorityToken(text, prio!.token), 'Revisar contrato', 'Limpa !!')
+  }
+
+  // --- 5. SUB-TAREFAS & CHECKLIST (TickTick / Todoist) ---
+  // 5.1 Cálculo de progresso de sub-tarefas
+  {
+    const emptyProgress = getSubtaskProgress(null)
+    assertEquals(emptyProgress.total, 0, 'Total vazio deve ser 0')
+    assertEquals(emptyProgress.completed, 0, 'Completas vazio deve ser 0')
+    assertEquals(emptyProgress.allDone, false, 'allDone deve ser falso se vazio')
+
+    const items: SubtaskItem[] = [
+      { id: '1', title: 'Comprar pó de café', done: true },
+      { id: '2', title: 'Limpar moedor', done: false },
+      { id: '3', title: 'Ferver água a 92°C', done: true },
+    ]
+    const p = getSubtaskProgress(items)
+    assertEquals(p.total, 3, 'Total 3 sub-tarefas')
+    assertEquals(p.completed, 2, '2 sub-tarefas feitas')
+    assertEquals(p.allDone, false, 'Nem todas concluídas')
+    assertEquals(Math.round(p.ratio), 67, 'Ratio ~67%')
+
+    const allDoneItems: SubtaskItem[] = [
+      { id: '1', title: 'Passo 1', done: true },
+      { id: '2', title: 'Passo 2', done: true },
+    ]
+    const pAll = getSubtaskProgress(allDoneItems)
+    assertEquals(pAll.allDone, true, 'Todas concluídas deve ser true')
+    assertEquals(pAll.ratio, 100, 'Ratio deve ser 100%')
+  }
+
+  // 5.2 Herança de sub-tarefas em tarefas recorrentes
+  {
+    const originalSubtasks: SubtaskItem[] = [
+      { id: 'a1', title: 'Revisar extrato bancário', done: true },
+      { id: 'a2', title: 'Categorizar lançamentos', done: true },
+      { id: 'a3', title: 'Exportar relatório mensal', done: false },
+    ]
+
+    const inherited = resetSubtasksForRecurrence(originalSubtasks)
+    assertEquals(inherited.length, 3, 'Mesma quantidade herdada')
+    assertEquals(inherited[0].title, 'Revisar extrato bancário', 'Título preservado')
+    assertEquals(inherited[0].done, false, 'Resetado para false')
+    assertEquals(inherited[1].done, false, 'Resetado para false')
+    assertEquals(inherited[2].done, false, 'Mantido false')
+    assertEquals(inherited[0].id, 'a1', 'ID preservado')
   }
 
   return true

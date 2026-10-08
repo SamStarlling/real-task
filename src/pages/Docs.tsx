@@ -275,6 +275,50 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
+            <h3>Sub-tarefas com Checklist no Painel de Detalhe (Estilo TickTick / Todoist)</h3>
+            <p>
+              Checklist nativa embutida para subdivisão granular de tarefas sem complexidade de
+              joins ou tabelas intermediárias:
+            </p>
+            <ul>
+              <li>
+                <strong>Adição e edição inline:</strong> no drawer lateral (TaskDetail), campo
+                inline com tecla <code>Enter</code> para inclusão imediata e <code>Esc</code> para
+                cancelar. Clique no título de qualquer sub-tarefa para edição inline com salvamento
+                ao pressionar <code>Enter</code> ou desfocar (<code>blur</code>).
+              </li>
+              <li>
+                <strong>Checkbox monocromático refinado:</strong> caixa de seleção de traço fino
+                alinhada ao Design System Barbosa, com preenchimento em Champagne Ouro Fosco e texto
+                esmaecido com tachado sutil ao concluir.
+              </li>
+              <li>
+                <strong>Reordenação e exclusão:</strong> botões discretos de mover para cima/baixo
+                ao passar o mouse (ou foco) para reordenar a sequência de execução, e botão de
+                exclusão rápida.
+              </li>
+              <li>
+                <strong>Contador e barra em Space Mono:</strong> cabeçalho da seção com progresso em
+                formato <code>SUB-TAREFAS · 2/5</code> e micro barra proporcional de preenchimento.
+                Quando todas as sub-tarefas estão completas, recebe sotaque discreto com ícone de
+                conclusão <code>✓</code>.
+              </li>
+              <li>
+                <strong>Indicador compacto nos cartões (TaskCard & Semana):</strong> cartões com
+                sub-tarefas exibem chip Space Mono com contagem <code>2/5</code> e uma linha fina
+                (2px) de progresso em Champagne sem alterar a altura estrutural do cartão.
+              </li>
+              <li>
+                <strong>Regra de autonomia & Herança na Recorrência:</strong> concluir a tarefa
+                principal NÃO altera as sub-tarefas e concluir todas as sub-tarefas NÃO fecha a
+                tarefa principal (autonomia deliberada do usuário). Quando uma tarefa recorrente é
+                concluída, a próxima instância gerada herda integralmente a lista de sub-tarefas com
+                o status resetado (não concluídas).
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
             <h3>Comparativo de Precisão Temporal</h3>
             <p>Controle estrito de acurácia entre planejamento e execução:</p>
             <ul>
@@ -561,7 +605,7 @@ export function Docs() {
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno (v0.0.19)</td>
+                <td>Interno (v0.0.20)</td>
                 <td>
                   Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
                   mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,
@@ -1325,6 +1369,21 @@ export function Docs() {
                   <td>
                     Nível de prioridade da tarefa (inteiro 1 a 4: 1=P1 Champagne Ouro, 2=P2
                     Champagne Claro, 3=P3 Titânio, 4=P4 Grafite; 0 ou nulo = sem prioridade).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>subtasks</code>
+                  </td>
+                  <td>
+                    <code>json</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Lista ordenada de sub-tarefas (checklist) no formato <code>SubtaskItem[]</code>{' '}
+                    (contendo <code>id: string</code>, <code>title: string</code> e{' '}
+                    <code>done: boolean</code>). Permite edição inline, checklist no drawer e
+                    herança limpa na recorrência.
                   </td>
                 </tr>
                 <tr>

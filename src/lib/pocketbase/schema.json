@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T22:51:46.482Z",
+  "generatedAt": "2026-10-08T23:42:41.750Z",
   "collections": [
     {
       "name": "users",
@@ -229,6 +229,12 @@
         {
           "name": "priority",
           "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "subtasks",
+          "type": "json",
           "required": false,
           "system": false
         }

@@ -1,9 +1,22 @@
 import { useEffect, useState } from 'react'
-import { X, Play, Tag as TagIcon, Plus, Repeat, Clock, Flag } from 'lucide-react'
+import {
+  X,
+  Play,
+  Tag as TagIcon,
+  Plus,
+  Repeat,
+  Clock,
+  Flag,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Check,
+} from 'lucide-react'
 import type {
   RecurrenceMode,
   RecurrenceType,
   SessionRecord,
+  SubtaskItem,
   TagRecord,
   TaskPriority,
   TaskRecord,
@@ -15,6 +28,7 @@ import {
   formatRecurrenceRule,
   getNextTagColor,
   getPriorityMeta,
+  getSubtaskProgress,
   getTags,
   sessionsForTask,
   TASK_PRIORITIES,
@@ -53,6 +67,12 @@ export function TaskDetail({
   )
   const [priority, setPriority] = useState<TaskPriority>(task.priority || 0)
   const [dueTime, setDueTime] = useState<string>(task.due_time || '')
+  const [subtasks, setSubtasks] = useState<SubtaskItem[]>(
+    Array.isArray(task.subtasks) ? task.subtasks : [],
+  )
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null)
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('')
   const { start } = usePomodoro()
 
   useEffect(() => {
@@ -62,6 +82,7 @@ export function TaskDetail({
     setRecurrenceType(task.recurrence_type || 'none')
     setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval) || 1))
     setDueTime(task.due_time || '')
+    setSubtasks(Array.isArray(task.subtasks) ? task.subtasks : [])
     setRecurrenceWeekdays(Array.isArray(task.recurrence_weekdays) ? task.recurrence_weekdays : [])
     setRecurrenceMode(task.recurrence_mode || 'from_date')
   }, [task])
@@ -151,6 +172,75 @@ export function TaskDetail({
     setRecurrenceWeekdays(next)
     await save({ recurrence_weekdays: next })
   }
+
+  // --- SUB-TAREFAS ---
+  const handleAddSubtask = async () => {
+    const trimmed = newSubtaskTitle.trim()
+    if (!trimmed) return
+
+    const newItem: SubtaskItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      title: trimmed,
+      done: false,
+    }
+
+    const nextList = [...subtasks, newItem]
+    setSubtasks(nextList)
+    setNewSubtaskTitle('')
+    await save({ subtasks: nextList })
+  }
+
+  const handleToggleSubtaskDone = async (id: string) => {
+    const nextList = subtasks.map((st) => (st.id === id ? { ...st, done: !st.done } : st))
+    setSubtasks(nextList)
+    await save({ subtasks: nextList })
+  }
+
+  const handleStartEditingSubtask = (st: SubtaskItem) => {
+    setEditingSubtaskId(st.id)
+    setEditingSubtaskTitle(st.title)
+  }
+
+  const handleSaveSubtaskTitle = async (id: string) => {
+    const trimmed = editingSubtaskTitle.trim()
+    if (!trimmed) {
+      // Se deixou em branco, cancela a edição mantendo o anterior
+      setEditingSubtaskId(null)
+      setEditingSubtaskTitle('')
+      return
+    }
+
+    const nextList = subtasks.map((st) => (st.id === id ? { ...st, title: trimmed } : st))
+    setSubtasks(nextList)
+    setEditingSubtaskId(null)
+    setEditingSubtaskTitle('')
+    await save({ subtasks: nextList })
+  }
+
+  const handleDeleteSubtask = async (id: string) => {
+    const nextList = subtasks.filter((st) => st.id !== id)
+    setSubtasks(nextList)
+    if (editingSubtaskId === id) {
+      setEditingSubtaskId(null)
+      setEditingSubtaskTitle('')
+    }
+    await save({ subtasks: nextList })
+  }
+
+  const handleMoveSubtask = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= subtasks.length) return
+
+    const nextList = [...subtasks]
+    const temp = nextList[index]
+    nextList[index] = nextList[targetIndex]
+    nextList[targetIndex] = temp
+
+    setSubtasks(nextList)
+    await save({ subtasks: nextList })
+  }
+
+  const subtaskProgress = getSubtaskProgress(subtasks)
 
   const readableRecurrence = formatRecurrenceRule({
     due_date: task.due_date,
@@ -401,6 +491,147 @@ export function TaskDetail({
               <span>Gerenciar / Adicionar Etiqueta</span>
             </button>
           )}
+        </div>
+
+        {/* SEÇÃO SUB-TAREFAS (CHECKLIST ESTILO TICKTICK / TODOIST) */}
+        <label className="detail-label flex items-center justify-between">
+          <span>
+            SUB-TAREFAS
+            {subtaskProgress.total > 0 && (
+              <span
+                className={`detail-subtasks-count ${subtaskProgress.allDone ? 'all-done' : ''}`}
+                title={
+                  subtaskProgress.allDone
+                    ? 'Todas as sub-tarefas concluídas'
+                    : `${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`
+                }
+              >
+                · {subtaskProgress.completed}/{subtaskProgress.total}
+                {subtaskProgress.allDone && ' ✓'}
+              </span>
+            )}
+          </span>
+          {subtaskProgress.total > 0 && (
+            <span className="detail-subtasks-progress-track">
+              <i
+                style={{ width: `${subtaskProgress.ratio}%` }}
+                className={subtaskProgress.allDone ? 'complete' : ''}
+              />
+            </span>
+          )}
+        </label>
+        <div className="subtasks-section">
+          {/* Lista de sub-tarefas existentes */}
+          {subtasks.length > 0 && (
+            <ul className="subtasks-list">
+              {subtasks.map((st, idx) => {
+                const isEditing = editingSubtaskId === st.id
+                return (
+                  <li
+                    key={st.id}
+                    className={`subtask-item ${st.done ? 'subtask-done' : ''} ${
+                      isEditing ? 'is-editing' : ''
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className={`subtask-checkbox ${st.done ? 'checked' : ''}`}
+                      onClick={() => handleToggleSubtaskDone(st.id)}
+                      aria-label={st.done ? 'Marcar como não concluída' : 'Marcar como concluída'}
+                      title={st.done ? 'Concluída' : 'Marcar feita'}
+                    >
+                      {st.done ? <Check className="w-3 h-3" /> : null}
+                    </button>
+
+                    {isEditing ? (
+                      <div className="subtask-edit-wrap">
+                        <input
+                          type="text"
+                          className="subtask-edit-input"
+                          value={editingSubtaskTitle}
+                          onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              handleSaveSubtaskTitle(st.id)
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault()
+                              setEditingSubtaskId(null)
+                              setEditingSubtaskTitle('')
+                            }
+                          }}
+                          onBlur={() => handleSaveSubtaskTitle(st.id)}
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
+                      <span
+                        className="subtask-title"
+                        onClick={() => handleStartEditingSubtask(st)}
+                        title="Clique para editar"
+                      >
+                        {st.title}
+                      </span>
+                    )}
+
+                    <div className="subtask-actions">
+                      <button
+                        type="button"
+                        className="subtask-action-btn"
+                        disabled={idx === 0}
+                        onClick={() => handleMoveSubtask(idx, 'up')}
+                        title="Mover para cima"
+                        aria-label="Mover para cima"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="subtask-action-btn"
+                        disabled={idx === subtasks.length - 1}
+                        onClick={() => handleMoveSubtask(idx, 'down')}
+                        title="Mover para baixo"
+                        aria-label="Mover para baixo"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="subtask-action-btn delete-btn"
+                        onClick={() => handleDeleteSubtask(st.id)}
+                        title="Excluir sub-tarefa"
+                        aria-label="Excluir sub-tarefa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {/* Adicionar sub-tarefa inline (Enter cria, Esc cancela) */}
+          <div className="subtask-add-row">
+            <Plus className="subtask-add-icon" />
+            <input
+              type="text"
+              className="subtask-add-input"
+              placeholder="Adicionar sub-tarefa... (Enter para criar)"
+              value={newSubtaskTitle}
+              onChange={(e) => setNewSubtaskTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddSubtask()
+                } else if (e.key === 'Escape') {
+                  e.preventDefault()
+                  setNewSubtaskTitle('')
+                  e.currentTarget.blur()
+                }
+              }}
+            />
+          </div>
         </div>
 
         {/* SEÇÃO RECORRÊNCIA ESTILO TICKTICK */}
