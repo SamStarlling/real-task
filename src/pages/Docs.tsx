@@ -36,23 +36,40 @@ export function Docs() {
             </p>
             <ul>
               <li>
-                <strong>Datas relativas:</strong> reconhecimento de expressões como{' '}
-                <code>hoje</code>, <code>amanhã</code> e <code>depois de amanhã</code>.
+                <strong>Datas relativas e futuras:</strong> reconhecimento abrangente de expressões
+                como <code>hoje</code>, <code>amanhã</code>, <code>depois de amanhã</code>,
+                intervalos relativos como <code>em 3 dias</code>, <code>daqui a duas semanas</code>,
+                saltos de semana como <code>próxima segunda</code> (projetada impreterivelmente para
+                a semana seguinte, nunca a atual) e datas explícitas futuras nos formatos{' '}
+                <code>12/11</code> (com ano automático) e <code>15 de novembro</code>. O token é
+                extraído e removido do título da tarefa.
               </li>
               <li>
-                <strong>Dias da semana e do mês:</strong> mapeamento de <code>segunda</code> a{' '}
-                <code>domingo</code> (incluindo sufixo <code>-feira</code>) e formato{' '}
-                <code>dia N</code> (ex.: <code>dia 15</code>), ajustando automaticamente para o
-                meio-dia local e mês subsequente caso a data já tenha passado.
+                <strong>Recorrência em linguagem natural:</strong> detecção pura de repetições em
+                português do Brasil diretamente pelo texto, como <code>todo dia</code> (diária),{' '}
+                <code>toda semana</code> (semanal), <code>toda segunda</code> ou{' '}
+                <code>toda terça e quinta</code> (semanal com dias específicos),{' '}
+                <code>todos os dias úteis</code> e <code>todo dia 15</code> (mensal no dia fixo
+                indicado, sem ambiguidade com diária). As expressões saem do título, configuram os
+                parâmetros de repetição da tarefa e geram chip editável com botão de remoção na
+                barra.
+              </li>
+              <li>
+                <strong>Combinação fluida com horário:</strong> frases como{' '}
+                <em>&quot;Ler 10 páginas todo dia às 10:00&quot;</em> geram a tarefa com título
+                limpo <em>&quot;Ler 10 páginas&quot;</em>, recorrência diária e horário{' '}
+                <code>10:00</code>. Analogamente, <em>&quot;dentista 20/11 às 9h30&quot;</em> agenda
+                a data e o horário sem poluir o nome da tarefa.
               </li>
               <li>
                 <strong>
-                  Prioridades P1–P4 via <code>p1–p4</code> ou <code>!</code>:
+                  Autocomplete ativo de Prioridade (<code>p1–p4</code> e <code>!</code>):
                 </strong>{' '}
-                suporte nativo na sintaxe da barra para priorização imediata (ex.: <code>p1</code>,{' '}
-                <code>p2</code>, <code>p3</code>, <code>p4</code> ou exclamações como <code>!</code>
-                ). O token é extraído do título final e exibe chip visual na barra com botão de
-                remoção e popover flutuante para seleção manual de nível (P1–P4 ou Nenhuma).
+                ao digitar <code>p1</code>–<code>p4</code> ou <code>!</code>/<code>!!</code> na
+                barra de captura, abre-se instantaneamente o popover contextual com opções P1–P4
+                (rótulo, cor oficial e descrição curta, ex. &quot;P1 · Urgente&quot;). Navegação por
+                teclado (setas + Enter/Esc) ou clique aplica a prioridade imediatamente, extrai o
+                token do título e adiciona o chip visual.
               </li>
               <li>
                 <strong>
@@ -540,13 +557,15 @@ export function Docs() {
                 </td>
               </tr>
               <tr>
-                <td>Parser de Datas</td>
+                <td>Parser PNL de Datas & Recorrência</td>
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno</td>
+                <td>Interno (v0.0.19)</td>
                 <td>
-                  Mecanismo autônomo regex de datas em português (hoje, amanhã, dias, semanas)
+                  Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
+                  mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,
+                  toda segunda), horário (14:00, às 9h30) e autocomplete de prioridades (P1–P4)
                 </td>
               </tr>
               <tr>

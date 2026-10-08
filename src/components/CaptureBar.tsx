@@ -12,9 +12,10 @@ import {
 } from 'lucide-react'
 import {
   cleanDateToken,
+  cleanRecurrenceToken,
   cleanTimeToken,
-  localDay,
   parsePortugueseDate,
+  parsePortugueseRecurrence,
   parsePortugueseTime,
   toPocketDate,
 } from '@/lib/date-parser'
@@ -44,7 +45,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const [tags, setTags] = useState<TagRecord[]>([])
   const [selectedList, setSelectedList] = useState<ListRecord | null>(null)
   const [selectedTags, setSelectedTags] = useState<TagRecord[]>([])
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')
+  const [manualRecurrenceType, setManualRecurrenceType] = useState<RecurrenceType | null>(null)
   const [recurrenceInterval, setRecurrenceInterval] = useState(1)
   const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([1, 3, 5])
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>('from_date')
@@ -64,11 +65,34 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
 
   const parsed = parsePortugueseDate(text)
   const parsedTime = parsePortugueseTime(text)
+  const parsedRecurrence = parsePortugueseRecurrence(text)
+
   const effectiveTime = manualTime !== null ? manualTime : parsedTime?.time || null
   const parsedPriority = parsePriorityToken(text)
   const effectivePriority: TaskPriority =
     priorityOverride !== null ? priorityOverride : parsedPriority ? parsedPriority.priority : 0
   const priorityMeta = getPriorityMeta(effectivePriority)
+
+  const effectiveRecurrenceType: RecurrenceType =
+    manualRecurrenceType !== null
+      ? manualRecurrenceType
+      : parsedRecurrence
+        ? parsedRecurrence.type
+        : 'none'
+
+  const effectiveRecurrenceInterval: number =
+    manualRecurrenceType !== null
+      ? recurrenceInterval
+      : parsedRecurrence
+        ? parsedRecurrence.interval
+        : recurrenceInterval
+
+  const effectiveRecurrenceWeekdays: number[] =
+    manualRecurrenceType !== null
+      ? recurrenceWeekdays
+      : parsedRecurrence && parsedRecurrence.weekdays && parsedRecurrence.weekdays.length > 0
+        ? parsedRecurrence.weekdays
+        : recurrenceWeekdays
 
   // Detecção de # (Listas)
   const hashMatch = text.match(/(?:^|\s)#([^\s]*)$/)
@@ -89,6 +113,29 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     atQuery && !tagMatches.some((t) => t.name.toLowerCase() === atQuery.toLowerCase())
       ? [null, ...tagMatches]
       : tagMatches
+
+  // Detecção de Autocomplete de Prioridade: "p", "p1"-"p4" ou "!" no cursor
+  const prioMatch = text.match(/(?:^|\s)(p[1-4]?|!{1,2})$/i)
+  const isPrioAutocompleteOpen = !isHashOpen && !isAtOpen && !!prioMatch
+  const prioQuery = prioMatch?.[1]?.toLowerCase() || ''
+  const priorityOptions: Array<{ level: TaskPriority; meta: (typeof TASK_PRIORITIES)[number] }> = (
+    [
+      { level: 1 as const, meta: TASK_PRIORITIES[1] },
+      { level: 2 as const, meta: TASK_PRIORITIES[2] },
+      { level: 3 as const, meta: TASK_PRIORITIES[3] },
+      { level: 4 as const, meta: TASK_PRIORITIES[4] },
+    ] as const
+  ).filter((opt) => {
+    if (!prioQuery) return true
+    if (prioQuery === 'p') return true
+    if (prioQuery === '!') return opt.level === 1 || opt.level === 2
+    if (prioQuery === '!!') return opt.level === 2 || opt.level === 1
+    if (prioQuery === 'p1') return opt.level === 1
+    if (prioQuery === 'p2') return opt.level === 2
+    if (prioQuery === 'p3') return opt.level === 3
+    if (prioQuery === 'p4') return opt.level === 4
+    return true
+  })
 
   const chooseList = (list: ListRecord | null) => {
     if (list) setSelectedList(list)
@@ -125,15 +172,27 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     setText(text.replace(/(?:^|\s)@[^\s]*$/, '').trimEnd() + ' ')
   }
 
+  const choosePriority = (level: TaskPriority) => {
+    setPriorityOverride(level)
+    // Remove o token digitado de prioridade (ex: p1, p2, !, !!) e acrescenta espaço
+    setText(text.replace(/(?:^|\s)(?:p[1-4]?|!{1,2})$/i, '').trimEnd() + ' ')
+    setActive(0)
+  }
+
   const removeTag = (tagId: string) => {
     setSelectedTags((prev) => prev.filter((t) => t.id !== tagId))
   }
 
   const submit = async () => {
-    let title = cleanDateToken(text, parsed)
+    // 1. Limpar recorrência detectada em linguagem natural
+    let title = cleanRecurrenceToken(text, parsedRecurrence)
+    // 2. Limpar data detectada
+    title = cleanDateToken(title, parsed)
+    // 3. Limpar horário detectado
     if (parsedTime) {
       title = cleanTimeToken(title, parsedTime)
     }
+    // 4. Limpar tokens de prioridade
     if (parsedPriority) {
       title = cleanPriorityToken(title, parsedPriority.token)
     }
@@ -143,6 +202,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       .replace(/(?:^|\s)#[^\s]+/g, '')
       .replace(/(?:^|\s)@[^\s]+/g, '')
       .trim()
+
     if (!title) {
       toast({ title: 'Digite o título da tarefa.', variant: 'destructive' })
       return
@@ -177,10 +237,10 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     }
     setTags(updatedTagsList)
 
-    // Se o usuário digitou um horário mas nenhuma data específica, assume hoje
+    // Se o usuário digitou um horário ou recorrência diária sem data específica, assume hoje
     const effectiveDueDate = parsed
       ? toPocketDate(parsed.date)
-      : effectiveTime
+      : effectiveTime || effectiveRecurrenceType !== 'none'
         ? toPocketDate(new Date())
         : ''
 
@@ -196,27 +256,28 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       actual_minutes: 0,
       order: 0,
       priority: effectivePriority,
-      recurrence_type: recurrenceType,
-      recurrence_interval: recurrenceInterval,
-      recurrence_weekdays: recurrenceType === 'weekly_days' ? recurrenceWeekdays : null,
+      recurrence_type: effectiveRecurrenceType,
+      recurrence_interval: effectiveRecurrenceInterval,
+      recurrence_weekdays:
+        effectiveRecurrenceType === 'weekly_days' ? effectiveRecurrenceWeekdays : null,
       recurrence_mode: recurrenceMode,
     })
 
     const recurrenceSuffix =
-      recurrenceType !== 'none'
+      effectiveRecurrenceType !== 'none'
         ? ` · ${formatRecurrenceRule({
-            recurrence_type: recurrenceType,
-            recurrence_interval: recurrenceInterval,
-            recurrence_weekdays: recurrenceWeekdays,
+            recurrence_type: effectiveRecurrenceType,
+            recurrence_interval: effectiveRecurrenceInterval,
+            recurrence_weekdays: effectiveRecurrenceWeekdays,
             recurrence_mode: recurrenceMode,
-            due_date: parsed ? toPocketDate(parsed.date) : '',
+            due_date: effectiveDueDate,
           })}`
         : ''
     const timeSuffix = effectiveTime ? ` às ${effectiveTime}` : ''
     const prioritySuffix = priorityMeta ? ` · ${priorityMeta.code}` : ''
 
     toast({
-      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : effectiveTime ? 'Hoje' : 'Inbox'}${timeSuffix}${prioritySuffix}${recurrenceSuffix}`,
+      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : effectiveDueDate ? 'Hoje' : 'Inbox'}${timeSuffix}${prioritySuffix}${recurrenceSuffix}`,
     })
     setText('')
     setSelectedList(null)
@@ -224,7 +285,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     setManualTime(null)
     setPriorityOverride(null)
     setIsPriorityPopoverOpen(false)
-    setRecurrenceType('none')
+    setManualRecurrenceType(null)
     setRecurrenceInterval(1)
     setRecurrenceWeekdays([1, 3, 5])
     setRecurrenceMode('from_date')
@@ -235,7 +296,21 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   }
 
   const key = (e: KeyboardEvent) => {
-    if (isHashOpen && listOptions.length) {
+    if (isPrioAutocompleteOpen && priorityOptions.length) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setActive((active + 1) % priorityOptions.length)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setActive((active - 1 + priorityOptions.length) % priorityOptions.length)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        choosePriority(priorityOptions[active].level)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setText(text.replace(/(?:^|\s)(?:p[1-4]?|!{1,2})$/i, ''))
+      }
+    } else if (isHashOpen && listOptions.length) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setActive((active + 1) % listOptions.length)
@@ -346,7 +421,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               <X className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100" />
             </span>
           ))}
-          {recurrenceType !== 'none' && (
+          {effectiveRecurrenceType !== 'none' && (
             <span
               className="tag-chip inline-flex items-center gap-1 cursor-pointer"
               style={{
@@ -358,18 +433,23 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               onClick={() => setIsRecurrencePopoverOpen(!isRecurrencePopoverOpen)}
             >
               <Repeat className="w-2.5 h-2.5" />
-              {recurrenceType === 'daily' &&
-                (recurrenceInterval === 1 ? 'Diária' : `${recurrenceInterval}d`)}
-              {recurrenceType === 'weekly' &&
-                (recurrenceInterval === 1 ? 'Semanal' : `${recurrenceInterval}sem`)}
-              {recurrenceType === 'weekly_days' && 'Dias da sem.'}
-              {recurrenceType === 'monthly' &&
-                (recurrenceInterval === 1 ? 'Mensal' : `${recurrenceInterval}m`)}
+              {effectiveRecurrenceType === 'daily' &&
+                (effectiveRecurrenceInterval === 1 ? 'Diária' : `${effectiveRecurrenceInterval}d`)}
+              {effectiveRecurrenceType === 'weekly' &&
+                (effectiveRecurrenceInterval === 1
+                  ? 'Semanal'
+                  : `${effectiveRecurrenceInterval}sem`)}
+              {effectiveRecurrenceType === 'weekly_days' && 'Dias da sem.'}
+              {effectiveRecurrenceType === 'monthly' &&
+                (effectiveRecurrenceInterval === 1 ? 'Mensal' : `${effectiveRecurrenceInterval}m`)}
               <X
                 className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation()
-                  setRecurrenceType('none')
+                  setManualRecurrenceType('none')
+                  if (parsedRecurrence) {
+                    setText(cleanRecurrenceToken(text, parsedRecurrence))
+                  }
                 }}
               />
             </span>
@@ -399,13 +479,13 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         {/* Botão de recorrência rápida na barra de captura */}
         <button
           type="button"
-          className={`capture-recurrence-trigger ${recurrenceType !== 'none' ? 'is-active' : ''}`}
+          className={`capture-recurrence-trigger ${effectiveRecurrenceType !== 'none' ? 'is-active' : ''}`}
           title={
-            recurrenceType !== 'none'
+            effectiveRecurrenceType !== 'none'
               ? `Recorrência configurada: ${formatRecurrenceRule({
-                  recurrence_type: recurrenceType,
-                  recurrence_interval: recurrenceInterval,
-                  recurrence_weekdays: recurrenceWeekdays,
+                  recurrence_type: effectiveRecurrenceType,
+                  recurrence_interval: effectiveRecurrenceInterval,
+                  recurrence_weekdays: effectiveRecurrenceWeekdays,
                   recurrence_mode: recurrenceMode,
                 })}`
               : 'Configurar repetição da tarefa'
@@ -516,9 +596,9 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               <button
                 key={opt.type}
                 type="button"
-                className={`capture-popover-pill ${recurrenceType === opt.type ? 'active' : ''}`}
+                className={`capture-popover-pill ${effectiveRecurrenceType === opt.type ? 'active' : ''}`}
                 onClick={() => {
-                  setRecurrenceType(opt.type as RecurrenceType)
+                  setManualRecurrenceType(opt.type as RecurrenceType)
                   if (opt.type === 'weekly_days' && recurrenceWeekdays.length === 0) {
                     setRecurrenceWeekdays([1, 2, 3, 4, 5])
                   }
@@ -532,7 +612,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
             ))}
           </div>
 
-          {recurrenceType !== 'none' && (
+          {effectiveRecurrenceType !== 'none' && (
             <div className="capture-popover-body">
               <div className="capture-popover-row">
                 <span className="text-xs text-[#a1a1aa]">A cada</span>
@@ -552,14 +632,17 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
                   </button>
                 </div>
                 <span className="text-xs text-[#a1a1aa]">
-                  {recurrenceType === 'daily' && (recurrenceInterval === 1 ? 'dia' : 'dias')}
-                  {recurrenceType === 'weekly' && (recurrenceInterval === 1 ? 'semana' : 'semanas')}
-                  {recurrenceType === 'weekly_days' && 'semanas'}
-                  {recurrenceType === 'monthly' && (recurrenceInterval === 1 ? 'mês' : 'meses')}
+                  {effectiveRecurrenceType === 'daily' &&
+                    (recurrenceInterval === 1 ? 'dia' : 'dias')}
+                  {effectiveRecurrenceType === 'weekly' &&
+                    (recurrenceInterval === 1 ? 'semana' : 'semanas')}
+                  {effectiveRecurrenceType === 'weekly_days' && 'semanas'}
+                  {effectiveRecurrenceType === 'monthly' &&
+                    (recurrenceInterval === 1 ? 'mês' : 'meses')}
                 </span>
               </div>
 
-              {recurrenceType === 'weekly_days' && (
+              {effectiveRecurrenceType === 'weekly_days' && (
                 <div className="recurrence-weekdays-picker mini">
                   {[
                     { idx: 1, label: 'seg' },
@@ -570,7 +653,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
                     { idx: 6, label: 'sáb' },
                     { idx: 0, label: 'dom' },
                   ].map((d) => {
-                    const sel = recurrenceWeekdays.includes(d.idx)
+                    const sel = effectiveRecurrenceWeekdays.includes(d.idx)
                     return (
                       <button
                         key={d.idx}
@@ -626,12 +709,42 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
 
+      {/* Menu suspenso para Autocomplete de Prioridade (p1-p4, !) */}
+      {isPrioAutocompleteOpen && (
+        <div className="list-menu">
+          {priorityOptions.length ? (
+            priorityOptions.map((item, i) => (
+              <button
+                type="button"
+                className={i === active ? 'active' : ''}
+                key={item.level}
+                onClick={() => choosePriority(item.level)}
+                style={{
+                  color: item.meta.color,
+                }}
+              >
+                <Flag style={{ color: item.meta.color }} />
+                <span>{item.meta.label}</span>
+                <span className="capture-priority-menu-desc">
+                  {item.meta.description.split('·')[1]?.trim() || item.meta.code}
+                </span>
+              </button>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground px-2 py-1">
+              Nenhuma prioridade correspondente
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Menu suspenso para # Listas */}
       {isHashOpen && (
         <div className="list-menu">
           {listOptions.length ? (
             listOptions.map((item, i) => (
               <button
+                type="button"
                 className={i === active ? 'active' : ''}
                 key={item?.id || 'new'}
                 onClick={() => chooseList(item)}
@@ -654,6 +767,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           {tagOptions.length ? (
             tagOptions.map((item, i) => (
               <button
+                type="button"
                 className={i === active ? 'active' : ''}
                 key={item?.id || 'new'}
                 onClick={() => chooseTag(item)}
@@ -680,6 +794,28 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           )}
         </div>
       )}
+
+      {/* Faixa de dicas de sintaxe em linguagem natural */}
+      <div className="capture-hints-bar">
+        <span className="capture-hint-item">
+          <kbd>p1–p4 / !</kbd> prioridade
+        </span>
+        <span className="capture-hint-item">
+          <kbd>@tag</kbd> etiqueta
+        </span>
+        <span className="capture-hint-item">
+          <kbd>#lista</kbd> projeto
+        </span>
+        <span className="capture-hint-item">
+          <kbd>todo dia / toda semana / todo dia 15</kbd> repetição
+        </span>
+        <span className="capture-hint-item">
+          <kbd>12/11 · 15 de nov · em 3 dias · próx segunda</kbd> lembrete
+        </span>
+        <span className="capture-hint-item">
+          <kbd>14:00 / às 9h30</kbd> horário
+        </span>
+      </div>
     </div>
   )
 }
