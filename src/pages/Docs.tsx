@@ -47,6 +47,15 @@ export function Docs() {
               </li>
               <li>
                 <strong>
+                  Prioridades P1–P4 via <code>p1–p4</code> ou <code>!</code>:
+                </strong>{' '}
+                suporte nativo na sintaxe da barra para priorização imediata (ex.: <code>p1</code>,{' '}
+                <code>p2</code>, <code>p3</code>, <code>p4</code> ou exclamações como <code>!</code>
+                ). O token é extraído do título final e exibe chip visual na barra com botão de
+                remoção e popover flutuante para seleção manual de nível (P1–P4 ou Nenhuma).
+              </li>
+              <li>
+                <strong>
                   Organização por listas via <code>#</code>:
                 </strong>{' '}
                 menu suspenso contextual com filtro dinâmico de listas existentes e opção
@@ -125,6 +134,41 @@ export function Docs() {
               <li>
                 <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
                 dias e lista cronológica detalhada.
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
+            <h3>Prioridades P1–P4 (Modelo TickTick / Quiet Luxury)</h3>
+            <p>
+              Hierarquia visual de priorização em 4 níveis sóbrios, sem poluição visual ou cores
+              neon:
+            </p>
+            <ul>
+              <li>
+                <strong>Níveis de prioridade calibrados:</strong> <code>P1 (Urgente)</code> com
+                borda esquerda 3px em Champagne Ouro Fosco (<code>#C5A880</code>, reservado ao mais
+                urgente); <code>P2 (Alta)</code> em Champagne Claro (<code>#D8C7B0</code>);{' '}
+                <code>P3 (Média)</code> em Titânio (<code>#A1A1AA</code>); e <code>P4 (Baixa)</code>{' '}
+                em Grafite Sutil (<code>#52525B</code>). Tarefas sem prioridade permanecem com a
+                borda sutil padrão.
+              </li>
+              <li>
+                <strong>Indicador discreto no cartão:</strong> chip tipográfico em Space Mono
+                uppercase 10px <code>P1</code>–<code>P4</code> posicionado junto aos metadados
+                (listas, tags e horários), reforçando a identificação rápida sem ruído cognitivo.
+              </li>
+              <li>
+                <strong>Preservação da Soberania da Ordem Manual:</strong> a prioridade funciona
+                como indicador visual claro, mas <em>não sequestra a ordenação manual</em> da lista
+                (drag-and-drop e campo <code>order</code> continuam soberanos dentro de cada grupo),
+                garantindo liberdade tática ao usuário ao planejar seu dia sem rearranjos
+                indesejados.
+              </li>
+              <li>
+                <strong>Seletor no painel de detalhes:</strong> seção dedicada{' '}
+                <code>PRIORIDADE</code> no drawer da tarefa com pílulas táteis (P1, P2, P3, P4 e
+                Nenhuma) com ativação em Champagne Ouro e sincronização em tempo real.
               </li>
             </ul>
           </article>
@@ -1249,6 +1293,19 @@ export function Docs() {
                   <td>
                     Horário agendado da tarefa em formato HH:MM (ex.: <code>14:30</code>,{' '}
                     <code>09:00</code>), utilizado para ordenação prioritária e disparos de alertas.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>priority</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Nível de prioridade da tarefa (inteiro 1 a 4: 1=P1 Champagne Ouro, 2=P2
+                    Champagne Claro, 3=P3 Titânio, 4=P4 Grafite; 0 ou nulo = sem prioridade).
                   </td>
                 </tr>
                 <tr>

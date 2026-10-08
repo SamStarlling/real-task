@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { ArrowRight, Clock, Folder, Minus, Plus, Repeat, Tag as TagIcon, X } from 'lucide-react'
+import {
+  ArrowRight,
+  Clock,
+  Flag,
+  Folder,
+  Minus,
+  Plus,
+  Repeat,
+  Tag as TagIcon,
+  X,
+} from 'lucide-react'
 import {
   cleanDateToken,
   cleanTimeToken,
@@ -10,15 +20,19 @@ import {
 } from '@/lib/date-parser'
 import { formatShortDate } from '@/lib/format'
 import {
+  cleanPriorityToken,
   createList,
   createTag,
   createTask,
   formatRecurrenceRule,
   getLists,
   getNextTagColor,
+  getPriorityMeta,
   getTags,
+  parsePriorityToken,
+  TASK_PRIORITIES,
 } from '@/services/data'
-import type { ListRecord, RecurrenceMode, RecurrenceType, TagRecord } from '@/types'
+import type { ListRecord, RecurrenceMode, RecurrenceType, TagRecord, TaskPriority } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
 
@@ -35,6 +49,8 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([1, 3, 5])
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>('from_date')
   const [isRecurrencePopoverOpen, setIsRecurrencePopoverOpen] = useState(false)
+  const [priorityOverride, setPriorityOverride] = useState<TaskPriority | null>(null)
+  const [isPriorityPopoverOpen, setIsPriorityPopoverOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [manualTime, setManualTime] = useState<string | null>(null)
   const input = useRef<HTMLInputElement>(null)
@@ -49,6 +65,10 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const parsed = parsePortugueseDate(text)
   const parsedTime = parsePortugueseTime(text)
   const effectiveTime = manualTime !== null ? manualTime : parsedTime?.time || null
+  const parsedPriority = parsePriorityToken(text)
+  const effectivePriority: TaskPriority =
+    priorityOverride !== null ? priorityOverride : parsedPriority ? parsedPriority.priority : 0
+  const priorityMeta = getPriorityMeta(effectivePriority)
 
   // Detecção de # (Listas)
   const hashMatch = text.match(/(?:^|\s)#([^\s]*)$/)
@@ -114,7 +134,12 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     if (parsedTime) {
       title = cleanTimeToken(title, parsedTime)
     }
+    if (parsedPriority) {
+      title = cleanPriorityToken(title, parsedPriority.token)
+    }
     title = title
+      .replace(/(?:^|\s)p[1-4](?=\s|$)/gi, ' ')
+      .replace(/(?:^|\s)!+(?=\s|$)/g, ' ')
       .replace(/(?:^|\s)#[^\s]+/g, '')
       .replace(/(?:^|\s)@[^\s]+/g, '')
       .trim()
@@ -170,6 +195,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       estimated_minutes: minutes,
       actual_minutes: 0,
       order: 0,
+      priority: effectivePriority,
       recurrence_type: recurrenceType,
       recurrence_interval: recurrenceInterval,
       recurrence_weekdays: recurrenceType === 'weekly_days' ? recurrenceWeekdays : null,
@@ -187,14 +213,17 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           })}`
         : ''
     const timeSuffix = effectiveTime ? ` às ${effectiveTime}` : ''
+    const prioritySuffix = priorityMeta ? ` · ${priorityMeta.code}` : ''
 
     toast({
-      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : effectiveTime ? 'Hoje' : 'Inbox'}${timeSuffix}${recurrenceSuffix}`,
+      title: `Tarefa capturada — ${parsed ? formatShortDate(parsed.date) : effectiveTime ? 'Hoje' : 'Inbox'}${timeSuffix}${prioritySuffix}${recurrenceSuffix}`,
     })
     setText('')
     setSelectedList(null)
     setSelectedTags([])
     setManualTime(null)
+    setPriorityOverride(null)
+    setIsPriorityPopoverOpen(false)
     setRecurrenceType('none')
     setRecurrenceInterval(1)
     setRecurrenceWeekdays([1, 3, 5])
@@ -252,9 +281,34 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               setActive(0)
             }}
             onKeyDown={key}
-            placeholder="O que precisa ser feito? (@tag, #lista, amanhã... ex: #Trabalho)"
+            placeholder="O que precisa ser feito? (@tag, #lista, p1–p4 ou !, amanhã...)"
           />
           {parsed && <span className="chip">{formatShortDate(parsed.date)}</span>}
+          {priorityMeta && (
+            <span
+              className="chip priority-capture-chip inline-flex items-center gap-1 cursor-pointer"
+              style={{
+                borderColor: priorityMeta.borderColor,
+                color: priorityMeta.color,
+                backgroundColor: priorityMeta.bgSubtle,
+              }}
+              title={`Prioridade ${priorityMeta.code} (${priorityMeta.label}) — clique para alterar`}
+              onClick={() => setIsPriorityPopoverOpen(!isPriorityPopoverOpen)}
+            >
+              <Flag className="w-2.5 h-2.5" />
+              {priorityMeta.code}
+              <X
+                className="w-2.5 h-2.5 cursor-pointer opacity-70 hover:opacity-100"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setPriorityOverride(0)
+                  if (parsedPriority) {
+                    setText(cleanPriorityToken(text, parsedPriority.token))
+                  }
+                }}
+              />
+            </span>
+          )}
           {effectiveTime && (
             <span
               className="chip time-capture-chip inline-flex items-center gap-1"
@@ -321,6 +375,27 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
             </span>
           )}
         </div>
+        {/* Botão de prioridade na barra de captura */}
+        <button
+          type="button"
+          className={`capture-action-trigger ${effectivePriority > 0 ? 'is-active' : ''}`}
+          style={{
+            borderColor: priorityMeta ? priorityMeta.borderColor : undefined,
+            color: priorityMeta ? priorityMeta.color : undefined,
+          }}
+          title={
+            priorityMeta
+              ? `Prioridade ${priorityMeta.code} (${priorityMeta.label})`
+              : 'Definir prioridade (P1–P4 ou !)'
+          }
+          onClick={() => {
+            setIsPriorityPopoverOpen(!isPriorityPopoverOpen)
+            setIsRecurrencePopoverOpen(false)
+          }}
+        >
+          <Flag />
+        </button>
+
         {/* Botão de recorrência rápida na barra de captura */}
         <button
           type="button"
@@ -353,6 +428,65 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           <ArrowRight />
         </button>
       </div>
+
+      {/* Popover flutuante de Prioridade na captura rápida */}
+      {isPriorityPopoverOpen && (
+        <div className="capture-priority-popover">
+          <div className="capture-popover-header">
+            <span className="capture-popover-title">
+              <Flag className="w-3.5 h-3.5 inline mr-1 text-[#C5A880]" />
+              Prioridade da Tarefa
+            </span>
+            <button
+              type="button"
+              className="capture-popover-close"
+              onClick={() => setIsPriorityPopoverOpen(false)}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="capture-priority-options">
+            <button
+              type="button"
+              className={`capture-priority-pill ${effectivePriority === 0 ? 'active' : ''}`}
+              onClick={() => {
+                setPriorityOverride(0)
+                setIsPriorityPopoverOpen(false)
+              }}
+            >
+              Nenhuma
+            </button>
+            {([1, 2, 3, 4] as const).map((lvl) => {
+              const meta = TASK_PRIORITIES[lvl]
+              const isSelected = effectivePriority === lvl
+              return (
+                <button
+                  key={lvl}
+                  type="button"
+                  className={`capture-priority-pill ${isSelected ? 'active' : ''}`}
+                  style={{
+                    borderColor: meta.borderColor,
+                    color: isSelected ? '#090A0E' : meta.color,
+                    backgroundColor: isSelected ? meta.color : meta.bgSubtle,
+                  }}
+                  onClick={() => {
+                    setPriorityOverride(lvl)
+                    setIsPriorityPopoverOpen(false)
+                  }}
+                >
+                  <Flag className="w-3 h-3 inline mr-1" />
+                  {meta.code} · {meta.label.split('·')[1]?.trim()}
+                </button>
+              )
+            })}
+          </div>
+          <small className="capture-priority-hint">
+            Dica: você também pode digitar <code>p1</code>, <code>p2</code>, <code>p3</code>,{' '}
+            <code>p4</code> ou <code>!</code> no texto.
+          </small>
+        </div>
+      )}
 
       {/* Popover flutuante de recorrência na captura rápida */}
       {isRecurrencePopoverOpen && (

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-08T20:17:03.856Z",
+  "generatedAt": "2026-10-08T20:42:59.445Z",
   "collections": [
     {
       "name": "users",
@@ -223,6 +223,12 @@
         {
           "name": "due_time",
           "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "priority",
+          "type": "number",
           "required": false,
           "system": false
         }

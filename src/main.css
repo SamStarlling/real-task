@@ -231,6 +231,42 @@ a {
   border: 1px solid rgba(179, 125, 107, 0.3) !important;
 }
 
+/* Indicadores de prioridade P1–P4 estilo TickTick / quiet luxury */
+.task-card.priority-p1 {
+  border-left-width: 3px !important;
+  border-left-color: #c5a880 !important;
+}
+.task-card.priority-p2 {
+  border-left-width: 2.5px !important;
+  border-left-color: #d8c7b0 !important;
+}
+.task-card.priority-p3 {
+  border-left-width: 2.5px !important;
+  border-left-color: #a1a1aa !important;
+}
+.task-card.priority-p4 {
+  border-left-width: 2.5px !important;
+  border-left-color: #52525b !important;
+}
+
+/* Indicador na faixa do Inbox na Semana */
+.inbox-shelf-item.priority-p1 {
+  border-left-width: 3px !important;
+  border-left-color: #c5a880 !important;
+}
+.inbox-shelf-item.priority-p2 {
+  border-left-width: 2.5px !important;
+  border-left-color: #d8c7b0 !important;
+}
+.inbox-shelf-item.priority-p3 {
+  border-left-width: 2.5px !important;
+  border-left-color: #a1a1aa !important;
+}
+.inbox-shelf-item.priority-p4 {
+  border-left-width: 2.5px !important;
+  border-left-color: #52525b !important;
+}
+
 /* Marcação de tarefa atrasada no card (quiet luxury - terracota) */
 .task-card.is-overdue-card {
   border-color: rgba(179, 125, 107, 0.35);
@@ -238,6 +274,133 @@ a {
 }
 .task-card.is-overdue-card:hover {
   border-color: rgba(179, 125, 107, 0.55);
+}
+.task-card.is-overdue-card.priority-p1 {
+  border-left-color: #c5a880 !important;
+}
+
+/* Chip de prioridade nos metadados do card */
+.priority-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+/* Popover e gatilho de prioridade na captura rápida */
+.capture-action-trigger {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  flex: none;
+  transition: all 150ms ease;
+}
+.capture-action-trigger:hover,
+.capture-action-trigger.is-active {
+  border-color: #c5a880;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.08);
+}
+.capture-action-trigger svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.5;
+}
+.capture-priority-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 60;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  animation: enter 0.2s both;
+}
+.capture-priority-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.capture-priority-pill {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  border-radius: 6px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.capture-priority-pill:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+  color: #f4f4f6;
+}
+.capture-priority-pill.active {
+  background: #c5a880;
+  border-color: #c5a880;
+  color: #090a0e;
+  font-weight: 600;
+}
+.capture-priority-hint {
+  font-size: 11px;
+  color: #71717a;
+  display: block;
+}
+.capture-priority-hint code {
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Seção de Prioridade no TaskDetail */
+.detail-priority-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+.priority-pill-btn {
+  padding: 6px 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.priority-pill-btn:hover {
+  border-color: rgba(197, 168, 128, 0.4);
+  color: #f4f4f6;
+}
+.priority-pill-btn.active-priority-btn {
+  background: #c5a880 !important;
+  color: #090a0e !important;
+  border-color: #c5a880 !important;
+  font-weight: 600;
 }
 
 /* Chip de horário no card */

@@ -7,6 +7,7 @@ import type {
   RecurrenceType,
   SessionRecord,
   TagRecord,
+  TaskPriority,
   TaskRecord,
   UserRecord,
   WeekdayKey,
@@ -17,6 +18,7 @@ export type {
   RecurrenceMode,
   RecurrenceType,
   TagRecord,
+  TaskPriority,
   WeekdayKey,
   WeeklyFocusGoals,
 } from '@/types'
@@ -26,6 +28,108 @@ import { toPocketDate } from '@/lib/date-parser'
  * Paleta de cores discretas (quiet luxury) Barbosa System para etiquetas.
  * Tons nobres, elegantes, nada de neon / arco-íris estridente.
  */
+/**
+ * Configuração visual de prioridades P1–P4 (modelo TickTick / quiet luxury):
+ * - P1: Champagne Ouro Fosco #C5A880 (reservado ao mais urgente)
+ * - P2: Champagne Claro/Dourado Acinzentado #D8C7B0
+ * - P3: Titânio Acinzentado #A1A1AA
+ * - P4: Grafite Sutil #52525B
+ */
+export interface PriorityMeta {
+  level: TaskPriority
+  code: 'P1' | 'P2' | 'P3' | 'P4' | 'NONE'
+  label: string
+  color: string
+  borderColor: string
+  bgSubtle: string
+  description: string
+}
+
+export const TASK_PRIORITIES: Record<number, PriorityMeta> = {
+  1: {
+    level: 1,
+    code: 'P1',
+    label: 'P1 · Urgente',
+    color: '#C5A880',
+    borderColor: '#C5A880',
+    bgSubtle: 'rgba(197, 168, 128, 0.12)',
+    description: 'Prioridade máxima · Champagne Ouro',
+  },
+  2: {
+    level: 2,
+    code: 'P2',
+    label: 'P2 · Alta',
+    color: '#D8C7B0',
+    borderColor: '#D8C7B0',
+    bgSubtle: 'rgba(216, 199, 176, 0.10)',
+    description: 'Prioridade alta · Champagne claro',
+  },
+  3: {
+    level: 3,
+    code: 'P3',
+    label: 'P3 · Média',
+    color: '#A1A1AA',
+    borderColor: '#A1A1AA',
+    bgSubtle: 'rgba(161, 161, 170, 0.08)',
+    description: 'Prioridade média · Titânio',
+  },
+  4: {
+    level: 4,
+    code: 'P4',
+    label: 'P4 · Baixa',
+    color: '#71717A',
+    borderColor: '#52525B',
+    bgSubtle: 'rgba(82, 82, 91, 0.12)',
+    description: 'Prioridade baixa · Grafite sutil',
+  },
+}
+
+export function getPriorityMeta(priority?: TaskPriority | number | null): PriorityMeta | null {
+  if (!priority || priority < 1 || priority > 4) return null
+  return TASK_PRIORITIES[priority] || null
+}
+
+/**
+ * Detecta e extrai sintaxe de prioridade de uma linha de texto.
+ * Padrões suportados (case-insensitive):
+ * - "p1", "p2", "p3", "p4" (palavra isolada, tipicamente no fim ou meio)
+ * - "!" ou "!!" ou "!!!" (modelo clássico: ! = P1, !! = P2, !!! = P1)
+ * Retorna { priority: TaskPriority, token: string } ou null.
+ */
+export function parsePriorityToken(text: string): { priority: TaskPriority; token: string } | null {
+  // 1. Verificar "p1", "p2", "p3", "p4" como token independente (com borda de palavra ou início/fim)
+  const pMatch = text.match(/(?:^|\s)(p[1-4])(?:\s|$)/i)
+  if (pMatch) {
+    const raw = pMatch[1].toLowerCase()
+    const num = parseInt(raw.replace('p', ''), 10) as TaskPriority
+    if (num >= 1 && num <= 4) {
+      return { priority: num, token: pMatch[1] }
+    }
+  }
+
+  // 2. Verificar "!" no fim ou como token isolado (ex: "Enviar relatório !")
+  // ! = P1, !! = P2
+  const exclMatch = text.match(/(?:^|\s)(!{1,3})(?:\s|$)/)
+  if (exclMatch) {
+    const marks = exclMatch[1].length
+    const prio: TaskPriority = marks === 1 ? 1 : marks === 2 ? 2 : 1
+    return { priority: prio, token: exclMatch[1] }
+  }
+
+  return null
+}
+
+/**
+ * Remove o token de prioridade identificado do texto do título.
+ */
+export function cleanPriorityToken(text: string, token: string): string {
+  if (!token) return text
+  // Escapa o token para regex seguro
+  const escaped = token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+  const regex = new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`, 'i')
+  return text.replace(regex, ' ').replace(/\s+/g, ' ').trim()
+}
+
 export const TAG_PALETTE = [
   { name: 'Champagne Ouro', color: '#C5A880' },
   { name: 'Verde-Oliva Suave', color: '#8F9E82' },
@@ -580,6 +684,7 @@ export async function toggleTaskDone(
         recurrence_weekdays: task.recurrence_weekdays || null,
         recurrence_mode: task.recurrence_mode || 'from_date',
         due_time: task.due_time || '',
+        priority: task.priority || 0,
       }
 
       try {

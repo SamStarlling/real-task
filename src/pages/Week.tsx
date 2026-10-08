@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Clock,
   Clock3,
+  Flag,
   GripHorizontal,
   GripVertical,
   Inbox,
@@ -26,6 +27,7 @@ import {
   compareTasksWithinDay,
   createTask,
   formatRecurrenceRule,
+  getPriorityMeta,
   isTaskOverdue,
   reorderTasks,
   toggleTaskDone,
@@ -605,91 +607,114 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
 
         {inboxTasks.length > 0 ? (
           <div className="inbox-shelf-cards">
-            {inboxTasks.map((task, idx) => (
-              <div
-                key={task.id}
-                data-task-id={task.id}
-                className={`inbox-shelf-item ${draggingTaskId === task.id ? 'is-dragging' : ''}`}
-                draggable
-                onDragStart={(e) => handleDragStartTask(e, task.id, 'inbox')}
-                onDragEnd={handleDragEndTask}
-              >
+            {inboxTasks.map((task, idx) => {
+              const priorityMeta = getPriorityMeta(task.priority)
+              const priorityClass = priorityMeta
+                ? `priority-${priorityMeta.code.toLowerCase()}`
+                : ''
+              return (
                 <div
-                  className="inbox-item-drag-handle"
-                  onTouchStart={(e) => handleTouchStartHandle(e, task.id, 'inbox')}
-                  title="Arrastar para agendar no dia"
-                >
-                  <GripHorizontal />
-                </div>
-                <button
-                  type="button"
-                  className="inbox-item-body"
-                  onClick={() => {
-                    setSelectedTask(task)
-                    setParams((p) => {
-                      p.set('taskId', task.id)
-                      return p
-                    })
+                  key={task.id}
+                  data-task-id={task.id}
+                  className={`inbox-shelf-item ${priorityClass} ${draggingTaskId === task.id ? 'is-dragging' : ''}`}
+                  style={{
+                    borderLeftColor: priorityMeta ? priorityMeta.borderColor : undefined,
                   }}
+                  draggable
+                  onDragStart={(e) => handleDragStartTask(e, task.id, 'inbox')}
+                  onDragEnd={handleDragEndTask}
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span className="inbox-item-title">{task.title}</span>
-                    {task.recurrence_type && task.recurrence_type !== 'none' && (
-                      <span
-                        className="recurrence-indicator"
-                        title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
-                      >
-                        <Repeat className="w-3 h-3 text-[#C5A880]" />
-                      </span>
-                    )}
+                  <div
+                    className="inbox-item-drag-handle"
+                    onTouchStart={(e) => handleTouchStartHandle(e, task.id, 'inbox')}
+                    title="Arrastar para agendar no dia"
+                  >
+                    <GripHorizontal />
                   </div>
-                  <div className="inbox-item-meta">
-                    {task.expand?.list && (
-                      <span className="inbox-list-chip">#{task.expand.list.name}</span>
-                    )}
-                    {task.expand?.tags &&
-                      task.expand.tags.map((tag) => (
+                  <button
+                    type="button"
+                    className="inbox-item-body"
+                    onClick={() => {
+                      setSelectedTask(task)
+                      setParams((p) => {
+                        p.set('taskId', task.id)
+                        return p
+                      })
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="inbox-item-title">{task.title}</span>
+                      {task.recurrence_type && task.recurrence_type !== 'none' && (
                         <span
-                          key={tag.id}
-                          className="tag-chip"
+                          className="recurrence-indicator"
+                          title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
+                        >
+                          <Repeat className="w-3 h-3 text-[#C5A880]" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="inbox-item-meta">
+                      {priorityMeta && (
+                        <span
+                          className="tag-chip priority-chip"
                           style={{
-                            borderColor: tag.color,
-                            color: tag.color,
+                            borderColor: priorityMeta.borderColor,
+                            color: priorityMeta.color,
+                            backgroundColor: priorityMeta.bgSubtle,
+                          }}
+                          title={priorityMeta.label}
+                        >
+                          <Flag className="w-2.5 h-2.5 inline mr-1" />
+                          {priorityMeta.code}
+                        </span>
+                      )}
+                      {task.expand?.list && (
+                        <span className="inbox-list-chip">#{task.expand.list.name}</span>
+                      )}
+                      {task.expand?.tags &&
+                        task.expand.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="tag-chip"
+                            style={{
+                              borderColor: tag.color,
+                              color: tag.color,
+                            }}
+                          >
+                            @{tag.name}
+                          </span>
+                        ))}
+                      {task.recurrence_type && task.recurrence_type !== 'none' && (
+                        <span
+                          className="tag-chip recurrence-chip"
+                          style={{
+                            borderColor: 'rgba(197, 168, 128, 0.35)',
+                            color: '#C5A880',
                           }}
                         >
-                          @{tag.name}
+                          <Repeat className="w-2.5 h-2.5 inline mr-1" />
+                          {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
                         </span>
-                      ))}
-                    {task.recurrence_type && task.recurrence_type !== 'none' && (
-                      <span
-                        className="tag-chip recurrence-chip"
-                        style={{
-                          borderColor: 'rgba(197, 168, 128, 0.35)',
-                          color: '#C5A880',
-                        }}
-                      >
-                        <Repeat className="w-2.5 h-2.5 inline mr-1" />
-                        {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                      )}
+                      <span className="inbox-est-chip">
+                        EST. {formatMinutes(task.estimated_minutes)}
                       </span>
-                    )}
-                    <span className="inbox-est-chip">
-                      EST. {formatMinutes(task.estimated_minutes)}
-                    </span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="inbox-item-focus"
-                  title="Iniciar Pomodoro"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    start(task)
-                  }}
-                >
-                  <Play />
-                </button>
-              </div>
-            ))}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="inbox-item-focus"
+                    title="Iniciar Pomodoro"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      start(task)
+                    }}
+                  >
+                    <Play />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         ) : (
           <div className="inbox-shelf-empty">
@@ -741,147 +766,173 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
 
                 {/* LISTA DE TAREFAS PENDENTES DO DIA */}
                 <div className="column-body">
-                  {bucket.pending.map((task, idx) => (
-                    <article
-                      key={task.id}
-                      data-task-id={task.id}
-                      className={`task-card week-task-card ${isTaskOverdue(task) ? 'is-overdue-card' : ''} ${
-                        draggingTaskId === task.id ? 'is-dragging' : ''
-                      } ${
-                        dropTargetInsideCol?.id === task.id
-                          ? dropTargetInsideCol.position === 'before'
-                            ? 'drop-target-before'
-                            : 'drop-target-after'
-                          : ''
-                      }`}
-                      draggable
-                      onDragStart={(e) => handleDragStartTask(e, task.id, `day:${day.dateKey}`)}
-                      onDragEnd={handleDragEndTask}
-                      onDragOver={(e) => handleDragOverTask(e, task.id, day.dateKey)}
-                      onDrop={(e) => {
-                        e.stopPropagation()
-                        handleDropOnColumn(e, day.dateKey)
-                      }}
-                    >
-                      <div
-                        className="task-drag-handle"
-                        title="Arrastar para outro dia ou reordenar"
-                        onTouchStart={(e) =>
-                          handleTouchStartHandle(e, task.id, `day:${day.dateKey}`)
-                        }
-                      >
-                        <GripVertical />
-                      </div>
+                  {bucket.pending.map((task, idx) => {
+                    const priorityMeta = getPriorityMeta(task.priority)
+                    const priorityClass = priorityMeta
+                      ? `priority-${priorityMeta.code.toLowerCase()}`
+                      : ''
+                    const isOverdue = isTaskOverdue(task)
 
-                      <button
-                        type="button"
-                        className="check"
-                        aria-label="Concluir"
-                        onClick={async (e) => {
+                    return (
+                      <article
+                        key={task.id}
+                        data-task-id={task.id}
+                        className={`task-card week-task-card ${isOverdue ? 'is-overdue-card' : ''} ${priorityClass} ${
+                          draggingTaskId === task.id ? 'is-dragging' : ''
+                        } ${
+                          dropTargetInsideCol?.id === task.id
+                            ? dropTargetInsideCol.position === 'before'
+                              ? 'drop-target-before'
+                              : 'drop-target-after'
+                            : ''
+                        }`}
+                        style={{
+                          borderLeftColor:
+                            priorityMeta && !isOverdue ? priorityMeta.borderColor : undefined,
+                        }}
+                        draggable
+                        onDragStart={(e) => handleDragStartTask(e, task.id, `day:${day.dateKey}`)}
+                        onDragEnd={handleDragEndTask}
+                        onDragOver={(e) => handleDragOverTask(e, task.id, day.dateKey)}
+                        onDrop={(e) => {
                           e.stopPropagation()
-                          await toggleTaskDone(task, true)
-                          refresh()
+                          handleDropOnColumn(e, day.dateKey)
                         }}
                       >
-                        {task.done ? '✓' : ''}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="task-body"
-                        onClick={() => {
-                          setSelectedTask(task)
-                          setParams((p) => {
-                            p.set('taskId', task.id)
-                            return p
-                          })
-                        }}
-                      >
-                        <div className="task-title-row">
-                          <h3>{task.title}</h3>
-                          {task.recurrence_type && task.recurrence_type !== 'none' && (
-                            <span
-                              className="recurrence-indicator"
-                              title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
-                            >
-                              <Repeat className="w-3.5 h-3.5" />
-                            </span>
-                          )}
-                        </div>
-                        <div className="meta">
-                          {task.expand?.list && <span>#{task.expand.list.name}</span>}
-                          {task.expand?.tags &&
-                            task.expand.tags.map((tag) => (
-                              <span
-                                key={tag.id}
-                                className="tag-chip"
-                                style={{
-                                  borderColor: tag.color,
-                                  color: tag.color,
-                                }}
-                              >
-                                @{tag.name}
-                              </span>
-                            ))}
-                          {task.recurrence_type && task.recurrence_type !== 'none' && (
-                            <span
-                              className="tag-chip recurrence-chip"
-                              style={{
-                                borderColor: 'rgba(197, 168, 128, 0.35)',
-                                color: '#C5A880',
-                              }}
-                              title={`Regra: ${formatRecurrenceRule(task)}`}
-                            >
-                              <Repeat className="w-2.5 h-2.5 inline mr-1" />
-                              {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
-                            </span>
-                          )}
-                          {task.due_time && (
-                            <span
-                              className={`tag-chip time-chip ${isTaskOverdue(task) ? 'overdue-time-chip' : ''}`}
-                              title={`Horário agendado: ${task.due_time}`}
-                            >
-                              <Clock className="w-2.5 h-2.5 inline mr-1" />
-                              {task.due_time}
-                            </span>
-                          )}
-                          <span>
-                            EST. {formatMinutes(task.estimated_minutes)} ·{' '}
-                            <b
-                              className={
-                                task.actual_minutes > task.estimated_minutes ? 'exceeded' : ''
-                              }
-                            >
-                              REAL {formatMinutes(task.actual_minutes)}
-                            </b>
-                          </span>
-                        </div>
                         <div
-                          className="progress"
-                          title={`Real ${Math.round(task.actual_minutes)} min / Estimado ${task.estimated_minutes} min`}
+                          className="task-drag-handle"
+                          title="Arrastar para outro dia ou reordenar"
+                          onTouchStart={(e) =>
+                            handleTouchStartHandle(e, task.id, `day:${day.dateKey}`)
+                          }
                         >
-                          <i
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                (task.actual_minutes / task.estimated_minutes) * 100,
-                              )}%`,
-                            }}
-                          />
+                          <GripVertical />
                         </div>
-                      </button>
 
-                      <button
-                        type="button"
-                        className="focus"
-                        title="Foco Pomodoro"
-                        onClick={() => start(task)}
-                      >
-                        <Play />
-                        FOCUS
-                      </button>
-                    </article>
-                  ))}
+                        <button
+                          type="button"
+                          className="check"
+                          aria-label="Concluir"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await toggleTaskDone(task, true)
+                            refresh()
+                          }}
+                        >
+                          {task.done ? '✓' : ''}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="task-body"
+                          onClick={() => {
+                            setSelectedTask(task)
+                            setParams((p) => {
+                              p.set('taskId', task.id)
+                              return p
+                            })
+                          }}
+                        >
+                          <div className="task-title-row">
+                            <h3>{task.title}</h3>
+                            {task.recurrence_type && task.recurrence_type !== 'none' && (
+                              <span
+                                className="recurrence-indicator"
+                                title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
+                              >
+                                <Repeat className="w-3.5 h-3.5" />
+                              </span>
+                            )}
+                          </div>
+                          <div className="meta">
+                            {priorityMeta && (
+                              <span
+                                className="tag-chip priority-chip"
+                                style={{
+                                  borderColor: priorityMeta.borderColor,
+                                  color: priorityMeta.color,
+                                  backgroundColor: priorityMeta.bgSubtle,
+                                }}
+                                title={priorityMeta.label}
+                              >
+                                <Flag className="w-2.5 h-2.5 inline mr-1" />
+                                {priorityMeta.code}
+                              </span>
+                            )}
+                            {task.expand?.list && <span>#{task.expand.list.name}</span>}
+                            {task.expand?.tags &&
+                              task.expand.tags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="tag-chip"
+                                  style={{
+                                    borderColor: tag.color,
+                                    color: tag.color,
+                                  }}
+                                >
+                                  @{tag.name}
+                                </span>
+                              ))}
+                            {task.recurrence_type && task.recurrence_type !== 'none' && (
+                              <span
+                                className="tag-chip recurrence-chip"
+                                style={{
+                                  borderColor: 'rgba(197, 168, 128, 0.35)',
+                                  color: '#C5A880',
+                                }}
+                                title={`Regra: ${formatRecurrenceRule(task)}`}
+                              >
+                                <Repeat className="w-2.5 h-2.5 inline mr-1" />
+                                {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                              </span>
+                            )}
+                            {task.due_time && (
+                              <span
+                                className={`tag-chip time-chip ${isTaskOverdue(task) ? 'overdue-time-chip' : ''}`}
+                                title={`Horário agendado: ${task.due_time}`}
+                              >
+                                <Clock className="w-2.5 h-2.5 inline mr-1" />
+                                {task.due_time}
+                              </span>
+                            )}
+                            <span>
+                              EST. {formatMinutes(task.estimated_minutes)} ·{' '}
+                              <b
+                                className={
+                                  task.actual_minutes > task.estimated_minutes ? 'exceeded' : ''
+                                }
+                              >
+                                REAL {formatMinutes(task.actual_minutes)}
+                              </b>
+                            </span>
+                          </div>
+                          <div
+                            className="progress"
+                            title={`Real ${Math.round(task.actual_minutes)} min / Estimado ${task.estimated_minutes} min`}
+                          >
+                            <i
+                              style={{
+                                width: `${Math.min(
+                                  100,
+                                  (task.actual_minutes / task.estimated_minutes) * 100,
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="focus"
+                          title="Foco Pomodoro"
+                          onClick={() => start(task)}
+                        >
+                          <Play />
+                          FOCUS
+                        </button>
+                      </article>
+                    )
+                  })}
 
                   {/* DROP ZONE SUTIL QUANDO A COLUNA ESTÁ VAZIA */}
                   {bucket.pending.length === 0 && (

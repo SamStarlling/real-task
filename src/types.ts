@@ -31,6 +31,7 @@ export interface TagRecord extends RecordModel {
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly_days' | 'weekly' | 'monthly'
 export type RecurrenceMode = 'from_date' | 'from_completion'
+export type TaskPriority = 0 | 1 | 2 | 3 | 4 // 1=P1 (Urgente), 2=P2 (Alta), 3=P3 (Média), 4=P4 (Baixa), 0=Sem prioridade
 
 export interface TaskRecord extends RecordModel {
   title: string
@@ -48,6 +49,7 @@ export interface TaskRecord extends RecordModel {
   recurrence_weekdays?: number[]
   recurrence_mode?: RecurrenceMode
   due_time?: string // Formato "HH:MM"
+  priority?: TaskPriority // 1-4 ou 0/undefined
   expand?: {
     list?: ListRecord
     tags?: TagRecord[]

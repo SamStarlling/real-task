@@ -1,14 +1,23 @@
 import { useEffect, useState } from 'react'
-import { X, Play, Tag as TagIcon, Plus, Repeat, Clock } from 'lucide-react'
-import type { RecurrenceMode, RecurrenceType, SessionRecord, TagRecord, TaskRecord } from '@/types'
+import { X, Play, Tag as TagIcon, Plus, Repeat, Clock, Flag } from 'lucide-react'
+import type {
+  RecurrenceMode,
+  RecurrenceType,
+  SessionRecord,
+  TagRecord,
+  TaskPriority,
+  TaskRecord,
+} from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
 import {
   createTag,
   formatRecurrenceRule,
   getNextTagColor,
+  getPriorityMeta,
   getTags,
   sessionsForTask,
+  TASK_PRIORITIES,
   updateTask,
 } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
@@ -42,12 +51,14 @@ export function TaskDetail({
   const [recurrenceMode, setRecurrenceMode] = useState<RecurrenceMode>(
     task.recurrence_mode || 'from_date',
   )
+  const [priority, setPriority] = useState<TaskPriority>(task.priority || 0)
   const [dueTime, setDueTime] = useState<string>(task.due_time || '')
   const { start } = usePomodoro()
 
   useEffect(() => {
     setTitle(task.title)
     setEstimate(task.estimated_minutes)
+    setPriority(task.priority || 0)
     setRecurrenceType(task.recurrence_type || 'none')
     setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval) || 1))
     setDueTime(task.due_time || '')
@@ -167,6 +178,59 @@ export function TaskDetail({
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && save({ title: title.trim() })}
         />
+        {/* SEÇÃO PRIORIDADE (P1–P4 + NENHUMA) */}
+        <label className="detail-label flex items-center justify-between">
+          <span>PRIORIDADE</span>
+          {priority > 0 && getPriorityMeta(priority) && (
+            <span
+              className="detail-priority-badge"
+              style={{
+                color: getPriorityMeta(priority)!.color,
+                borderColor: getPriorityMeta(priority)!.borderColor,
+                backgroundColor: getPriorityMeta(priority)!.bgSubtle,
+              }}
+            >
+              <Flag className="w-2.5 h-2.5 inline mr-1" />
+              {getPriorityMeta(priority)!.label}
+            </span>
+          )}
+        </label>
+        <div className="option-row priority-row">
+          <button
+            type="button"
+            className={`priority-pill-btn ${priority === 0 ? 'active-priority-btn' : ''}`}
+            onClick={async () => {
+              setPriority(0)
+              await save({ priority: 0 })
+            }}
+          >
+            Nenhuma
+          </button>
+          {([1, 2, 3, 4] as const).map((lvl) => {
+            const meta = TASK_PRIORITIES[lvl]
+            const isSelected = priority === lvl
+            return (
+              <button
+                key={lvl}
+                type="button"
+                className={`priority-pill-btn ${isSelected ? 'active-priority-btn' : ''}`}
+                style={{
+                  borderColor: meta.borderColor,
+                  color: isSelected ? '#090A0E' : meta.color,
+                  backgroundColor: isSelected ? meta.color : meta.bgSubtle,
+                }}
+                onClick={async () => {
+                  setPriority(lvl)
+                  await save({ priority: lvl })
+                }}
+              >
+                <Flag className="w-3 h-3 inline mr-1" />
+                {meta.code}
+              </button>
+            )
+          })}
+        </div>
+
         <label className="detail-label">DATA</label>
         <div className="option-row">
           <button onClick={() => save({ due_date: date(0) })}>Hoje</button>

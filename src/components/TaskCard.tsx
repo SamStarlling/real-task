@@ -1,8 +1,13 @@
-import { Clock, GripVertical, Play, Repeat } from 'lucide-react'
+import { Clock, Flag, GripVertical, Play, Repeat } from 'lucide-react'
 import type { TaskRecord } from '@/types'
 import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
-import { formatRecurrenceRule, isTaskOverdue, toggleTaskDone } from '@/services/data'
+import {
+  formatRecurrenceRule,
+  getPriorityMeta,
+  isTaskOverdue,
+  toggleTaskDone,
+} from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 
 export interface TaskCardProps {
@@ -41,16 +46,21 @@ export function TaskCard({
   const isRecurrent = task.recurrence_type && task.recurrence_type !== 'none'
   const recurrenceLabel = isRecurrent ? formatRecurrenceRule(task) : ''
   const hasTime = !!(task.due_time && task.due_time.trim())
+  const priorityMeta = getPriorityMeta(task.priority)
+  const priorityClass = priorityMeta ? `priority-${priorityMeta.code.toLowerCase()}` : ''
 
   return (
     <article
       data-task-id={task.id}
-      className={`task-card ${task.done ? 'done' : ''} ${overdue ? 'is-overdue-card' : ''} ${
+      className={`task-card ${task.done ? 'done' : ''} ${overdue ? 'is-overdue-card' : ''} ${priorityClass} ${
         isDragging ? 'is-dragging' : ''
       } ${isDropTarget === 'before' ? 'drop-target-before' : ''} ${
         isDropTarget === 'after' ? 'drop-target-after' : ''
       }`}
-      style={{ animationDelay: `${index * 40}ms` }}
+      style={{
+        animationDelay: `${index * 40}ms`,
+        borderLeftColor: priorityMeta && !overdue ? priorityMeta.borderColor : undefined,
+      }}
       draggable={draggable && !task.done}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -87,6 +97,20 @@ export function TaskCard({
           )}
         </div>
         <div className="meta">
+          {priorityMeta && (
+            <span
+              className="tag-chip priority-chip"
+              style={{
+                borderColor: priorityMeta.borderColor,
+                color: priorityMeta.color,
+                backgroundColor: priorityMeta.bgSubtle,
+              }}
+              title={priorityMeta.label}
+            >
+              <Flag className="w-2.5 h-2.5 inline mr-1" />
+              {priorityMeta.code}
+            </span>
+          )}
           {task.expand?.list && <span>#{task.expand.list.name}</span>}
           {task.expand?.tags &&
             task.expand.tags.map((tag) => (
