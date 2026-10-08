@@ -132,6 +132,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PomodoroState | null>(null)
   const [now, setNow] = useState(Date.now())
   const [pendingNote, setPendingNote] = useState<PendingSessionNote | null>(null)
+  const pendingNoteRef = useRef(pendingNote)
+  pendingNoteRef.current = pendingNote
 
   // Controle de propriedade de abas (BroadcastChannel)
   const [controllingTabId, setControllingTabId] = useState<string | null>(null)
@@ -752,16 +754,18 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   // Envio e descarte da nota pós-foco
   const submitPendingNote = useCallback(
     async (noteText: string) => {
-      if (!pendingNote) return
+      const currentPending = pendingNoteRef.current || pendingNote
+      if (!currentPending) return
       const trimmed = noteText.trim()
       if (trimmed) {
         try {
-          await updateSessionNote(pendingNote.sessionId, trimmed)
+          await updateSessionNote(currentPending.sessionId, trimmed)
           toast({
             title: 'Nota de foco registrada',
             description: trimmed.length > 50 ? `${trimmed.slice(0, 50)}...` : trimmed,
           })
-        } catch {
+        } catch (err) {
+          console.error('Erro ao atualizar nota da sessão:', err)
           toast({
             title: 'Erro ao salvar nota da sessão',
             variant: 'destructive',

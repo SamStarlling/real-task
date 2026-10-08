@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T19:04:15.093Z",
+  "generatedAt": "2026-10-08T20:17:03.856Z",
   "collections": [
     {
       "name": "users",
@@ -249,7 +249,7 @@
         {
           "name": "task",
           "type": "relation",
-          "required": true,
+          "required": false,
           "system": false,
           "collectionRef": "tasks"
         },
@@ -347,29 +347,25 @@
           "name": "work_minutes",
           "type": "number",
           "required": true,
-          "system": false,
-          "min": 5
+          "system": false
         },
         {
           "name": "short_break_minutes",
           "type": "number",
           "required": true,
-          "system": false,
-          "min": 5
+          "system": false
         },
         {
           "name": "long_break_minutes",
           "type": "number",
           "required": true,
-          "system": false,
-          "min": 5
+          "system": false
         },
         {
           "name": "blocks_before_long_break",
           "type": "number",
           "required": true,
-          "system": false,
-          "min": 1
+          "system": false
         },
         {
           "name": "archived",

@@ -54,7 +54,7 @@ export interface TaskRecord extends RecordModel {
   }
 }
 export interface SessionRecord extends RecordModel {
-  task: string
+  task?: string
   user: string
   started_at: string
   ended_at: string

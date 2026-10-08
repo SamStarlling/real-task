@@ -173,7 +173,24 @@ export const createList = (name: string, user: string) =>
   pb.collection<ListRecord>('lists').create({ name, user })
 export const createTag = (data: { name: string; user: string; color: string }) =>
   pb.collection<TagRecord>('tags').create(data)
-export const deleteTag = (id: string) => pb.collection<TagRecord>('tags').delete(id)
+export const updateTag = (id: string, data: Partial<{ name: string; color: string }>) =>
+  pb.collection<TagRecord>('tags').update(id, data)
+export const deleteTag = async (id: string) => {
+  // Remove a referência da tag das tarefas que a utilizam antes de deletar
+  try {
+    const tasksWithTag = await pb.collection<TaskRecord>('tasks').getFullList({
+      filter: pb.filter('tags ~ {:tagId}', { tagId: id }),
+    })
+    for (const task of tasksWithTag) {
+      const currentTags = Array.isArray(task.tags) ? task.tags : []
+      const nextTags = currentTags.filter((t) => t !== id)
+      await pb.collection('tasks').update(task.id, { tags: nextTags })
+    }
+  } catch (err) {
+    console.warn('Aviso ao desvincular tag de tarefas:', err)
+  }
+  return pb.collection<TagRecord>('tags').delete(id)
+}
 export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
@@ -251,13 +268,15 @@ export async function recordSession(
   const user = pb.authStore.record!.id
   const midnight = new Date(endedAt.getFullYear(), endedAt.getMonth(), endedAt.getDate())
   const payload: Record<string, unknown> = {
-    task: task ? task.id : '',
     user,
     started_at: startedAt.toISOString(),
     ended_at: endedAt.toISOString(),
     duration_minutes: minutes,
     session_date: midnight.toISOString(),
     status,
+  }
+  if (task && task.id) {
+    payload.task = task.id
   }
   if (note && note.trim()) {
     payload.note = note.trim().slice(0, 500)

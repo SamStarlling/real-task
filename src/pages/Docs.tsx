@@ -300,7 +300,9 @@ export function Docs() {
                 <strong>Contabilidade e Notas de Sessão:</strong> apenas blocos de foco gravam
                 sessões na coleção <code>sessions</code> e somam minutos ao{' '}
                 <code>actual_minutes</code> da tarefa vinculada. O prompt não-bloqueante "O que foi
-                feito?" fica disponível durante o descanso para registro de notas.
+                feito?" fica disponível durante o descanso para registro de notas, salvando de forma
+                resiliente tanto para tarefas específicas quanto para sessões de foco autônomo (sem
+                tarefa associada).
               </li>
             </ul>
           </article>
@@ -342,8 +344,8 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Central de Configurações (Estilo Todoist)</h3>
-            <p>Painel com navegação em duas colunas para objetivos e conta:</p>
+            <h3>Central de Configurações (Estilo Todoist) & Gestão de Etiquetas</h3>
+            <p>Painel com navegação lateral em duas colunas para objetivos, acervo e conta:</p>
             <ul>
               <li>
                 <strong>Metas específicas por dia da semana:</strong> controle individual para os 7
@@ -356,6 +358,12 @@ export function Docs() {
                 15 min (0 a 720 min por dia), digitação direta do valor numérico, feedback sutil de
                 salvamento <code>SALVO</code> e persistência no campo JSON{' '}
                 <code>weekly_focus_goals</code> da coleção <code>users</code>.
+              </li>
+              <li>
+                <strong>Gerenciamento Completo de Etiquetas:</strong> seção dedicada para
+                visualização, criação, edição e exclusão de etiquetas da coleção <code>tags</code>.
+                Exibe o código HEX, paleta recomendada, contagem em tempo real de tarefas vinculadas
+                a cada etiqueta e desassociação segura em cascata ao remover.
               </li>
               <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta

@@ -252,7 +252,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               setActive(0)
             }}
             onKeyDown={key}
-            placeholder="O que precisa ser feito? (@tag, #lista, amanhã...)"
+            placeholder="O que precisa ser feito? (@tag, #lista, amanhã... ex: #Trabalho)"
           />
           {parsed && <span className="chip">{formatShortDate(parsed.date)}</span>}
           {effectiveTime && (

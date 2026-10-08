@@ -13,6 +13,13 @@ import {
   Bell,
   Volume2,
   VolumeX,
+  Tag,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  AlertCircle,
+  Hash,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -22,14 +29,23 @@ import {
   updateUserWeeklyGoals,
   WEEKDAY_ORDER,
   WEEKDAY_LABELS,
+  getTags,
+  getTasks,
+  createTag,
+  updateTag,
+  deleteTag,
+  TAG_PALETTE,
+  getNextTagColor,
   type NotificationPreferences,
   type WeekdayKey,
   type WeeklyFocusGoals,
+  type TagRecord,
 } from '@/services/data'
+import type { TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { playReminderSound } from '@/lib/sounds'
 
-type SettingsTab = 'produtividade' | 'conta'
+type SettingsTab = 'produtividade' | 'etiquetas' | 'conta'
 
 interface EditingState {
   day: WeekdayKey | null
@@ -46,6 +62,19 @@ export function Settings() {
   const [savedFeedback, setSavedFeedback] = useState<WeekdayKey | null>(null)
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null)
 
+  // Estado de Etiquetas (Tags)
+  const [tags, setTags] = useState<TagRecord[]>([])
+  const [tasks, setTasks] = useState<TaskRecord[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  const [tagSearch, setTagSearch] = useState('')
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState(TAG_PALETTE[0].color)
+  const [tagCreating, setTagCreating] = useState(false)
+  const [editingTagId, setEditingTagId] = useState<string | null>(null)
+  const [editingTagName, setEditingTagName] = useState('')
+  const [editingTagColor, setEditingTagColor] = useState('')
+  const [tagActionError, setTagActionError] = useState<string | null>(null)
+
   // Estado de Notificações / Alertas (Etapa 3)
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(() =>
     resolveNotificationPreferences(user),
@@ -59,15 +88,110 @@ export function Settings() {
   const [notifSaving, setNotifSaving] = useState(false)
   const [notifFeedback, setNotifFeedback] = useState<string | null>(null)
 
+  const loadTagsAndTasks = async () => {
+    setTagsLoading(true)
+    try {
+      const [allTags, allTasks] = await Promise.all([getTags(), getTasks()])
+      setTags(allTags)
+      setTasks(allTasks)
+    } catch (err) {
+      console.error('Erro ao carregar etiquetas e tarefas:', err)
+    } finally {
+      setTagsLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (user) {
       setGoals(resolveWeeklyGoals(user))
       setNotifPrefs(resolveNotificationPreferences(user))
+      loadTagsAndTasks()
     }
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPermission(Notification.permission)
     }
   }, [user])
+
+  const handleCreateTag = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = newTagName.trim()
+    if (!trimmed || !user?.id) return
+    setTagCreating(true)
+    setTagActionError(null)
+    try {
+      const created = await createTag({
+        name: trimmed,
+        user: user.id,
+        color: newTagColor || getNextTagColor(tags.length),
+      })
+      setTags((prev) => [...prev, created])
+      setNewTagName('')
+      // Cicla para a próxima cor da paleta recomendada
+      const nextIdx = (tags.length + 1) % TAG_PALETTE.length
+      setNewTagColor(TAG_PALETTE[nextIdx].color)
+    } catch (err) {
+      console.error('Erro ao criar etiqueta:', err)
+      setTagActionError('Não foi possível criar a etiqueta. Verifique o nome digitado.')
+    } finally {
+      setTagCreating(false)
+    }
+  }
+
+  const handleStartEditTag = (tag: TagRecord) => {
+    setEditingTagId(tag.id)
+    setEditingTagName(tag.name)
+    setEditingTagColor(tag.color)
+  }
+
+  const handleSaveEditTag = async () => {
+    if (!editingTagId) return
+    const trimmed = editingTagName.trim()
+    if (!trimmed) {
+      setTagActionError('O nome da etiqueta não pode ficar vazio.')
+      return
+    }
+    try {
+      const updated = await updateTag(editingTagId, {
+        name: trimmed,
+        color: editingTagColor,
+      })
+      setTags((prev) => prev.map((t) => (t.id === editingTagId ? updated : t)))
+      setEditingTagId(null)
+      setEditingTagName('')
+      setEditingTagColor('')
+      setTagActionError(null)
+    } catch (err) {
+      console.error('Erro ao atualizar etiqueta:', err)
+      setTagActionError('Falha ao salvar etiqueta.')
+    }
+  }
+
+  const handleDeleteTag = async (tag: TagRecord) => {
+    const count = tasks.filter((t) => Array.isArray(t.tags) && t.tags.includes(tag.id)).length
+    const confirmMsg =
+      count > 0
+        ? `Excluir a etiqueta "${tag.name}"? Ela será removida de ${count} tarefa(s) vinculada(s).`
+        : `Deseja excluir a etiqueta "${tag.name}"?`
+    if (!window.confirm(confirmMsg)) return
+
+    try {
+      await deleteTag(tag.id)
+      setTags((prev) => prev.filter((t) => t.id !== tag.id))
+      // Atualiza lista local de tarefas desvinculadas
+      setTasks((prev) =>
+        prev.map((tk) => ({
+          ...tk,
+          tags: Array.isArray(tk.tags) ? tk.tags.filter((id) => id !== tag.id) : [],
+        })),
+      )
+      if (editingTagId === tag.id) {
+        setEditingTagId(null)
+      }
+    } catch (err) {
+      console.error('Erro ao remover etiqueta:', err)
+      setTagActionError('Não foi possível excluir a etiqueta.')
+    }
+  }
 
   const persistNotifPrefs = async (updated: NotificationPreferences) => {
     setNotifPrefs(updated)
@@ -200,6 +324,12 @@ export function Settings() {
       label: 'Produtividade & Alertas',
       desc: 'Metas de foco, horários e notificações',
       icon: TrendingUp,
+    },
+    {
+      id: 'etiquetas' as SettingsTab,
+      label: 'Etiquetas & Tags',
+      desc: 'Cores, renomeação e tarefas vinculadas',
+      icon: Tag,
     },
     {
       id: 'conta' as SettingsTab,
@@ -575,6 +705,264 @@ export function Settings() {
                     As alterações salvas aqui são refletidas imediatamente no cartão "META DO DIA"
                     da página Histórico. Aos sábados ou domingos com meta reduzida ou zerada, a
                     barra de progresso do histórico adapta-se à rotina planejada.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'etiquetas' && (
+            <div className="settings-panel tags-panel">
+              <header className="panel-header">
+                <div>
+                  <h2>Gerenciamento de Etiquetas</h2>
+                  <p>
+                    Crie, renomeie, personalize cores e visualize a contagem de tarefas vinculadas a
+                    cada etiqueta do sistema. Padrão minimalista e integrado às capturas do Barbosa
+                    System.
+                  </p>
+                </div>
+              </header>
+
+              {/* CARD: CRIAR NOVA ETIQUETA */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">NOVA ETIQUETA</div>
+                    <h3>Adicionar ao acervo</h3>
+                    <p>
+                      Defina um nome e escolha uma das cores recomendadas da paleta suave do
+                      sistema.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateTag} className="tag-create-form">
+                  <div className="tag-input-group">
+                    <div className="tag-input-field-wrap">
+                      <Hash size={14} className="tag-input-icon" />
+                      <input
+                        type="text"
+                        placeholder="Nome da etiqueta (ex.: Backend, Foco Profundo, Pessoal)..."
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        className="tag-text-input"
+                      />
+                    </div>
+
+                    <div className="tag-color-picker-row">
+                      <span className="tag-color-label">COR:</span>
+                      <div className="tag-palette-bubbles">
+                        {TAG_PALETTE.map((pal) => {
+                          const isSelected = newTagColor.toLowerCase() === pal.color.toLowerCase()
+                          return (
+                            <button
+                              key={pal.name}
+                              type="button"
+                              onClick={() => setNewTagColor(pal.color)}
+                              className={`tag-color-bubble ${isSelected ? 'active' : ''}`}
+                              style={{ backgroundColor: pal.color }}
+                              title={`${pal.name} (${pal.color})`}
+                              aria-label={pal.name}
+                            >
+                              {isSelected && <Check size={11} className="tag-bubble-check" />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!newTagName.trim() || tagCreating}
+                      className="primary tag-create-btn"
+                    >
+                      <Plus size={14} />
+                      <span>{tagCreating ? 'Criando...' : 'Criar etiqueta'}</span>
+                    </button>
+                  </div>
+                </form>
+
+                {tagActionError && (
+                  <div className="tag-error-banner">
+                    <AlertCircle size={14} />
+                    <span>{tagActionError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* CARD: LISTA DE ETIQUETAS EXISTENTES */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">ACERVO CADASTRADO</div>
+                    <h3>Etiquetas em uso ({tags.length})</h3>
+                    <p>
+                      Visualize a quantidade de tarefas em que cada etiqueta é utilizada, edite seus
+                      nomes ou cores e remova etiquetas que não usa mais.
+                    </p>
+                  </div>
+
+                  <div className="tag-list-search-wrap">
+                    <Search size={13} className="text-[#a1a1aa]" />
+                    <input
+                      type="text"
+                      placeholder="Filtrar etiquetas..."
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      className="tag-list-search-input"
+                    />
+                  </div>
+                </div>
+
+                {tagsLoading ? (
+                  <div className="tags-loading-state">
+                    <span>Carregando etiquetas do sistema...</span>
+                  </div>
+                ) : tags.length === 0 ? (
+                  <div className="tags-empty-state">
+                    <Tag size={24} className="text-[#C5A880]/50 mb-2" />
+                    <h4>Nenhuma etiqueta cadastrada</h4>
+                    <p>
+                      Crie sua primeira etiqueta acima para organizar suas tarefas por contexto ou
+                      tema.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="tags-table-wrap">
+                    <div className="tags-table-header">
+                      <span className="col-tag">ETIQUETA</span>
+                      <span className="col-color">CÓDIGO HEX</span>
+                      <span className="col-count">TAREFAS VINCULADAS</span>
+                      <span className="col-actions">AÇÕES</span>
+                    </div>
+
+                    <div className="tags-table-body">
+                      {tags
+                        .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
+                        .map((tag) => {
+                          const isEditing = editingTagId === tag.id
+                          const linkedCount = tasks.filter(
+                            (tk) => Array.isArray(tk.tags) && tk.tags.includes(tag.id),
+                          ).length
+
+                          if (isEditing) {
+                            return (
+                              <div key={tag.id} className="tags-table-row editing">
+                                <div className="col-tag">
+                                  <input
+                                    type="text"
+                                    value={editingTagName}
+                                    onChange={(e) => setEditingTagName(e.target.value)}
+                                    className="tag-edit-input"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveEditTag()
+                                      if (e.key === 'Escape') setEditingTagId(null)
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-color">
+                                  <div className="tag-palette-bubbles sm">
+                                    {TAG_PALETTE.map((pal) => {
+                                      const isSel =
+                                        editingTagColor.toLowerCase() === pal.color.toLowerCase()
+                                      return (
+                                        <button
+                                          key={pal.name}
+                                          type="button"
+                                          onClick={() => setEditingTagColor(pal.color)}
+                                          className={`tag-color-bubble sm ${isSel ? 'active' : ''}`}
+                                          style={{ backgroundColor: pal.color }}
+                                          title={pal.name}
+                                        />
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                                <div className="col-count">
+                                  <span className="tag-task-badge">{linkedCount} tarefa(s)</span>
+                                </div>
+                                <div className="col-actions">
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveEditTag}
+                                    className="tag-action-icon-btn save"
+                                    title="Salvar alterações"
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingTagId(null)}
+                                    className="tag-action-icon-btn cancel"
+                                    title="Cancelar edição"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          return (
+                            <div key={tag.id} className="tags-table-row">
+                              <div className="col-tag">
+                                <div className="tag-pill-preview">
+                                  <span
+                                    className="tag-dot-indicator"
+                                    style={{ backgroundColor: tag.color || '#C5A880' }}
+                                  />
+                                  <span className="tag-name-text">{tag.name}</span>
+                                </div>
+                              </div>
+                              <div className="col-color">
+                                <code className="tag-hex-code">{tag.color || '#C5A880'}</code>
+                              </div>
+                              <div className="col-count">
+                                <span
+                                  className={`tag-task-badge ${linkedCount > 0 ? 'has-tasks' : ''}`}
+                                >
+                                  {linkedCount} {linkedCount === 1 ? 'tarefa' : 'tarefas'}
+                                </span>
+                              </div>
+                              <div className="col-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditTag(tag)}
+                                  className="tag-action-icon-btn"
+                                  title="Editar etiqueta"
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTag(tag)}
+                                  className="tag-action-icon-btn danger"
+                                  title="Excluir etiqueta"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* DICA DE USABILIDADE / ATALHOS */}
+              <div className="settings-info-card">
+                <div className="info-icon-wrap">
+                  <Tag size={18} />
+                </div>
+                <div className="info-text">
+                  <h4>Captura Rápida com # na Barra</h4>
+                  <p>
+                    Ao digitar uma nova tarefa na barra de captura superior, use a hashtag como no
+                    TickTick ou Todoist (ex.: <code>Planejar sprint #Trabalho amanhã às 14h</code>).
+                    O sistema reconhece e associa a etiqueta automaticamente.
                   </p>
                 </div>
               </div>
