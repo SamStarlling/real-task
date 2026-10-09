@@ -451,17 +451,56 @@ a {
   border-color: rgba(179, 125, 107, 0.6);
   color: #f4f4f6;
 }
+/* =========================================================================
+   SISTEMA DE CAMADAS Z-INDEX BARBOSA SYSTEM (QUIET LUXURY)
+   =========================================================================
+   z-index: 1    -> timer pseudo-elements, base indicators
+   z-index: 5    -> drag drop-target line indicators (before/after)
+   z-index: 10   -> sticky capture bar (desktop) & dragging card elevation
+   z-index: 15   -> week column sticky header
+   z-index: 20   -> desktop sidebar (left-nav)
+   z-index: 30   -> mobile header (top-nav), floating list menus
+   z-index: 40   -> mobile bottom nav (bottom-nav)
+   z-index: 45   -> floating Pomodoro widget (desktop) & mobile capture FAB
+   z-index: 50   -> drawer lateral (TaskDetail), mobile capture expanded panel
+   z-index: 60   -> capture popovers (recorrência, prioridade), logout confirm
+   z-index: 100  -> system toasts / notifications
+   ========================================================================= */
+
 .main {
   margin-left: 260px;
   min-height: 100vh;
+  /* Garante padding-bottom generoso no desktop para não haver conteúdo coberto pelo widget Pomodoro */
+  padding-bottom: 96px;
 }
+
+/* Escala responsiva de largura máxima coerente:
+   - Até 1280px: max-width 816px (foco e legibilidade em laptops pequenos)
+   - ≥1280px até 1600px: max-width 960px
+   - ≥1600px (monitores grandes / 27"+): max-width 1080px (harmonia ampla e conforto visual)
+*/
 .main > * {
   max-width: 816px;
   margin-inline: auto;
 }
-.main > .week-page-container {
-  max-width: 1440px;
+
+@media (min-width: 1280px) {
+  .main > * {
+    max-width: 960px;
+  }
 }
+
+@media (min-width: 1600px) {
+  .main > * {
+    max-width: 1080px;
+  }
+}
+
+/* A Semana tem área mais ampla para acomodar as 7 colunas */
+.main > .week-page-container {
+  max-width: 100%;
+}
+
 .capture-sticky {
   position: sticky;
   top: 0;
@@ -1267,8 +1306,20 @@ a {
   color: #a1a1aa;
 }
 .page {
-  max-width: 720px !important;
+  max-width: 816px !important;
   padding: 28px 0 100px;
+}
+
+@media (min-width: 1280px) {
+  .page {
+    max-width: 960px !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .page {
+    max-width: 1080px !important;
+  }
 }
 .view-title {
   display: flex;
@@ -1801,7 +1852,9 @@ a {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: #0008;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 50;
 }
 .drawer {
@@ -1809,11 +1862,16 @@ a {
   right: 0;
   top: 0;
   height: 100%;
-  width: 420px;
+  width: min(420px, 100vw);
+  max-width: 100vw;
   background: #12141c;
   border-left: 1px solid rgba(197, 168, 128, 0.12);
-  padding: 44px 34px;
-  overflow: auto;
+  padding: 44px 34px calc(44px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+  padding-right: max(20px, env(safe-area-inset-right, 0px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
   animation: drawer 0.25s ease-out;
 }
 @keyframes drawer {
@@ -1823,10 +1881,19 @@ a {
 }
 .drawer-close {
   position: absolute;
-  right: 20px;
-  top: 20px;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  top: max(20px, env(safe-area-inset-top, 0px));
   background: transparent;
   border: 0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: #a1a1aa;
+  transition: all 140ms ease;
+}
+.drawer-close:hover {
+  color: #f4f4f6;
+  background: rgba(255, 255, 255, 0.05);
 }
 .drawer-close svg {
   width: 20px;
@@ -1935,13 +2002,15 @@ a {
   position: fixed;
   right: 24px;
   bottom: 24px;
-  width: 280px;
+  width: min(280px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   background: #12141c;
   border: 1px solid rgba(197, 168, 128, 0.35);
   border-radius: 12px;
   padding: 16px;
   z-index: 45;
-  box-shadow: 0 12px 40px #0008;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  box-sizing: border-box;
 }
 .pomodoro strong {
   display: block;
@@ -2042,6 +2111,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
   font:
     11px 'Space Mono',
     monospace;
@@ -2055,6 +2126,45 @@ a {
   white-space: nowrap;
   user-select: none;
   transition: all 140ms ease;
+  box-sizing: border-box;
+}
+
+.tag-chip-label,
+.recurrence-chip-text {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.overflow-chip {
+  border-color: rgba(197, 168, 128, 0.35) !important;
+  color: #c5a880 !important;
+  background: rgba(197, 168, 128, 0.1) !important;
+  font-weight: 600;
+  padding: 2.5px 6px;
+  letter-spacing: 0.04em;
+}
+
+.meta-list-chip {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  color: #a1a1aa;
+}
+
+.meta-status-chip {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.meta-times {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tags-filter-bar {
@@ -4161,8 +4271,9 @@ a {
   .pomodoro {
     left: 14px;
     right: 14px;
-    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     width: auto;
+    max-width: calc(100vw - 28px);
     border-radius: 12px;
     padding: 10px 14px;
     border: 1px solid rgba(197, 168, 128, 0.35);
@@ -4230,11 +4341,15 @@ a {
   .drawer {
     top: auto;
     bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    height: min(82vh, 720px);
+    max-width: 100vw;
+    height: min(85vh, 720px);
     border-left: 0;
     border-top: 1px solid rgba(197, 168, 128, 0.12);
     border-radius: 16px 16px 0 0;
+    padding: 32px 20px calc(32px + env(safe-area-inset-bottom, 0px));
     animation: sheet 0.25s ease-out;
   }
   @keyframes sheet {
@@ -4349,7 +4464,7 @@ a {
     gap: 4px;
   }
   .drawer {
-    padding: 38px 20px;
+    padding: 28px 16px calc(36px + env(safe-area-inset-bottom, 0px));
   }
   .auth-card {
     padding: 28px 22px;
@@ -5577,6 +5692,10 @@ a {
 .column-header {
   padding: 14px 14px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: sticky;
+  top: 0;
+  background: #12141c;
+  z-index: 15;
 }
 
 .col-header-top {
@@ -5859,18 +5978,37 @@ a {
 }
 
 /* ==========================================================================
-   RESPONSIVIDADE: MOBILE / TABLET PARA VISÃO SEMANA
+   RESPONSIVIDADE: MOBILE / TABLET / DESKTOP PARA VISÃO SEMANA
    ========================================================================== */
 
-@media (max-width: 1180px) {
+/* Em viewports de até ~1540px com sidebar desktop de 260px (ou seja, área de
+   conteúdo menor que 1280px), o grid de 7 colunas (cada uma com min 180px + gaps)
+   precisa permitir scroll horizontal suave sem quebrar nem transbordar a janela,
+   com visual indicator suave e padding de segurança.
+   Em telas muito estreitas (<= 900px), as colunas empilham em cards sequenciais. */
+
+.week-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: start;
+  min-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
   .week-columns-grid {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow-x: visible;
   }
 
   .week-column {
     min-height: auto;
+    width: 100%;
   }
 }
 

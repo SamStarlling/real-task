@@ -605,6 +605,40 @@ export function Docs() {
                 </ul>
               </li>
               <li>
+                <strong>Integridade Visual & Layout Responsivo - Etapa 1 (v0.0.29):</strong> revisão
+                completa da integridade visual e consistência em todas as resoluções (de smartphones
+                a monitores ultrawide / 27"):
+                <ul style={{ marginTop: '6px' }}>
+                  <li>
+                    <strong>Proteção de Chips de Metadados:</strong> aplicação de{' '}
+                    <code>min-width: 0</code>, truncamento com <code>ellipsis</code> e limite de
+                    chips visíveis com indicador <code>+N</code> (padrão TickTick), impedindo
+                    quebras verticais ou sobreposição entre vizinhos.
+                  </li>
+                  <li>
+                    <strong>Área Real & Overflow na Semana:</strong> o grid de 7 colunas agora
+                    utiliza cálculo e rolagem horizontal suave contida em laptops de 1300–1600px
+                    (considerando os 260px da sidebar), eliminando o overflow de janela sem cortar
+                    colunas.
+                  </li>
+                  <li>
+                    <strong>Escala Coerente de Largura Máxima:</strong> layout do conteúdo central
+                    adaptável (816px até 1280px, 960px até 1600px e 1080px em telas ≥1600px / 27"),
+                    oferecendo harmonia sem dispersão visual.
+                  </li>
+                  <li>
+                    <strong>Painel de Detalhe Flexível:</strong> gaveta lateral com{' '}
+                    <code>width: min(420px, 100vw)</code> e safe-areas, adaptando-se sem estouro em
+                    qualquer largura de smartphone.
+                  </li>
+                  <li>
+                    <strong>Auditoria e Escala de Z-Index:</strong> camadas estruturadas (headers
+                    15, sidebar 20, mobile header 30, bottom nav 40, widget Pomodoro/FAB 45, drawer
+                    50) e respiro inferior generoso para que nenhum controle fique encoberto.
+                  </li>
+                </ul>
+              </li>
+              <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
                 de Segunda para todos os dias úteis ou sincronizar Sábado e Domingo.
               </li>
@@ -765,6 +799,18 @@ export function Docs() {
                   Barra inferior fixa de 5 destinos ao alcance do polegar, drawer lateral completo
                   via hambúrguer no topo com suporte a etiquetas/listas/pin 80/20, e botão flutuante
                   (FAB) de captura rápida responsiva com respeito a safe-area.
+                </td>
+              </tr>
+              <tr>
+                <td>Layout Responsivo & Integridade Visual (Etapa 1)</td>
+                <td>
+                  <code>src/main.css</code>, <code>src/components/TaskCard.tsx</code>
+                </td>
+                <td>v0.0.29</td>
+                <td>
+                  Chips com truncamento e limite +N, área real de conteúdo da Semana, escala de
+                  largura máxima para 27" (1080px), gaveta de detalhe fluida e auditoria rigorosa de
+                  camadas de z-index.
                 </td>
               </tr>
               <tr>

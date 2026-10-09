@@ -732,21 +732,43 @@ export function WeekPage({
                         </span>
                       )}
                       {task.expand?.list && (
-                        <span className="inbox-list-chip">#{task.expand.list.name}</span>
+                        <span
+                          className="inbox-list-chip meta-list-chip"
+                          title={`#${task.expand.list.name}`}
+                        >
+                          #{task.expand.list.name}
+                        </span>
                       )}
                       {task.expand?.tags &&
-                        task.expand.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="tag-chip"
-                            style={{
-                              borderColor: tag.color,
-                              color: tag.color,
-                            }}
-                          >
-                            @{tag.name}
-                          </span>
-                        ))}
+                        (() => {
+                          const visibleTags = task.expand.tags.slice(0, 2)
+                          const overflowCount = task.expand.tags.length - visibleTags.length
+                          return (
+                            <>
+                              {visibleTags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="tag-chip"
+                                  style={{
+                                    borderColor: tag.color,
+                                    color: tag.color,
+                                  }}
+                                  title={`@${tag.name}`}
+                                >
+                                  <span className="tag-chip-label">@{tag.name}</span>
+                                </span>
+                              ))}
+                              {overflowCount > 0 && (
+                                <span
+                                  className="tag-chip overflow-chip"
+                                  title={`${overflowCount} outra(s) etiqueta(s)`}
+                                >
+                                  +{overflowCount}
+                                </span>
+                              )}
+                            </>
+                          )
+                        })()}
                       {task.recurrence_type && task.recurrence_type !== 'none' && (
                         <span
                           className="tag-chip recurrence-chip"
@@ -754,9 +776,12 @@ export function WeekPage({
                             borderColor: 'rgba(197, 168, 128, 0.35)',
                             color: '#C5A880',
                           }}
+                          title={`Regra: ${formatRecurrenceRule(task)}`}
                         >
-                          <Repeat className="w-2.5 h-2.5 inline mr-1" />
-                          {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                          <Repeat className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
+                          <span className="recurrence-chip-text">
+                            {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                          </span>
                         </span>
                       )}
                       {subtaskProgress.total > 0 && (
@@ -764,11 +789,14 @@ export function WeekPage({
                           className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
                           title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
                         >
-                          <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+                          <CheckSquare className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
                           {subtaskProgress.completed}/{subtaskProgress.total}
                         </span>
                       )}
-                      <span className="inbox-est-chip">
+                      <span
+                        className="inbox-est-chip meta-times"
+                        title={`Estimado: ${formatMinutes(task.estimated_minutes)}`}
+                      >
                         EST. {formatMinutes(task.estimated_minutes)}
                       </span>
                     </div>
@@ -945,20 +973,41 @@ export function WeekPage({
                                 {priorityMeta.code}
                               </span>
                             )}
-                            {task.expand?.list && <span>#{task.expand.list.name}</span>}
+                            {task.expand?.list && (
+                              <span className="meta-list-chip" title={`#${task.expand.list.name}`}>
+                                #{task.expand.list.name}
+                              </span>
+                            )}
                             {task.expand?.tags &&
-                              task.expand.tags.map((tag) => (
-                                <span
-                                  key={tag.id}
-                                  className="tag-chip"
-                                  style={{
-                                    borderColor: tag.color,
-                                    color: tag.color,
-                                  }}
-                                >
-                                  @{tag.name}
-                                </span>
-                              ))}
+                              (() => {
+                                const visibleTags = task.expand.tags.slice(0, 2)
+                                const overflowCount = task.expand.tags.length - visibleTags.length
+                                return (
+                                  <>
+                                    {visibleTags.map((tag) => (
+                                      <span
+                                        key={tag.id}
+                                        className="tag-chip"
+                                        style={{
+                                          borderColor: tag.color,
+                                          color: tag.color,
+                                        }}
+                                        title={`@${tag.name}`}
+                                      >
+                                        <span className="tag-chip-label">@{tag.name}</span>
+                                      </span>
+                                    ))}
+                                    {overflowCount > 0 && (
+                                      <span
+                                        className="tag-chip overflow-chip"
+                                        title={`${overflowCount} outra(s) etiqueta(s)`}
+                                      >
+                                        +{overflowCount}
+                                      </span>
+                                    )}
+                                  </>
+                                )
+                              })()}
                             {task.recurrence_type && task.recurrence_type !== 'none' && (
                               <span
                                 className="tag-chip recurrence-chip"
@@ -968,8 +1017,10 @@ export function WeekPage({
                                 }}
                                 title={`Regra: ${formatRecurrenceRule(task)}`}
                               >
-                                <Repeat className="w-2.5 h-2.5 inline mr-1" />
-                                {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                                <Repeat className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
+                                <span className="recurrence-chip-text">
+                                  {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                                </span>
                               </span>
                             )}
                             {task.due_time && (
@@ -977,7 +1028,7 @@ export function WeekPage({
                                 className={`tag-chip time-chip ${isTaskOverdue(task) ? 'overdue-time-chip' : ''}`}
                                 title={`Horário agendado: ${task.due_time}`}
                               >
-                                <Clock className="w-2.5 h-2.5 inline mr-1" />
+                                <Clock className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
                                 {task.due_time}
                               </span>
                             )}
@@ -986,11 +1037,14 @@ export function WeekPage({
                                 className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
                                 title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
                               >
-                                <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+                                <CheckSquare className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
                                 {subtaskProgress.completed}/{subtaskProgress.total}
                               </span>
                             )}
-                            <span>
+                            <span
+                              className="meta-times"
+                              title={`Estimado: ${formatMinutes(task.estimated_minutes)} · Realizado: ${formatMinutes(task.actual_minutes)}`}
+                            >
                               EST. {formatMinutes(task.estimated_minutes)} ·{' '}
                               <b
                                 className={

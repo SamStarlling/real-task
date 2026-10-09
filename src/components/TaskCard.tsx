@@ -28,6 +28,7 @@ export interface TaskCardProps {
   onDragOver?: (e: React.DragEvent) => void
   onDrop?: (e: React.DragEvent) => void
   onTouchStartHandle?: (e: React.TouchEvent) => void
+  compact?: boolean
 }
 
 export function TaskCard({
@@ -45,6 +46,7 @@ export function TaskCard({
   onDragOver,
   onDrop,
   onTouchStartHandle,
+  compact = false,
 }: TaskCardProps) {
   const { start } = usePomodoro()
   const today = localDay()
@@ -133,20 +135,42 @@ export function TaskCard({
               {priorityMeta.code}
             </span>
           )}
-          {task.expand?.list && <span>#{task.expand.list.name}</span>}
+          {task.expand?.list && (
+            <span className="meta-list-chip" title={`#${task.expand.list.name}`}>
+              #{task.expand.list.name}
+            </span>
+          )}
           {task.expand?.tags &&
-            task.expand.tags.map((tag) => (
-              <span
-                key={tag.id}
-                className="tag-chip"
-                style={{
-                  borderColor: tag.color,
-                  color: tag.color,
-                }}
-              >
-                @{tag.name}
-              </span>
-            ))}
+            (() => {
+              const maxTags = compact ? 2 : 4
+              const visibleTags = task.expand.tags.slice(0, maxTags)
+              const overflowCount = task.expand.tags.length - visibleTags.length
+              return (
+                <>
+                  {visibleTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="tag-chip"
+                      style={{
+                        borderColor: tag.color,
+                        color: tag.color,
+                      }}
+                      title={`@${tag.name}`}
+                    >
+                      <span className="tag-chip-label">@{tag.name}</span>
+                    </span>
+                  ))}
+                  {overflowCount > 0 && (
+                    <span
+                      className="tag-chip overflow-chip"
+                      title={`${overflowCount} outra(s) etiqueta(s)`}
+                    >
+                      +{overflowCount}
+                    </span>
+                  )}
+                </>
+              )
+            })()}
           {isRecurrent && recurrenceLabel && (
             <span
               className="tag-chip recurrence-chip"
@@ -156,8 +180,10 @@ export function TaskCard({
               }}
               title={`Regra: ${recurrenceLabel}`}
             >
-              <Repeat className="w-2.5 h-2.5 inline mr-1" />
-              {recurrenceLabel.replace(/^repete\s*·\s*/, '')}
+              <Repeat className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
+              <span className="recurrence-chip-text">
+                {recurrenceLabel.replace(/^repete\s*·\s*/, '')}
+              </span>
             </span>
           )}
           {hasTime && (
@@ -165,7 +191,7 @@ export function TaskCard({
               className={`tag-chip time-chip ${overdue ? 'overdue-time-chip' : ''}`}
               title={`Horário agendado: ${task.due_time}`}
             >
-              <Clock className="w-2.5 h-2.5 inline mr-1" />
+              <Clock className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
               {task.due_time}
             </span>
           )}
@@ -174,11 +200,11 @@ export function TaskCard({
               className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
               title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
             >
-              <CheckSquare className="w-2.5 h-2.5 inline mr-1" />
+              <CheckSquare className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
               {subtaskProgress.completed}/{subtaskProgress.total}
             </span>
           )}
-          <span className={overdue ? 'overdue' : ''}>
+          <span className={`meta-status-chip ${overdue ? 'overdue' : ''}`}>
             {overdue
               ? 'ATRASADA'
               : pbDay(task.due_date) === today
@@ -189,7 +215,10 @@ export function TaskCard({
                     : 'AMANHÃ'
                   : 'INBOX'}
           </span>
-          <span>
+          <span
+            className="meta-times"
+            title={`Estimado: ${formatMinutes(task.estimated_minutes)} · Realizado: ${formatMinutes(task.actual_minutes)}`}
+          >
             EST. {formatMinutes(task.estimated_minutes)} ·{' '}
             <b className={task.actual_minutes > task.estimated_minutes ? 'exceeded' : ''}>
               REAL {formatMinutes(task.actual_minutes)}
