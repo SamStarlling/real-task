@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   TrendingUp,
   User,
@@ -22,6 +23,7 @@ import {
   Hash,
   Folder,
   Pin,
+  BookOpen,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -63,6 +65,7 @@ interface EditingState {
 
 export function Settings() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<SettingsTab>('produtividade')
   const [searchTerm, setSearchTerm] = useState('')
   const [goals, setGoals] = useState<WeeklyFocusGoals>(() => resolveWeeklyGoals(user))
@@ -434,28 +437,36 @@ export function Settings() {
   // Seções disponíveis filtradas pela busca
   const sections = [
     {
-      id: 'produtividade' as SettingsTab,
+      id: 'produtividade',
       label: 'Produtividade & Alertas',
       desc: 'Metas de foco, horários e notificações',
       icon: TrendingUp,
     },
     {
-      id: 'etiquetas' as SettingsTab,
+      id: 'etiquetas',
       label: 'Etiquetas & Tags',
       desc: 'Cores, prioridade 80/20 e tarefas vinculadas',
       icon: Tag,
     },
     {
-      id: 'listas' as SettingsTab,
+      id: 'listas',
       label: 'Listas & Projetos',
       desc: 'Organização estrutural, prioridade e tarefas',
       icon: Folder,
     },
     {
-      id: 'conta' as SettingsTab,
+      id: 'conta',
       label: 'Conta',
       desc: 'Perfil e credenciais de acesso',
       icon: User,
+    },
+    {
+      id: 'documentacao',
+      label: 'Documentação',
+      desc: 'Guia do sistema, arquitetura e atalhos',
+      icon: BookOpen,
+      isExternalLink: true,
+      onClick: () => navigate('/docs'),
     },
   ]
 
@@ -498,12 +509,18 @@ export function Settings() {
           <nav className="settings-nav">
             {filteredSections.map((sec) => {
               const Icon = sec.icon
-              const isActive = activeTab === sec.id
+              const isActive = !sec.isExternalLink && activeTab === sec.id
               return (
                 <button
                   key={sec.id}
                   type="button"
-                  onClick={() => setActiveTab(sec.id)}
+                  onClick={() => {
+                    if (sec.onClick) {
+                      sec.onClick()
+                    } else {
+                      setActiveTab(sec.id as SettingsTab)
+                    }
+                  }}
                   className={`settings-nav-item ${isActive ? 'active' : ''}`}
                 >
                   <Icon className="settings-nav-icon" />
@@ -511,6 +528,9 @@ export function Settings() {
                     <span className="settings-nav-label">{sec.label}</span>
                     <span className="settings-nav-sub">{sec.desc}</span>
                   </div>
+                  {sec.isExternalLink && (
+                    <ArrowRight className="w-3.5 h-3.5 text-[#71717A] ml-auto flex-none" />
+                  )}
                 </button>
               )
             })}

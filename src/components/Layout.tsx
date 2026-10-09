@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   ArrowRight,
-  BookOpen,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -11,11 +10,10 @@ import {
   Inbox,
   LogOut,
   Pin,
-  Settings,
   Sun,
-  Tag as TagIcon,
   Timer,
 } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
@@ -662,47 +660,69 @@ export function Layout({
         </div>
 
         <div className="sidebar-footer">
-          <NavLink
-            to="/configuracoes"
-            className={({ isActive }) => `sidebar-docs-link ${isActive ? 'active' : ''}`}
-            title="Configurações e Metas de Foco"
-          >
-            <Settings />
-            <span>Configurações</span>
-          </NavLink>
-          <NavLink
-            to="/docs"
-            className={({ isActive }) => `sidebar-docs-link ${isActive ? 'active' : ''}`}
-            title="Documentação do Sistema"
-          >
-            <BookOpen />
-            <span>Documentação</span>
-          </NavLink>
-          <div className="profile">
-            <span className="avatar">{initials}</span>
-            <span>{String(user?.name || 'Usuário')}</span>
+          <div className="sidebar-profile-row">
             <button
-              onClick={() => {
-                logout()
-                navigate('/login')
-              }}
-              title="Encerrar sessão"
+              type="button"
+              className={`sidebar-profile-btn ${location.pathname === '/configuracoes' ? 'active' : ''}`}
+              onClick={() => navigate('/configuracoes')}
+              title="Ir para Configurações do perfil"
             >
-              <LogOut />
+              <span className="avatar">{initials}</span>
+              <span className="sidebar-profile-name">{String(user?.name || 'Usuário')}</span>
             </button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="sidebar-logout-btn"
+                  title="Encerrar sessão"
+                  aria-label="Encerrar sessão"
+                >
+                  <LogOut className="w-4 h-4 text-[#a1a1aa]" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="end"
+                sideOffset={8}
+                className="logout-popover-content"
+              >
+                <div className="logout-confirm-box">
+                  <div className="logout-confirm-title">Sair da conta?</div>
+                  <p className="logout-confirm-desc">
+                    Você precisará fazer login novamente para acessar o sistema.
+                  </p>
+                  <div className="logout-confirm-actions">
+                    <button
+                      type="button"
+                      className="logout-confirm-btn"
+                      onClick={() => {
+                        logout()
+                        navigate('/login')
+                      }}
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </aside>
       <header className="mobile-header">
         <Brand compact />
         <div className="mobile-header-actions">
-          <NavLink to="/configuracoes" className="mobile-docs-btn" title="Configurações">
-            <Settings />
-          </NavLink>
-          <NavLink to="/docs" className="mobile-docs-btn" title="Documentação">
-            <BookOpen />
-          </NavLink>
-          <span className="avatar">{initials}</span>
+          <button
+            type="button"
+            className="mobile-avatar-btn"
+            onClick={() => navigate('/configuracoes')}
+            title="Ir para Configurações"
+            aria-label="Ir para Configurações"
+          >
+            <span className="avatar">{initials}</span>
+          </button>
         </div>
       </header>
       <nav className="mobile-nav">

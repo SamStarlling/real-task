@@ -538,6 +538,21 @@ export function Docs() {
                 finalizar as 3 tarefas.
               </li>
               <li>
+                <strong>Perfil Clicável na Sidebar & Acesso Integrado (v0.0.25):</strong> o bloco de
+                perfil no rodapé da barra lateral (avatar com iniciais + nome do usuário) é uma área
+                clicável direta para <code>/configuracoes</code> com hover sutil em fundo elevado e
+                affordance discreta. O botão de encerramento de sessão (logout) atua de forma
+                independente e segura, acionando uma caixa de confirmação rápida antes de sair. As
+                antigas opções soltas de Configurações e Documentação foram removidas do rodapé da
+                sidebar, e no mobile o toque no avatar conduz imediatamente às Configurações.
+              </li>
+              <li>
+                <strong>Documentação Integrada às Configurações (v0.0.25):</strong> a navegação
+                lateral de <code>/configuracoes</code> inclui a seção
+                <strong>Documentação</strong> com ícone de livro fino e seta indicativa que conduz a{' '}
+                <code>/docs</code>, preservando a rota direta e bookmarkável com fluxo centralizado.
+              </li>
+              <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
                 de Segunda para todos os dias úteis ou sincronizar Sábado e Domingo.
               </li>
@@ -668,7 +683,7 @@ export function Docs() {
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno (v0.0.24)</td>
+                <td>Interno (v0.0.25)</td>
                 <td>
                   Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
                   mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,
@@ -680,7 +695,7 @@ export function Docs() {
                 <td>
                   <code>src/services/data.ts</code>
                 </td>
-                <td>v0.0.24</td>
+                <td>v0.0.25</td>
                 <td>
                   Derivação e ranqueamento inteligente das até 3 tarefas do dia que geram os 80% de
                   resultado a partir de etiquetas e listas prioritárias fixadas (pinned),
