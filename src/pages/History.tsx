@@ -1,11 +1,24 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sliders } from 'lucide-react'
+import { Sliders, Trophy } from 'lucide-react'
 import type { SessionRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
 import { useAuth } from '@/contexts/AuthContext'
 import { getGoalForDate, getWeekdayKey, WEEKDAY_LABELS } from '@/services/data'
+import { computeBestDayStats } from '@/lib/best-day'
+
+function formatRecordDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  const date = new Date(y, m - 1, d, 12, 0, 0)
+  return date
+    .toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+    })
+    .replace('.', '')
+}
 
 export function History({ sessions }: { sessions: SessionRecord[] }) {
   const nav = useNavigate()
@@ -29,6 +42,9 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
 
   const percentage = hasGoal ? Math.min(100, Math.round((todayTotal / goal) * 100)) : 0
   const isGoalReached = hasGoal && todayTotal >= goal
+
+  // Estatísticas de melhor dia e recordes derivados do histórico completo
+  const stats = useMemo(() => computeBestDayStats(sessions, now), [sessions])
 
   const days = useMemo(
     () =>
@@ -103,8 +119,26 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
             style={{ width: hasGoal ? `${percentage}%` : '0%' }}
           />
         </div>
+
+        {/* COMPARAÇÃO DISCRETA COM O MESMO DIA DA SEMANA */}
+        {stats.weekdayComparison && stats.weekdayComparison.totalDaysCount > 0 && (
+          <div className="history-weekday-benchmark">
+            <span className="benchmark-name">
+              SUAS {stats.weekdayComparison.weekdayName.toUpperCase()}:
+            </span>
+            <span>
+              MÉDIA <b>{formatMinutes(stats.weekdayComparison.averageMinutes)}</b>
+            </span>
+            <span>·</span>
+            <span>
+              RECORDE{' '}
+              <b className="highlight">{formatMinutes(stats.weekdayComparison.recordMinutes)}</b>
+            </span>
+          </div>
+        )}
       </section>
 
+      {/* PAINEL DE MÉTRICAS (4 CARTÕES: HOJE, ESTA SEMANA, TOTAL, MELHOR DIA) */}
       <div className="metrics">
         <span>
           HOJE<b>{formatMinutes(todayTotal)}</b>
@@ -115,78 +149,148 @@ export function History({ sessions }: { sessions: SessionRecord[] }) {
         <span>
           TOTAL<b>{formatMinutes(sum(sessions))}</b>
         </span>
-      </div>
-      <div className="chart">
-        {days.map((d) => (
-          <div key={d.key} title={formatMinutes(d.total)}>
-            <i>
-              <b style={{ height: `${(d.total / max) * 100}%` }} />
-            </i>
-            <span>
-              {d.date.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3).toUpperCase()}
-            </span>
+        <div className={`metrics-best-day ${stats.isTodayRecord ? 'is-record-holder' : ''}`}>
+          <div className="metrics-card-tag">
+            <Trophy size={11} />
+            <span>MELHOR DIA</span>
           </div>
-        ))}
+          {stats.bestDay ? (
+            <>
+              <b>
+                {formatMinutes(stats.bestDay.totalMinutes)}
+                <span className="metrics-subtext">
+                  {' '}
+                  ({formatRecordDate(stats.bestDay.dateStr)})
+                </span>
+              </b>
+              {stats.isTodayRecord ? (
+                <span className="metrics-record-badge current-record">
+                  <Trophy size={9} />
+                  HOJE É O RECORDE
+                </span>
+              ) : (
+                <span className="metrics-record-badge diff-record">
+                  FALTAM {formatMinutes(stats.minutesRemainingToBeat)}
+                </span>
+              )}
+            </>
+          ) : (
+            <b>—</b>
+          )}
+        </div>
       </div>
+
+      {/* GRÁFICO DE BARRAS DOS ÚLTIMOS 14 DIAS COM DESTAQUE DO MELHOR DIA */}
+      <div className="chart">
+        {days.map((d) => {
+          const isBestOf14 =
+            stats.bestDayOf14Days &&
+            stats.bestDayOf14Days.dateStr === d.key &&
+            stats.bestDayOf14Days.totalMinutes > 0
+
+          return (
+            <div
+              key={d.key}
+              className={isBestOf14 ? 'is-best-day' : ''}
+              title={`${d.date.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short',
+              })}: ${formatMinutes(d.total)}${isBestOf14 ? ' (Melhor dia do período)' : ''}`}
+            >
+              {isBestOf14 && (
+                <span className="chart-bar-badge">
+                  <Trophy size={8} />
+                  RECORDE
+                </span>
+              )}
+              <i>
+                <b style={{ height: `${(d.total / max) * 100}%` }} />
+              </i>
+              <span>
+                {d.date.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3).toUpperCase()}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* LISTA CRONOLÓGICA DE SESSÕES AGRUPADA POR DIA */}
       <div className="history-list">
         {Object.entries(groups)
           .sort(([a], [b]) => b.localeCompare(a))
-          .map(([day, items]) => (
-            <section key={day}>
-              <header>
-                <h2>
-                  {new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                </h2>
-                <span>{formatMinutes(sum(items || []))}</span>
-              </header>
-              {(items || []).map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => nav(`/?taskId=${s.task}`)}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'auto 1fr auto auto',
-                    gap: '12px',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span>
-                    {new Date(s.started_at).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}{' '}
-                    –{' '}
-                    {new Date(s.ended_at).toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '2px',
-                      textAlign: 'left',
-                      minWidth: 0,
-                    }}
-                  >
-                    <strong>{s.expand?.task?.title || 'Tarefa'}</strong>
-                    {s.note && s.note.trim() && (
-                      <span className="session-note-text" style={{ margin: 0 }}>
-                        {s.note}
+          .map(([day, items]) => {
+            const isAbsoluteRecord =
+              stats.bestDay && stats.bestDay.dateStr === day && stats.bestDay.totalMinutes > 0
+
+            return (
+              <section key={day}>
+                <header>
+                  <div className="history-day-title-wrap">
+                    <h2>
+                      {new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                      })}
+                    </h2>
+                    {isAbsoluteRecord && (
+                      <span
+                        className="history-record-pill"
+                        title="Dia com maior volume de foco de todo o histórico"
+                      >
+                        <Trophy size={10} />
+                        RECORDE
                       </span>
                     )}
                   </div>
-                  <span>{formatMinutes(s.duration_minutes)}</span>
-                  <em className={s.status}>{s.status.toUpperCase()}</em>
-                </button>
-              ))}
-            </section>
-          ))}
+                  <span>{formatMinutes(sum(items || []))}</span>
+                </header>
+                {(items || []).map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => nav(`/?taskId=${s.task}`)}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'auto 1fr auto auto',
+                      gap: '12px',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span>
+                      {new Date(s.started_at).toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}{' '}
+                      –{' '}
+                      {new Date(s.ended_at).toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                        textAlign: 'left',
+                        minWidth: 0,
+                      }}
+                    >
+                      <strong>{s.expand?.task?.title || 'Tarefa'}</strong>
+                      {s.note && s.note.trim() && (
+                        <span className="session-note-text" style={{ margin: 0 }}>
+                          {s.note}
+                        </span>
+                      )}
+                    </div>
+                    <span>{formatMinutes(s.duration_minutes)}</span>
+                    <em className={s.status}>{s.status.toUpperCase()}</em>
+                  </button>
+                ))}
+              </section>
+            )
+          })}
       </div>
       {!sessions.length && <p className="history-empty">Nenhuma sessão registrada ainda.</p>}
     </div>

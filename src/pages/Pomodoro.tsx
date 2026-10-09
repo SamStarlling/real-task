@@ -13,6 +13,7 @@ import {
   Trash2,
   CheckCircle2,
   MessageSquare,
+  Trophy,
   X as XIcon,
 } from 'lucide-react'
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
@@ -27,6 +28,7 @@ import {
 import { toast } from '@/hooks/use-toast'
 import { formatMinutes } from '@/lib/format'
 import { localDay } from '@/lib/date-parser'
+import { computeBestDayStats } from '@/lib/best-day'
 import {
   Dialog,
   DialogContent,
@@ -269,6 +271,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     [sessions],
   )
 
+  // Estatísticas de recordes derivadas para a visão geral
+  const bestDayStats = useMemo(() => computeBestDayStats(sessions, new Date()), [sessions])
+
   // Formato estilo print TickTick: "339h 58m" ou "0m"
   const formatTotalTime = (totalMin: number) => {
     const totalRounded = Math.round(totalMin)
@@ -474,7 +479,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             <h2 className="pomodoro-overview-title">Visão geral</h2>
           </header>
 
-          {/* 4 CARTÕES DE MÉTRICAS */}
+          {/* 4 CARTÕES DE MÉTRICAS COM MARCAÇÃO DISCRETA DE RECORDE */}
           <div className="pomodoro-metrics-grid">
             <div className="pomodoro-metric-card">
               <span className="pomodoro-metric-label">Pomos de hoje</span>
@@ -482,10 +487,28 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             </div>
 
             <div className="pomodoro-metric-card">
-              <span className="pomodoro-metric-label">Foco de hoje</span>
+              <div className="pomodoro-metric-label-row">
+                <span className="pomodoro-metric-label">Foco de hoje</span>
+                {bestDayStats.isTodayRecord && (
+                  <span
+                    className="pomodoro-metric-record-chip"
+                    title="Hoje é o seu recorde absoluto de foco"
+                  >
+                    <Trophy size={8} />
+                    RECORDE
+                  </span>
+                )}
+              </div>
               <strong className="pomodoro-metric-value">
                 {formatTotalTime(focoDeHojeMinutos)}
               </strong>
+              {bestDayStats.bestDay &&
+                !bestDayStats.isTodayRecord &&
+                bestDayStats.minutesRemainingToBeat > 0 && (
+                  <span className="pomodoro-metric-subhint">
+                    Faltam {formatTotalTime(bestDayStats.minutesRemainingToBeat)} p/ recorde
+                  </span>
+                )}
             </div>
 
             <div className="pomodoro-metric-card">

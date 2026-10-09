@@ -162,8 +162,15 @@ export function Docs() {
                 lista da tarefa em tempo real com sincronização no banco.
               </li>
               <li>
-                <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
-                dias e lista cronológica detalhada.
+                <strong>Histórico com Marcações de Melhor Dia & Recordes:</strong> registro
+                auditável de esforço completo com marcas discretas de recorde (<em>quiet luxury</em>
+                ). Cartão dedicado <code>MELHOR DIA</code> no topo comparando o foco acumulado de
+                hoje com o recorde absoluto histórico do usuário (com badge{' '}
+                <code>HOJE É O RECORDE</code> ou o déficit pontual <code>FALTAM X MIN</code>),
+                destaque champagne refinado na barra do melhor dia no gráfico de 14 dias com chip{' '}
+                <code>RECORDE</code>, insígnia sutil nos cabeçalhos de datas recordistas na timeline
+                e linha comparativa com o mesmo dia da semana (média e recorde para segundas, terças
+                etc.).
               </li>
             </ul>
           </article>
@@ -427,8 +434,10 @@ export function Docs() {
           </article>
 
           <article className="docs-card">
-            <h3>Métricas e Análise Histórica com Meta Diária</h3>
-            <p>Auditoria quantitativa do foco acumulado e acompanhamento de metas:</p>
+            <h3>Métricas e Análise Histórica com Meta Diária & Marcações de Recorde</h3>
+            <p>
+              Auditoria quantitativa do foco acumulado, acompanhamento de metas e recordes pessoais:
+            </p>
             <ul>
               <li>
                 <strong>Meta diária reativa por dia da semana:</strong> cartão destacado no topo do
@@ -443,21 +452,43 @@ export function Docs() {
                 <code>SEM META (FOLGA)</code> tratando adequadamente divisão por zero.
               </li>
               <li>
-                <strong>Leitura e atalho para Configurações:</strong> o cartão no Histórico opera em
-                modo de visualização limpa, com botão <code>EDITAR METAS</code> que redireciona à
-                seção dedicada em <code>/configuracoes</code>.
+                <strong>Benchmark do mesmo dia da semana:</strong> linha contextual refinada em
+                Space Mono no rodapé do cartão de meta de hoje comparando a produção atual com a
+                média e o recorde histórico daquele mesmo dia (ex.:{' '}
+                <em>SUAS SEGUNDAS: MÉDIA 1H 40M · RECORDE 2H 30M</em>).
               </li>
               <li>
-                <strong>Resumo numérico:</strong> cartões com totalização de foco para Hoje, Esta
-                Semana e Tempo Total em Space Mono tabular.
+                <strong>Cartão "MELHOR DIA" no painel de métricas:</strong> quarto cartão integrado
+                ao grid (Hoje, Esta Semana, Total e Melhor Dia). Identifica de forma 100% dinâmica o
+                dia com maior volume de minutos de foco da história da conta e exibe sua data
+                formatada em pt-BR junto ao selo <code>HOJE É O RECORDE</code> (quando o usuário
+                supera a melhor marca) ou a contagem regressiva precisa <code>FALTAM X MIN</code>{' '}
+                para igualar ou bater o recorde.
               </li>
               <li>
-                <strong>Histograma de 14 dias:</strong> gráfico de barras proporcional com escala
-                calculada pelo pico do período e indicação abreviada dos dias da semana.
+                <strong>Histograma de 14 dias com destaque de pico:</strong> gráfico de barras
+                proporcional onde a barra correspondente ao melhor dia do período ganha contorno e
+                acabamento Champagne Ouro Fosco (<code>#C5A880</code>) com badge superior{' '}
+                <code>RECORDE</code>
+                em traço fino, permitindo visualização imediata da melhor performance dos últimos 14
+                dias.
               </li>
               <li>
-                <strong>Timeline de sessões:</strong> agrupamento por dia com horários de início e
-                término, nome da tarefa relacionada, duração em minutos e etiqueta de status.
+                <strong>Marcador discreto nos cabeçalhos da lista diária:</strong> no agrupamento
+                cronológico, se um dia for o recordista absoluto do histórico, o cabeçalho exibe uma
+                pílula sóbria em Champagne com ícone fino de troféu e rótulo <code>RECORDE</code>.
+              </li>
+              <li>
+                <strong>Sutileza na visão /pomodoro:</strong> no painel de visão geral da página
+                Pomodoro, o cartão "Foco de hoje" ganha chip discreto <code>RECORDE</code> e dica
+                inferior em Space Mono mostrando quanto falta para bater a marca histórica,
+                preservando a sobriedade visual.
+              </li>
+              <li>
+                <strong>Regra de cálculo transparente e zero mock:</strong> todas as métricas são
+                computadas estritamente a partir do histórico real de sessões do usuário recuperadas
+                da coleção <code>sessions</code>, agrupadas por <code>session_date</code> e somadas
+                em minutos reais (com consistência absoluta entre Pomodoro e Histórico).
               </li>
             </ul>
           </article>
@@ -618,7 +649,7 @@ export function Docs() {
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno (v0.0.21)</td>
+                <td>Interno (v0.0.22)</td>
                 <td>
                   Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
                   mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,

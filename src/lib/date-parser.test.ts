@@ -12,7 +12,8 @@ import {
   getSubtaskProgress,
   resetSubtasksForRecurrence,
 } from '@/services/data'
-import type { SubtaskItem } from '@/types'
+import { computeBestDayStats } from './best-day'
+import type { SubtaskItem, SessionRecord } from '@/types'
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -255,6 +256,78 @@ export function runDateParserTests() {
     assertEquals(inherited[1].done, false, 'Resetado para false')
     assertEquals(inherited[2].done, false, 'Mantido false')
     assertEquals(inherited[0].id, 'a1', 'ID preservado')
+  }
+
+  // 6. Testes do cálculo de Melhor Dia & Recordes
+  {
+    const ref = new Date('2025-05-15T12:00:00') // Uma quinta-feira
+    const makeSession = (
+      id: string,
+      started_at: string,
+      ended_at: string,
+      duration_minutes: number,
+      session_date: string,
+    ): SessionRecord => ({
+      id,
+      collectionId: 'sessions_col',
+      collectionName: 'sessions',
+      user: 'u1',
+      task: 't1',
+      started_at,
+      ended_at,
+      duration_minutes,
+      session_date,
+      status: 'completa',
+      created: session_date.slice(0, 10),
+      updated: session_date.slice(0, 10),
+    })
+
+    const mockSessions: SessionRecord[] = [
+      makeSession(
+        's1',
+        '2025-05-10T10:00:00.000Z',
+        '2025-05-10T12:00:00.000Z',
+        120,
+        '2025-05-10T00:00:00.000Z',
+      ),
+      makeSession(
+        's2',
+        '2025-05-10T14:00:00.000Z',
+        '2025-05-10T15:30:00.000Z',
+        90,
+        '2025-05-10T00:00:00.000Z',
+      ),
+      makeSession(
+        's3',
+        '2025-05-15T09:00:00.000Z',
+        '2025-05-15T10:30:00.000Z',
+        90,
+        '2025-05-15T00:00:00.000Z',
+      ),
+    ]
+
+    const stats = computeBestDayStats(mockSessions, ref)
+    assertEquals(stats.bestDay?.dateStr, '2025-05-10', 'Melhor dia absoluto foi 10 de maio')
+    assertEquals(stats.bestDay?.totalMinutes, 210, 'Total do melhor dia 210 min')
+    assertEquals(stats.isTodayRecord, false, 'Hoje não é o recorde ainda')
+    assertEquals(stats.minutesRemainingToBeat, 120, 'Faltam 120 min para igualar o recorde')
+
+    // Se hoje supera o recorde com 240 min
+    const sessionsWithNewRecord: SessionRecord[] = [
+      ...mockSessions,
+      makeSession(
+        's4',
+        '2025-05-15T13:00:00.000Z',
+        '2025-05-15T15:30:00.000Z',
+        150,
+        '2025-05-15T00:00:00.000Z',
+      ),
+    ]
+
+    const statsNewRecord = computeBestDayStats(sessionsWithNewRecord, ref)
+    assertEquals(statsNewRecord.todayMinutes, 240, 'Hoje soma 240 min')
+    assertEquals(statsNewRecord.isTodayRecord, true, 'Hoje é o novo recorde')
+    assertEquals(statsNewRecord.minutesRemainingToBeat, 0, 'Déficit zero quando é recorde')
   }
 
   return true
