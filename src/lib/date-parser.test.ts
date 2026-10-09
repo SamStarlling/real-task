@@ -12,9 +12,12 @@ import {
   getSubtaskProgress,
   resetSubtasksForRecurrence,
   sortPrioritizedItems,
+  getTaskBig3Source,
+  compareBig3Tasks,
+  selectBig3ForDay,
 } from '@/services/data'
 import { computeBestDayStats } from './best-day'
-import type { SubtaskItem, SessionRecord } from '@/types'
+import type { SubtaskItem, SessionRecord, TaskRecord, TagRecord, ListRecord } from '@/types'
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -354,6 +357,177 @@ export function runDateParserTests() {
     assertEquals(sorted[2].name, 'Arquivadas', 'Ordem 10 não-pinned')
     assertEquals(sorted[3].name, 'Estudos', 'Ordem 20 não-pinned')
     assertEquals(sorted[4].name, 'Tarefas Gerais', 'Ordem 30 não-pinned')
+  }
+
+  // 8. Testes do Efeito Big3 (Etapa 2): identificação de fonte prioritária, ordenação e seleção dos top 3
+  {
+    const sampleTags: TagRecord[] = [
+      {
+        id: 'tag-deep',
+        name: 'Foco Profundo',
+        color: '#C5A880',
+        order: 10,
+        pinned: true,
+        user: 'u1',
+        collectionId: 'tags_col',
+        collectionName: 'tags',
+        created: '2025-01-01',
+        updated: '2025-01-01',
+      },
+      {
+        id: 'tag-study',
+        name: 'Estudos',
+        color: '#7E92A2',
+        order: 20,
+        pinned: true,
+        user: 'u1',
+        collectionId: 'tags_col',
+        collectionName: 'tags',
+        created: '2025-01-01',
+        updated: '2025-01-01',
+      },
+      {
+        id: 'tag-routine',
+        name: 'Rotina',
+        color: '#8F9E82',
+        order: 5,
+        pinned: false,
+        user: 'u1',
+        collectionId: 'tags_col',
+        collectionName: 'tags',
+        created: '2025-01-01',
+        updated: '2025-01-01',
+      },
+    ]
+
+    const sampleLists: ListRecord[] = [
+      {
+        id: 'list-proj-a',
+        name: 'Projeto A',
+        order: 15,
+        pinned: true,
+        user: 'u1',
+        collectionId: 'lists_col',
+        collectionName: 'lists',
+        created: '2025-01-01',
+        updated: '2025-01-01',
+      },
+      {
+        id: 'list-inbox',
+        name: 'Geral',
+        order: 5,
+        pinned: false,
+        user: 'u1',
+        collectionId: 'lists_col',
+        collectionName: 'lists',
+        created: '2025-01-01',
+        updated: '2025-01-01',
+      },
+    ]
+
+    const makeTask = (id: string, title: string, opts: Partial<TaskRecord> = {}): TaskRecord => ({
+      id,
+      title,
+      user: 'u1',
+      done: false,
+      estimated_minutes: 25,
+      actual_minutes: 0,
+      collectionId: 'tasks_col',
+      collectionName: 'tasks',
+      created: '2025-10-15T10:00:00.000Z',
+      updated: '2025-10-15T10:00:00.000Z',
+      due_date: '2025-10-15T12:00:00.000Z',
+      ...opts,
+    })
+
+    // 8.1 Tarefa sem tag/lista prioritária não tem fonte Big3
+    const regularTask = makeTask('t1', 'Comprar água', {
+      tags: ['tag-routine'],
+      list: 'list-inbox',
+    })
+    assertEquals(
+      getTaskBig3Source(regularTask, sampleTags, sampleLists),
+      null,
+      'Tarefa sem tags/listas pinned não deve ter fonte Big3',
+    )
+
+    // 8.2 Tarefa com tag prioritária
+    const tagTask = makeTask('t2', 'Escrever relatório', {
+      tags: ['tag-deep'],
+    })
+    const sourceT2 = getTaskBig3Source(tagTask, sampleTags, sampleLists)
+    assert(sourceT2 !== null, 'Deve encontrar fonte prioritária para t2')
+    assertEquals(sourceT2?.type, 'tag', 'Tipo deve ser tag')
+    assertEquals(sourceT2?.name, 'Foco Profundo', 'Nome da tag deve ser Foco Profundo')
+    assertEquals(sourceT2?.label, '@Foco Profundo', 'Label deve ser @Foco Profundo')
+
+    // 8.3 Tarefa com MÚLTIPLAS origens prioritárias: deve escolher a de MAIOR prioridade (menor order)
+    // tag-deep tem order 10, list-proj-a tem order 15, tag-study tem order 20
+    const multiTask = makeTask('t3', 'Arquitetura do sistema', {
+      tags: ['tag-study', 'tag-deep'],
+      list: 'list-proj-a',
+    })
+    const sourceMulti = getTaskBig3Source(multiTask, sampleTags, sampleLists)
+    assert(sourceMulti !== null, 'Deve encontrar fonte para tarefa múltipla')
+    assertEquals(
+      sourceMulti?.name,
+      'Foco Profundo',
+      'Deve escolher Foco Profundo por ter menor order (10)',
+    )
+    assertEquals(sourceMulti?.order, 10, 'Ordem do pai deve ser 10')
+
+    // 8.4 Seleção de Big3 do dia com limite de 3 tarefas e desempate por P1-P4
+    const tPrio1 = makeTask('p1', 'Definir escopo', {
+      tags: ['tag-deep'], // order pai = 10
+      priority: 2, // P2
+      due_time: '14:00',
+    })
+    const tPrio2 = makeTask('p2', 'Revisar PR crítico', {
+      tags: ['tag-deep'], // order pai = 10
+      priority: 1, // P1 -> deve desempate antes de tPrio1!
+      due_time: '15:00',
+    })
+    const tPrio3 = makeTask('p3', 'Alinhamento com cliente', {
+      list: 'list-proj-a', // order pai = 15
+      priority: 1,
+    })
+    const tPrio4 = makeTask('p4', 'Leitura técnica', {
+      tags: ['tag-study'], // order pai = 20
+      priority: 1,
+    })
+
+    const allDayTasks = [regularTask, tPrio1, tPrio2, tPrio3, tPrio4]
+    const selection = selectBig3ForDay(allDayTasks, sampleTags, sampleLists, '2025-10-15')
+
+    assertEquals(selection.totalCount, 4, 'Total de 4 tarefas prioritárias hoje')
+    assertEquals(selection.top3.length, 3, 'Top 3 deve ter exatamente 3 tarefas')
+    assertEquals(selection.remainingCount, 1, '1 tarefa excedente')
+    assertEquals(selection.isCompleted, false, 'Ainda não está completo')
+
+    // Ordem no top 3:
+    // 1º: tPrio2 (pai order 10, P1)
+    // 2º: tPrio1 (pai order 10, P2)
+    // 3º: tPrio3 (pai order 15, P1)
+    // Fora do top 3 (4º): tPrio4 (pai order 20)
+    assertEquals(selection.top3[0].id, 'p2', 'Primeiro deve ser p2 (Pai 10, P1)')
+    assertEquals(selection.top3[1].id, 'p1', 'Segundo deve ser p1 (Pai 10, P2)')
+    assertEquals(selection.top3[2].id, 'p3', 'Terceiro deve ser p3 (Pai 15, P1)')
+
+    // 8.5 Conclusão das 3 tarefas ativa o estado isCompleted
+    const completedTasks = [
+      { ...tPrio2, done: true },
+      { ...tPrio1, done: true },
+      { ...tPrio3, done: true },
+    ]
+    const completedSelection = selectBig3ForDay(
+      completedTasks,
+      sampleTags,
+      sampleLists,
+      '2025-10-15',
+    )
+    assertEquals(completedSelection.top3.length, 3, 'Top 3 com 3 concluídas')
+    assertEquals(completedSelection.top3DoneCount, 3, '3 concluídas no top3')
+    assertEquals(completedSelection.isCompleted, true, 'Deve marcar Big3 completo')
   }
 
   return true

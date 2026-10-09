@@ -356,6 +356,203 @@ export function sortPrioritizedItems<T extends { order?: number; pinned?: boolea
 }
 
 /**
+ * Informação da fonte prioritária (etiqueta ou lista pinned) que confere o status Big3 a uma tarefa.
+ */
+export interface TaskBig3Source {
+  type: 'tag' | 'list'
+  id: string
+  name: string
+  color: string
+  order: number
+  label: string // '@etiqueta' ou '#lista'
+}
+
+/**
+ * Avalia se uma tarefa pertence a alguma etiqueta ou lista marcada como prioritária (pinned === true).
+ * Se pertencer a múltiplas fontes prioritárias, seleciona a de MAIOR prioridade (menor order do pai,
+ * priorizando tags/listas mais ao topo na sidebar).
+ *
+ * Pode receber `tags` e `lists` do app para garantir dados atualizados mesmo que o expand da task
+ * contenha apenas o estado do momento da query.
+ */
+export function getTaskBig3Source(
+  task: TaskRecord,
+  allTags?: TagRecord[],
+  allLists?: ListRecord[],
+): TaskBig3Source | null {
+  const candidates: TaskBig3Source[] = []
+
+  // 1. Verificar lista
+  const listId = task.list || task.expand?.list?.id
+  if (listId) {
+    const foundList = allLists?.find((l) => l.id === listId) || task.expand?.list
+    if (foundList && foundList.pinned) {
+      candidates.push({
+        type: 'list',
+        id: foundList.id,
+        name: foundList.name,
+        color: '#C5A880', // champagne suave padrão para listas
+        order:
+          typeof foundList.order === 'number' && foundList.order > 0 ? foundList.order : 999999,
+        label: `#${foundList.name}`,
+      })
+    }
+  }
+
+  // 2. Verificar etiquetas
+  const tagIds =
+    Array.isArray(task.tags) && task.tags.length > 0
+      ? task.tags
+      : task.expand?.tags?.map((t) => t.id) || []
+
+  for (const tid of tagIds) {
+    const foundTag =
+      allTags?.find((t) => t.id === tid) || task.expand?.tags?.find((t) => t.id === tid)
+    if (foundTag && foundTag.pinned) {
+      candidates.push({
+        type: 'tag',
+        id: foundTag.id,
+        name: foundTag.name,
+        color: foundTag.color || '#C5A880',
+        order: typeof foundTag.order === 'number' && foundTag.order > 0 ? foundTag.order : 999999,
+        label: `@${foundTag.name}`,
+      })
+    }
+  }
+
+  if (candidates.length === 0) return null
+
+  // Ordenar candidatos pela prioridade do pai: menor order vem primeiro
+  candidates.sort((a, b) => {
+    if (a.order !== b.order) return a.order - b.order
+    return a.name.localeCompare(b.name, 'pt-BR')
+  })
+
+  return candidates[0]
+}
+
+/**
+ * Ordenação estrita de tarefas Big3:
+ * 1. Prioridade do pai (ordem da etiqueta/lista prioritária - menor order primeiro).
+ * 2. Prioridade P1-P4 da tarefa (P1=1 até P4=4, tarefas sem prioridade tratadas como 99).
+ * 3. Tarefas com horário antes de tarefas sem horário (se aplicável) e depois hora "HH:MM".
+ * 4. Ordem manual da tarefa (campo `order` crescente).
+ * 5. Data de criação (-created).
+ */
+export function compareBig3Tasks(
+  a: TaskRecord,
+  b: TaskRecord,
+  allTags?: TagRecord[],
+  allLists?: ListRecord[],
+): number {
+  const sourceA = getTaskBig3Source(a, allTags, allLists)
+  const sourceB = getTaskBig3Source(b, allTags, allLists)
+
+  const parentOrderA = sourceA ? sourceA.order : 999999
+  const parentOrderB = sourceB ? sourceB.order : 999999
+  if (parentOrderA !== parentOrderB) {
+    return parentOrderA - parentOrderB
+  }
+
+  // Desempate 1: Prioridade da tarefa (P1=1, P2=2, P3=3, P4=4, 0/undefined=99)
+  const prioA =
+    typeof a.priority === 'number' && a.priority >= 1 && a.priority <= 4 ? a.priority : 99
+  const prioB =
+    typeof b.priority === 'number' && b.priority >= 1 && b.priority <= 4 ? b.priority : 99
+  if (prioA !== prioB) {
+    return prioA - prioB
+  }
+
+  // Desempate 2: Horário se houver
+  const hasTimeA = !!(a.due_time && a.due_time.trim())
+  const hasTimeB = !!(b.due_time && b.due_time.trim())
+  if (hasTimeA && !hasTimeB) return -1
+  if (!hasTimeA && hasTimeB) return 1
+  if (hasTimeA && hasTimeB) {
+    const timeCompare = (a.due_time || '').localeCompare(b.due_time || '')
+    if (timeCompare !== 0) return timeCompare
+  }
+
+  // Desempate 3: Ordem manual da tarefa
+  const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
+  const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
+  if (orderA !== orderB) {
+    return orderA - orderB
+  }
+
+  // Desempate final: Criação
+  return new Date(b.created).getTime() - new Date(a.created).getTime()
+}
+
+/**
+ * Deriva as tarefas Big3 do dia de hoje:
+ * - Filtra as tarefas de hoje (due_date <= hoje) que possuam etiqueta OU lista prioritária (pinned === true).
+ * - Ordena segundo `compareBig3Tasks`.
+ * - Separa as ATÉ 3 candidatas do topo, identificando o total de candidatas, quantas estão concluídas,
+ *   e se todas as 3 (ou todas as candidatas se houver < 3) estão concluídas.
+ */
+export interface Big3DaySelection {
+  // As até 3 tarefas em destaque no cartão (ou as 3 primeiras)
+  top3: TaskRecord[]
+  // Todas as candidatas do dia (concluídas e pendentes)
+  allCandidates: TaskRecord[]
+  // Total de tarefas prioritárias no dia
+  totalCount: number
+  // Quantas tarefas a mais existem além do limite de 3
+  remainingCount: number
+  // Quantas do cartão top3 estão concluídas
+  top3DoneCount: number
+  // Se o Big3 está completo (ao menos 1 tarefa existe e todas do top3 estão concluídas)
+  isCompleted: boolean
+}
+
+export function selectBig3ForDay(
+  tasks: TaskRecord[],
+  allTags?: TagRecord[],
+  allLists?: ListRecord[],
+  targetDayStr: string = new Date().toISOString().slice(0, 10),
+): Big3DaySelection {
+  // 1. Filtrar tarefas pertinentes a este dia (due_date <= targetDayStr)
+  // Nota: Tarefas atrasadas anteriores a hoje também compõem o escopo do dia a ser executado
+  const dayTasks = tasks.filter((t) => {
+    if (!t.due_date) return false
+    const day = t.due_date.slice(0, 10)
+    return day <= targetDayStr
+  })
+
+  // 2. Filtrar tarefas que possuem origem prioritária
+  const candidateTasks = dayTasks.filter((t) => {
+    return getTaskBig3Source(t, allTags, allLists) !== null
+  })
+
+  // 3. Ordenar: primeiro tarefas pendentes vs concluídas (as pendentes prioritárias formam o foco do Big3;
+  // se houver menos de 3 pendentes e houver concluídas, as concluídas preenchem o cartão com o check marcado),
+  // e internamente ordenadas por compareBig3Tasks
+  candidateTasks.sort((a, b) => {
+    // Pendentes têm precedência no topo do cartão para foco
+    if (a.done !== b.done) {
+      return a.done ? 1 : -1
+    }
+    return compareBig3Tasks(a, b, allTags, allLists)
+  })
+
+  const totalCount = candidateTasks.length
+  const top3 = candidateTasks.slice(0, 3)
+  const remainingCount = Math.max(0, totalCount - 3)
+  const top3DoneCount = top3.filter((t) => t.done).length
+  const isCompleted = top3.length > 0 && top3DoneCount === top3.length
+
+  return {
+    top3,
+    allCandidates: candidateTasks,
+    totalCount,
+    remainingCount,
+    top3DoneCount,
+    isCompleted,
+  }
+}
+
+/**
  * Reordena uma lista ordenada de etiquetas, persistindo a nova sequência no banco.
  */
 export async function reorderTags(orderedTags: TagRecord[]): Promise<void> {

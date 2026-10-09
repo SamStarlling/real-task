@@ -30,11 +30,13 @@ import {
   formatRecurrenceRule,
   getPriorityMeta,
   getSubtaskProgress,
+  getTaskBig3Source,
   isTaskOverdue,
   reorderTasks,
   toggleTaskDone,
   updateTask,
 } from '@/services/data'
+import type { ListRecord, TagRecord } from '@/types'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
@@ -49,7 +51,17 @@ interface DayColumnInfo {
   isToday: boolean
 }
 
-export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
+export function WeekPage({
+  tasks,
+  tags,
+  lists,
+  refresh,
+}: {
+  tasks: TaskRecord[]
+  tags?: TagRecord[]
+  lists?: ListRecord[]
+  refresh: () => void
+}) {
   const { user } = useAuth()
   const { start } = usePomodoro()
   const [params, setParams] = useSearchParams()
@@ -650,11 +662,12 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                 ? `priority-${priorityMeta.code.toLowerCase()}`
                 : ''
               const subtaskProgress = getSubtaskProgress(task.subtasks)
+              const big3Source = getTaskBig3Source(task, tags, lists)
               return (
                 <div
                   key={task.id}
                   data-task-id={task.id}
-                  className={`inbox-shelf-item ${priorityClass} ${draggingTaskId === task.id ? 'is-dragging' : ''}`}
+                  className={`inbox-shelf-item ${priorityClass} ${draggingTaskId === task.id ? 'is-dragging' : ''} ${big3Source ? 'has-big3-source' : ''}`}
                   style={{
                     borderLeftColor: priorityMeta ? priorityMeta.borderColor : undefined,
                   }}
@@ -692,6 +705,18 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                       )}
                     </div>
                     <div className="inbox-item-meta">
+                      {big3Source && (
+                        <span
+                          className="tag-chip big3-indicator-chip"
+                          title={`Item prioritário Big3 (80/20) via ${big3Source.label}`}
+                        >
+                          <span
+                            className="big3-dot"
+                            style={{ backgroundColor: big3Source.color || '#C5A880' }}
+                          />
+                          BIG3
+                        </span>
+                      )}
                       {priorityMeta && (
                         <span
                           className="tag-chip priority-chip"
@@ -820,6 +845,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                       : ''
                     const isOverdue = isTaskOverdue(task)
                     const subtaskProgress = getSubtaskProgress(task.subtasks)
+                    const big3Source = getTaskBig3Source(task, tags, lists)
 
                     return (
                       <article
@@ -833,7 +859,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                               ? 'drop-target-before'
                               : 'drop-target-after'
                             : ''
-                        }`}
+                        } ${big3Source ? 'has-big3-source' : ''}`}
                         style={{
                           borderLeftColor:
                             priorityMeta && !isOverdue ? priorityMeta.borderColor : undefined,
@@ -893,6 +919,18 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
                             )}
                           </div>
                           <div className="meta">
+                            {big3Source && (
+                              <span
+                                className="tag-chip big3-indicator-chip"
+                                title={`Item prioritário Big3 (80/20) via ${big3Source.label}`}
+                              >
+                                <span
+                                  className="big3-dot"
+                                  style={{ backgroundColor: big3Source.color || '#C5A880' }}
+                                />
+                                BIG3
+                              </span>
+                            )}
                             {priorityMeta && (
                               <span
                                 className="tag-chip priority-chip"

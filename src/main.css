@@ -531,6 +531,240 @@ a {
   border-left-color: #c5a880 !important;
 }
 
+/* Indicador BIG3 nos metadados do card (quiet luxury) */
+.big3-indicator-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 2.5px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(197, 168, 128, 0.35) !important;
+  background: rgba(197, 168, 128, 0.08) !important;
+  color: #c5a880 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+.big3-indicator-chip .big3-dot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ========================================================
+   CARTÃO BIG3 NO TOPO DE HOJE (QUIET LUXURY BARBOSA)
+   ======================================================== */
+.big3-top-card {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.22);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 200ms ease;
+}
+.big3-top-card.is-completed-card {
+  border-color: rgba(197, 168, 128, 0.45);
+  background: linear-gradient(180deg, rgba(197, 168, 128, 0.04) 0%, #12141c 100%);
+}
+
+.big3-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.big3-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.big3-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.12);
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  border-radius: 4px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.big3-heading {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #f4f4f6;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.big3-counter-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  color: #a1a1aa;
+  letter-spacing: 0.04em;
+}
+
+.big3-status-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+.big3-status-badge.completed {
+  background: rgba(197, 168, 128, 0.16);
+  color: #c5a880;
+  border: 1px solid rgba(197, 168, 128, 0.35);
+}
+
+.big3-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.big3-task-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 140ms ease;
+}
+.big3-task-row:hover {
+  background: rgba(197, 168, 128, 0.04);
+  border-color: rgba(197, 168, 128, 0.18);
+}
+.big3-task-row.done {
+  opacity: 0.6;
+}
+
+.big3-check-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid #71717a;
+  background: transparent;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  cursor: pointer;
+  color: #090a0e;
+  transition: all 140ms ease;
+}
+.big3-check-btn:hover {
+  border-color: #c5a880;
+}
+.big3-task-row.done .big3-check-btn {
+  background: #c5a880;
+  border-color: #c5a880;
+  color: #090a0e;
+}
+
+.big3-task-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.big3-task-title {
+  font-size: 13.5px;
+  color: #f4f4f6;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.big3-task-row.done .big3-task-title {
+  color: #71717a;
+  text-decoration: line-through;
+}
+
+.big3-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.big3-source-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.big3-source-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.big3-time-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.08);
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.big3-remaining-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: right;
+}
+
+.big3-remaining-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+}
+
 /* Chip de prioridade nos metadados do card */
 .priority-chip {
   font-family: 'Space Mono', monospace;

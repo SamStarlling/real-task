@@ -42,8 +42,14 @@ function Protected() {
   return (
     <Routes>
       <Route element={<Layout tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}>
-        <Route path="/" element={<Index tasks={tasks} refresh={refresh} />} />
-        <Route path="/semana" element={<WeekPage tasks={tasks} refresh={refresh} />} />
+        <Route
+          path="/"
+          element={<Index tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
+        />
+        <Route
+          path="/semana"
+          element={<WeekPage tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
+        />
         <Route
           path="/pomodoro"
           element={<PomodoroPage sessions={sessions} tasks={tasks} refreshSessions={refresh} />}

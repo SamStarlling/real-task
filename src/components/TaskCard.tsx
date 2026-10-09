@@ -6,9 +6,11 @@ import {
   formatRecurrenceRule,
   getPriorityMeta,
   getSubtaskProgress,
+  getTaskBig3Source,
   isTaskOverdue,
   toggleTaskDone,
 } from '@/services/data'
+import type { ListRecord, TagRecord } from '@/types'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 
 export interface TaskCardProps {
@@ -16,6 +18,8 @@ export interface TaskCardProps {
   index: number
   onChange: () => void
   onOpen: () => void
+  tags?: TagRecord[]
+  lists?: ListRecord[]
   draggable?: boolean
   isDragging?: boolean
   isDropTarget?: 'before' | 'after' | null
@@ -31,6 +35,8 @@ export function TaskCard({
   index,
   onChange,
   onOpen,
+  tags,
+  lists,
   draggable = false,
   isDragging = false,
   isDropTarget = null,
@@ -50,6 +56,7 @@ export function TaskCard({
   const priorityMeta = getPriorityMeta(task.priority)
   const priorityClass = priorityMeta ? `priority-${priorityMeta.code.toLowerCase()}` : ''
   const subtaskProgress = getSubtaskProgress(task.subtasks)
+  const big3Source = getTaskBig3Source(task, tags, lists)
 
   return (
     <article
@@ -58,7 +65,7 @@ export function TaskCard({
         isDragging ? 'is-dragging' : ''
       } ${isDropTarget === 'before' ? 'drop-target-before' : ''} ${
         isDropTarget === 'after' ? 'drop-target-after' : ''
-      }`}
+      } ${big3Source ? 'has-big3-source' : ''}`}
       style={{
         animationDelay: `${index * 40}ms`,
         borderLeftColor: priorityMeta && !overdue ? priorityMeta.borderColor : undefined,
@@ -99,6 +106,19 @@ export function TaskCard({
           )}
         </div>
         <div className="meta">
+          {/* Indicador discreto BIG3 quiet luxury com o ponto da cor da etiqueta/lista prioritária */}
+          {big3Source && (
+            <span
+              className="tag-chip big3-indicator-chip"
+              title={`Item prioritário Big3 (80/20) via ${big3Source.label}`}
+            >
+              <span
+                className="big3-dot"
+                style={{ backgroundColor: big3Source.color || '#C5A880' }}
+              />
+              BIG3
+            </span>
+          )}
           {priorityMeta && (
             <span
               className="tag-chip priority-chip"

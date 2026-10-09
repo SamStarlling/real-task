@@ -8,19 +8,27 @@ import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
 import {
   compareTasksWithinDay,
+  getTaskBig3Source,
   isTaskOverdue,
   moveTaskToList,
   reorderTasks,
+  selectBig3ForDay,
+  toggleTaskDone,
   type TaskGroupingMode,
 } from '@/services/data'
+import type { ListRecord, TagRecord } from '@/types'
 import {
   AlertCircle,
+  Check,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
   Folder,
   Layers,
+  Sparkles,
   Tag as TagIcon,
+  Target,
 } from 'lucide-react'
 
 interface TaskGroupItem {
@@ -31,7 +39,17 @@ interface TaskGroupItem {
   tasks: TaskRecord[]
 }
 
-export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
+export function Index({
+  tasks,
+  tags,
+  lists,
+  refresh,
+}: {
+  tasks: TaskRecord[]
+  tags?: TagRecord[]
+  lists?: ListRecord[]
+  refresh: () => void
+}) {
   const [params, setParams] = useSearchParams()
   const [selected, setSelected] = useState<TaskRecord | null>(null)
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
@@ -511,6 +529,12 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     return { upcoming: upcomingList, overdue: overdueList }
   }, [view, optimisticPending, nowMinute])
 
+  // Seleção Big3 para o dia de hoje (Item 2 dos requisitos)
+  const big3Selection = useMemo(() => {
+    if (view !== 'hoje') return null
+    return selectBig3ForDay(tasks, tags, lists, today)
+  }, [view, tasks, tags, lists, today])
+
   return (
     <div className="page">
       <header className="view-title">
@@ -692,6 +716,111 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
         </div>
       )}
 
+      {/* CARTÃO "BIG3" NO TOPO DE HOJE (Item 2 dos requisitos) */}
+      {view === 'hoje' && big3Selection && big3Selection.top3.length > 0 && (
+        <section
+          className={`big3-top-card ${big3Selection.isCompleted ? 'is-completed-card' : ''}`}
+          aria-label="Tarefas Big3 prioritárias do dia"
+        >
+          <header className="big3-card-header">
+            <div className="big3-title-wrap">
+              <span className="big3-badge">
+                <Target className="w-3.5 h-3.5 inline mr-1 text-[#C5A880]" />
+                BIG3
+              </span>
+              <span className="big3-heading">O FOCO DOS 80% DE HOJE</span>
+            </div>
+
+            {big3Selection.isCompleted ? (
+              <div
+                className="big3-status-badge completed"
+                title="Todas as tarefas Big3 de hoje foram concluídas!"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 inline mr-1 text-[#C5A880]" />
+                BIG3 COMPLETO
+              </div>
+            ) : (
+              <span className="big3-counter-text">
+                {big3Selection.top3DoneCount} de {big3Selection.top3.length} concluída
+                {big3Selection.top3.length === 1 ? '' : 's'}
+              </span>
+            )}
+          </header>
+
+          <div className="big3-items-list">
+            {big3Selection.top3.map((task) => {
+              const source = getTaskBig3Source(task, tags, lists)
+              return (
+                <div key={task.id} className={`big3-task-row ${task.done ? 'done' : ''}`}>
+                  <button
+                    type="button"
+                    className="big3-check-btn"
+                    aria-label={task.done ? 'Reabrir tarefa' : 'Concluir tarefa'}
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      await toggleTaskDone(task)
+                      refresh()
+                    }}
+                  >
+                    {task.done ? <Check className="w-3.5 h-3.5" /> : null}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="big3-task-content"
+                    onClick={() => {
+                      setSelected(task)
+                      setParams((p) => {
+                        p.set('taskId', task.id)
+                        return p
+                      })
+                    }}
+                  >
+                    <span className="big3-task-title">{task.title}</span>
+
+                    <div className="big3-task-meta">
+                      {source && (
+                        <span
+                          className="big3-source-tag"
+                          style={{
+                            borderColor: `${source.color}55`,
+                            color: source.color || '#C5A880',
+                          }}
+                          title={`Origem prioritária: ${source.label}`}
+                        >
+                          <span
+                            className="big3-source-dot"
+                            style={{ backgroundColor: source.color || '#C5A880' }}
+                          />
+                          {source.label}
+                        </span>
+                      )}
+
+                      {task.due_time && (
+                        <span className="big3-time-chip" title={`Horário: ${task.due_time}`}>
+                          <Clock className="w-2.5 h-2.5 inline mr-1" />
+                          {task.due_time}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          {big3Selection.remainingCount > 0 && (
+            <div className="big3-remaining-footer">
+              <span className="big3-remaining-text">
+                +{big3Selection.remainingCount} tarefa
+                {big3Selection.remainingCount === 1 ? '' : 's'} prioritária
+                {big3Selection.remainingCount === 1 ? '' : 's'} na lista de hoje
+              </span>
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="tasks" ref={tasksContainerRef}>
         {/* MODO AGRUPADO (POR ETIQUETA OU POR LISTA) */}
         {isEligibleForGrouping && groupingMode !== 'none' && taskGroups.length > 0 ? (
@@ -732,6 +861,8 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
                           key={task.id}
                           task={task}
                           index={i}
+                          tags={tags}
+                          lists={lists}
                           draggable={true}
                           isDragging={draggingTaskId === task.id}
                           isDropTarget={dropTarget?.id === task.id ? dropTarget.position : null}
@@ -763,6 +894,8 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
               key={task.id}
               task={task}
               index={i}
+              tags={tags}
+              lists={lists}
               draggable={true}
               isDragging={draggingTaskId === task.id}
               isDropTarget={dropTarget?.id === task.id ? dropTarget.position : null}
@@ -801,6 +934,8 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
                 key={task.id}
                 task={task}
                 index={i}
+                tags={tags}
+                lists={lists}
                 draggable={false}
                 onChange={refresh}
                 onOpen={() => setSelected(task)}

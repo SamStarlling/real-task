@@ -525,6 +525,19 @@ export function Docs() {
                 sincronizada via Server-Sent Events.
               </li>
               <li>
+                <strong>Efeito Big3 nas Visões & Cartão de Topo (v0.0.24):</strong> tarefas
+                pertencentes a etiquetas ou listas prioritárias (<code>pinned=true</code>) exibem o
+                indicador discreto
+                <code>BIG3</code> em Space Mono acompanhado do ponto na cor da etiqueta/lista
+                prioritária em todas as visões (Hoje, Amanhã, Inbox e Semana). No topo da visão
+                Hoje, o cartão
+                <strong>BIG3</strong> seleciona as até 3 tarefas do dia que valem os 80% do
+                resultado, ordenadas pela prioridade da etiqueta/lista (order + pinned) e
+                desempatadas por P1–P4, horário e ordem manual. Permite conclusão rápida com
+                checkbox integrado e aciona o selo discreto champagne <code>BIG3 COMPLETO</code> ao
+                finalizar as 3 tarefas.
+              </li>
+              <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
                 de Segunda para todos os dias úteis ou sincronizar Sábado e Domingo.
               </li>
@@ -655,11 +668,24 @@ export function Docs() {
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno (v0.0.22)</td>
+                <td>Interno (v0.0.24)</td>
                 <td>
                   Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
                   mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,
                   toda segunda), horário (14:00, às 9h30) e autocomplete de prioridades (P1–P4)
+                </td>
+              </tr>
+              <tr>
+                <td>Mecanismo Big3 (80/20)</td>
+                <td>
+                  <code>src/services/data.ts</code>
+                </td>
+                <td>v0.0.24</td>
+                <td>
+                  Derivação e ranqueamento inteligente das até 3 tarefas do dia que geram os 80% de
+                  resultado a partir de etiquetas e listas prioritárias fixadas (pinned),
+                  respeitando desempates por nível de prioridade (P1–P4), horário agendado e ordem
+                  sequencial.
                 </td>
               </tr>
               <tr>
