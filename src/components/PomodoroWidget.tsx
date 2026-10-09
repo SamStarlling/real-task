@@ -5,6 +5,7 @@ import { usePomodoro } from '@/contexts/PomodoroContext'
 export function PomodoroWidget() {
   const {
     state,
+    selectedTask,
     seconds,
     overtimeSeconds,
     isOvertime,
@@ -151,7 +152,7 @@ export function PomodoroWidget() {
             <span>{phaseLabel}</span>
             <span style={{ opacity: 0.7 }}>{state.preset.name}</span>
           </div>
-          <strong>{state.task?.title || 'Sem tarefa vinculada'}</strong>
+          <strong>{state.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
           {isReadOnlyTab && (
             <div
               style={{

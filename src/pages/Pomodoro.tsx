@@ -53,6 +53,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const { user } = useAuth()
   const {
     state,
+    selectedTask,
     seconds,
     overtimeSeconds,
     isOvertime,
@@ -251,7 +252,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const handlePlayPreset = (preset: FocusPresetRecord) => {
     setActivePreset(preset)
     // Se o timer já está rodando nesta mesma tarefa/preset, apenas segue; senão inicia com este preset
-    start(state?.task || null, preset)
+    start(state?.task ?? selectedTask, preset)
   }
 
   // MÉTRICAS DO PAINEL DIREITO "Visão geral"
@@ -320,6 +321,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const isRunning = state?.status === 'rodando'
   const isPaused = state?.status === 'pausado'
   const hasActiveSession = !!state
+  const currentLinkedTask = state?.task ?? selectedTask
 
   // Fase e bloco
   const currentBlock = state?.currentBlock ?? 1
@@ -619,7 +621,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                     >
                       <span className="pomodoro-task-dot" />
                       <span className="pomodoro-task-title">
-                        {state?.task ? state.task.title : 'Vincular tarefa...'}
+                        {currentLinkedTask ? currentLinkedTask.title : 'Vincular tarefa...'}
                       </span>
                     </button>
                   </DropdownMenuTrigger>
@@ -629,9 +631,12 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   >
                     <DropdownMenuItem
                       onClick={() => selectTask(null)}
-                      className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans']"
+                      className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
                     >
                       <em>Nenhuma tarefa vinculada (foco livre)</em>
+                      {!currentLinkedTask && (
+                        <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
+                      )}
                     </DropdownMenuItem>
                     {tasks
                       .filter((t) => !t.done)
@@ -642,7 +647,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                           className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
                         >
                           <span className="truncate">{t.title}</span>
-                          {state?.task?.id === t.id && (
+                          {currentLinkedTask?.id === t.id && (
                             <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
                           )}
                         </DropdownMenuItem>

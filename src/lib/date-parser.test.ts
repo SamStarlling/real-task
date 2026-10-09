@@ -530,5 +530,52 @@ export function runDateParserTests() {
     assertEquals(completedSelection.isCompleted, true, 'Deve marcar Big3 completo')
   }
 
+  // 9. Testes de Vinculação de Tarefa ao Pomodoro (selectedTask & fallback de UI)
+  {
+    const dummyTask = {
+      id: 'task_test_pomo',
+      title: 'Tarefa Pomodoro Vinculada',
+      done: false,
+    } as any
+
+    // 9.1 Seleção com timer inativo guarda pendente
+    let state: any = null
+    let selectedTask: any = null
+    const selectTask = (t: any) => {
+      selectedTask = t
+      if (state) state = { ...state, task: t }
+    }
+
+    selectTask(dummyTask)
+    assertEquals(selectedTask?.id, 'task_test_pomo', 'selectedTask guardou a tarefa antes do play')
+    assertEquals(state, null, 'Timer permanece inativo')
+
+    // 9.2 Fallback da UI: state?.task ?? selectedTask
+    const currentLinkedTask = state?.task ?? selectedTask
+    assertEquals(
+      currentLinkedTask?.title,
+      'Tarefa Pomodoro Vinculada',
+      'UI resolve a tarefa vinculada mesmo inativo',
+    )
+
+    // 9.3 Toggle nasce com a selectedTask
+    state = {
+      task: selectedTask,
+      status: 'rodando',
+    }
+    assertEquals(state.task?.id, 'task_test_pomo', 'Toggle iniciou com a tarefa pendente')
+
+    // 9.4 Troca no meio da sessão
+    const dummyTask2 = { id: 'task_test_2', title: 'Segunda Tarefa' } as any
+    selectTask(dummyTask2)
+    assertEquals(state.task?.id, 'task_test_2', 'Troca no meio da sessão atualizou state.task')
+    assertEquals(selectedTask?.id, 'task_test_2', 'Troca no meio atualizou selectedTask')
+
+    // 9.5 Desvincular tarefa
+    selectTask(null)
+    assertEquals(state.task, null, 'Desvinculação limpou state.task')
+    assertEquals(selectedTask, null, 'Desvinculação limpou selectedTask')
+  }
+
   return true
 }

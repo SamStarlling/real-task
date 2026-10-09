@@ -101,6 +101,7 @@ const CHANNEL_NAME = 'barbosa_pomodoro_sync_v1'
 
 export interface PomodoroContextValue {
   state: PomodoroState | null
+  selectedTask: TaskRecord | null
   seconds: number
   overtimeSeconds: number
   isOvertime: boolean
@@ -130,6 +131,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [activePreset, setActivePresetState] = useState<ActivePreset>(DEFAULT_PRESET)
   const [state, setState] = useState<PomodoroState | null>(null)
+  const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [now, setNow] = useState(Date.now())
   const [pendingNote, setPendingNote] = useState<PendingSessionNote | null>(null)
   const pendingNoteRef = useRef(pendingNote)
@@ -141,6 +143,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const stateRef = useRef(state)
   stateRef.current = state
+
+  const selectedTaskRef = useRef(selectedTask)
+  selectedTaskRef.current = selectedTask
 
   const activePresetRef = useRef(activePreset)
   activePresetRef.current = activePreset
@@ -320,12 +325,25 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const selectTask = useCallback(
     (task: TaskRecord | null) => {
+      setSelectedTask(task)
       setState((curr) => {
         if (!curr) return null
         const updated = { ...curr, task }
         broadcastState(updated)
         return updated
       })
+
+      if (task) {
+        toast({
+          title: 'Tarefa vinculada ao Pomodoro',
+          description: task.title,
+        })
+      } else {
+        toast({
+          title: 'Vínculo removido',
+          description: 'Pomodoro em modo foco livre.',
+        })
+      }
     },
     [broadcastState],
   )
@@ -513,6 +531,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         })
       }
       setState(null)
+      setSelectedTask(null)
       setControllingTabId(null)
       broadcastState(null)
       resetDynamicFavicon()
@@ -641,6 +660,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       setControllingTabId(TAB_ID)
 
+      const effectiveTask = task !== undefined ? task : (selectedTaskRef.current ?? null)
+      setSelectedTask(effectiveTask)
+
       let chosenPreset = activePresetRef.current
       if (customPreset) {
         chosenPreset =
@@ -666,7 +688,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       const totalSec = chosenPreset.workMinutes * 60
       setNow(Date.now())
       const newState: PomodoroState = {
-        task: task !== undefined ? task : null,
+        task: effectiveTask,
         status: 'rodando',
         phase: 'foco',
         currentBlock: 1,
@@ -692,11 +714,12 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
     setState((current) => {
       if (!current) {
-        // Se estava inativo, inicia com o preset atual
+        // Se estava inativo, inicia com o preset atual e tarefa pendente selecionada
         playFocusStartSound()
+        const initialTask = selectedTaskRef.current ?? null
         const totalSec = activePresetRef.current.workMinutes * 60
         const fresh: PomodoroState = {
-          task: null,
+          task: initialTask,
           status: 'rodando',
           phase: 'foco',
           currentBlock: 1,
@@ -746,6 +769,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const discard = useCallback(() => {
     unlockAudioContext()
     setState(null)
+    setSelectedTask(null)
     setControllingTabId(null)
     broadcastState(null)
     resetDynamicFavicon()
@@ -903,6 +927,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       state,
+      selectedTask,
       seconds,
       overtimeSeconds,
       isOvertime,
@@ -924,6 +949,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }),
     [
       state,
+      selectedTask,
       seconds,
       overtimeSeconds,
       isOvertime,

@@ -814,6 +814,19 @@ export function Docs() {
                 </td>
               </tr>
               <tr>
+                <td>Vinculação de Tarefas no Pomodoro</td>
+                <td>
+                  <code>PomodoroContext</code>, <code>Pomodoro.tsx</code>,{' '}
+                  <code>PomodoroWidget.tsx</code>
+                </td>
+                <td>v0.0.33</td>
+                <td>
+                  Vinculação de tarefa pré-play com <code>selectedTask</code>, feedback via toast,
+                  preservação em <code>toggle</code>/<code>start</code> e associação correta ao
+                  registrar sessão.
+                </td>
+              </tr>
+              <tr>
                 <td>Estado Global</td>
                 <td>
                   <code>AuthContext</code> & <code>PomodoroContext</code>
