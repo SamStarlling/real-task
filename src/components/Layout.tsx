@@ -9,11 +9,21 @@ import {
   GripVertical,
   Inbox,
   LogOut,
+  Menu,
   Pin,
+  Plus,
   Sun,
   Timer,
+  X,
 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
@@ -29,8 +39,16 @@ import {
   toggleTagPinned,
 } from '@/services/data'
 
-const links = [
+const desktopNavLinks = [
   ['/?view=inbox', 'Inbox', Inbox],
+  ['/', 'Hoje', Sun],
+  ['/?view=amanha', 'Amanhã', ArrowRight],
+  ['/semana', 'Semana', CalendarDays],
+  ['/pomodoro', 'Pomodoro', Timer],
+  ['/historico', 'Histórico', Clock3],
+] as const
+
+const mobileBottomNavLinks = [
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
   ['/semana', 'Semana', CalendarDays],
@@ -368,6 +386,14 @@ export function Layout({
                 : false),
     ).length
 
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false)
+
+  // Fecha o drawer automaticamente ao mudar de rota ou parâmetros
+  useEffect(() => {
+    setMobileDrawerOpen(false)
+  }, [location.pathname, location.search])
+
   const initials = String(user?.name || user?.email || 'U')
     .split(' ')
     .map((x) => x[0])
@@ -375,344 +401,369 @@ export function Layout({
     .join('')
     .toUpperCase()
 
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <Brand />
-        <div className="sidebar-scroll-area">
-          <nav>
-            {links.map(([to, label, Icon]) => (
-              <NavLink
-                key={label}
-                end={to === '/'}
-                to={to}
-                className={({ isActive }) =>
-                  isActive && !activeUrlTag && !activeUrlList ? 'active' : ''
-                }
-              >
-                <Icon />
-                <span>{label}</span>
-                {label !== 'Histórico' && label !== 'Pomodoro' && <b>{count(label)}</b>}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* SEÇÃO NOVA: ETIQUETAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
-          <div className="sidebar-custom-section">
-            <button
-              type="button"
-              className="sidebar-section-header"
-              onClick={toggleTagsCollapse}
-              aria-expanded={!tagsCollapsed}
-              title={tagsCollapsed ? 'Expandir etiquetas' : 'Recolher etiquetas'}
+  // Função auxiliar para renderizar a árvore de navegação completa da sidebar
+  // compartilhada entre a barra lateral do desktop e o drawer mobile
+  const renderSidebarBody = (onItemClick?: () => void) => (
+    <>
+      <div className="sidebar-scroll-area">
+        <nav>
+          {desktopNavLinks.map(([to, label, Icon]) => (
+            <NavLink
+              key={label}
+              end={to === '/'}
+              to={to}
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                isActive && !activeUrlTag && !activeUrlList ? 'active' : ''
+              }
             >
-              <span className="sidebar-section-title">ETIQUETAS</span>
-              <span className="sidebar-section-meta">
-                {optimisticTags.length > 0 && (
-                  <span className="sidebar-section-count">{optimisticTags.length}</span>
-                )}
-                {tagsCollapsed ? (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </span>
-            </button>
+              <Icon />
+              <span>{label}</span>
+              {label !== 'Histórico' && label !== 'Pomodoro' && <b>{count(label)}</b>}
+            </NavLink>
+          ))}
+        </nav>
 
-            {!tagsCollapsed && (
-              <div className="sidebar-custom-list">
-                {optimisticTags.length === 0 ? (
-                  <div className="sidebar-empty-hint">Nenhuma etiqueta criada</div>
-                ) : (
-                  optimisticTags.map((tag) => {
-                    const tagCount = openCountByTag.get(tag.id) || 0
-                    const isPinned = !!tag.pinned
-                    const isActive = activeUrlTag === tag.id
-                    const isDragging = draggingTagId === tag.id
-                    const dropPos = tagDropTarget?.id === tag.id ? tagDropTarget.position : null
+        {/* SEÇÃO ETIQUETAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
+        <div className="sidebar-custom-section">
+          <button
+            type="button"
+            className="sidebar-section-header"
+            onClick={toggleTagsCollapse}
+            aria-expanded={!tagsCollapsed}
+            title={tagsCollapsed ? 'Expandir etiquetas' : 'Recolher etiquetas'}
+          >
+            <span className="sidebar-section-title">ETIQUETAS</span>
+            <span className="sidebar-section-meta">
+              {optimisticTags.length > 0 && (
+                <span className="sidebar-section-count">{optimisticTags.length}</span>
+              )}
+              {tagsCollapsed ? (
+                <ChevronRight className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </span>
+          </button>
 
-                    return (
-                      <div
-                        key={tag.id}
-                        data-tag-id={tag.id}
-                        draggable={true}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', tag.id)
-                          e.dataTransfer.effectAllowed = 'move'
+          {!tagsCollapsed && (
+            <div className="sidebar-custom-list">
+              {optimisticTags.length === 0 ? (
+                <div className="sidebar-empty-hint">Nenhuma etiqueta criada</div>
+              ) : (
+                optimisticTags.map((tag) => {
+                  const tagCount = openCountByTag.get(tag.id) || 0
+                  const isPinned = !!tag.pinned
+                  const isActive = activeUrlTag === tag.id
+                  const isDragging = draggingTagId === tag.id
+                  const dropPos = tagDropTarget?.id === tag.id ? tagDropTarget.position : null
+
+                  return (
+                    <div
+                      key={tag.id}
+                      data-tag-id={tag.id}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', tag.id)
+                        e.dataTransfer.effectAllowed = 'move'
+                        setDraggingTagId(tag.id)
+                      }}
+                      onDragEnd={() => {
+                        setDraggingTagId(null)
+                        setTagDropTarget(null)
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = 'move'
+                        if (!draggingTagId || draggingTagId === tag.id) {
+                          setTagDropTarget(null)
+                          return
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        const midY = rect.top + rect.height / 2
+                        const position = e.clientY < midY ? 'before' : 'after'
+                        setTagDropTarget({ id: tag.id, position })
+                      }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        const sourceId = e.dataTransfer.getData('text/plain') || draggingTagId
+                        const pos = tagDropTarget?.id === tag.id ? tagDropTarget.position : 'before'
+                        setDraggingTagId(null)
+                        setTagDropTarget(null)
+                        if (sourceId && sourceId !== tag.id) {
+                          await commitTagReorder(sourceId, tag.id, pos)
+                        }
+                      }}
+                      className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
+                        isActive ? 'active' : ''
+                      } ${isDragging ? 'is-dragging' : ''} ${
+                        dropPos ? `drop-indicator-${dropPos}` : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="sidebar-drag-handle"
+                        title="Arrastar para reordenar"
+                        onTouchStart={(e) => {
+                          const touch = e.touches[0]
+                          tagTouchStateRef.current = {
+                            activeId: tag.id,
+                            lastTouchY: touch.clientY,
+                          }
                           setDraggingTagId(tag.id)
                         }}
-                        onDragEnd={() => {
-                          setDraggingTagId(null)
-                          setTagDropTarget(null)
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          e.dataTransfer.dropEffect = 'move'
-                          if (!draggingTagId || draggingTagId === tag.id) {
-                            setTagDropTarget(null)
-                            return
-                          }
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          const midY = rect.top + rect.height / 2
-                          const position = e.clientY < midY ? 'before' : 'after'
-                          setTagDropTarget({ id: tag.id, position })
-                        }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          const sourceId = e.dataTransfer.getData('text/plain') || draggingTagId
-                          const pos =
-                            tagDropTarget?.id === tag.id ? tagDropTarget.position : 'before'
-                          setDraggingTagId(null)
-                          setTagDropTarget(null)
-                          if (sourceId && sourceId !== tag.id) {
-                            await commitTagReorder(sourceId, tag.id, pos)
-                          }
-                        }}
-                        className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
-                          isActive ? 'active' : ''
-                        } ${isDragging ? 'is-dragging' : ''} ${
-                          dropPos ? `drop-indicator-${dropPos}` : ''
-                        }`}
                       >
-                        <button
-                          type="button"
-                          className="sidebar-drag-handle"
-                          title="Arrastar para reordenar"
-                          onTouchStart={(e) => {
-                            const touch = e.touches[0]
-                            tagTouchStateRef.current = {
-                              activeId: tag.id,
-                              lastTouchY: touch.clientY,
-                            }
-                            setDraggingTagId(tag.id)
-                          }}
-                        >
-                          <GripVertical className="w-3 h-3 text-[#71717A]" />
-                        </button>
+                        <GripVertical className="w-3 h-3 text-[#71717A]" />
+                      </button>
 
-                        <button
-                          type="button"
-                          className="sidebar-item-link"
-                          onClick={() => {
-                            // Clicar na etiqueta navega para Hoje filtrada por esta etiqueta
-                            navigate(`/?view=hoje&tag=${tag.id}`)
-                          }}
-                          title={`Filtrar por etiqueta @${tag.name}${isPinned ? ' (Prioritária)' : ''}`}
-                        >
-                          <span
-                            className="sidebar-item-dot"
-                            style={{ backgroundColor: tag.color || '#C5A880' }}
-                          />
-                          <span className="sidebar-item-name">{tag.name}</span>
-                          <span className={`sidebar-item-count ${tagCount === 0 ? 'zero' : ''}`}>
-                            {tagCount}
-                          </span>
-                        </button>
+                      <button
+                        type="button"
+                        className="sidebar-item-link"
+                        onClick={() => {
+                          navigate(`/?view=hoje&tag=${tag.id}`)
+                          onItemClick?.()
+                        }}
+                        title={`Filtrar por etiqueta @${tag.name}${isPinned ? ' (Prioritária)' : ''}`}
+                      >
+                        <span
+                          className="sidebar-item-dot"
+                          style={{ backgroundColor: tag.color || '#C5A880' }}
+                        />
+                        <span className="sidebar-item-name">{tag.name}</span>
+                        <span className={`sidebar-item-count ${tagCount === 0 ? 'zero' : ''}`}>
+                          {tagCount}
+                        </span>
+                      </button>
 
-                        <button
-                          type="button"
-                          className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
-                          onClick={(e) => handleToggleTagPin(e, tag)}
-                          title={
-                            isPinned
-                              ? 'Etiqueta prioritária (80/20) · Clique para desmarcar'
-                              : 'Fixar como etiqueta prioritária (80/20)'
+                      <button
+                        type="button"
+                        className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
+                        onClick={(e) => handleToggleTagPin(e, tag)}
+                        title={
+                          isPinned
+                            ? 'Etiqueta prioritária (80/20) · Clique para desmarcar'
+                            : 'Fixar como etiqueta prioritária (80/20)'
+                        }
+                      >
+                        <Pin className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* SEÇÃO LISTAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
+        <div className="sidebar-custom-section">
+          <button
+            type="button"
+            className="sidebar-section-header"
+            onClick={toggleListsCollapse}
+            aria-expanded={!listsCollapsed}
+            title={listsCollapsed ? 'Expandir listas' : 'Recolher listas'}
+          >
+            <span className="sidebar-section-title">LISTAS</span>
+            <span className="sidebar-section-meta">
+              {optimisticLists.length > 0 && (
+                <span className="sidebar-section-count">{optimisticLists.length}</span>
+              )}
+              {listsCollapsed ? (
+                <ChevronRight className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </span>
+          </button>
+
+          {!listsCollapsed && (
+            <div className="sidebar-custom-list">
+              {optimisticLists.length === 0 ? (
+                <div className="sidebar-empty-hint">Nenhuma lista criada</div>
+              ) : (
+                optimisticLists.map((list) => {
+                  const listCount = openCountByList.get(list.id) || 0
+                  const isPinned = !!list.pinned
+                  const isActive = activeUrlList === list.id
+                  const isDragging = draggingListId === list.id
+                  const dropPos = listDropTarget?.id === list.id ? listDropTarget.position : null
+
+                  return (
+                    <div
+                      key={list.id}
+                      data-list-id={list.id}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', list.id)
+                        e.dataTransfer.effectAllowed = 'move'
+                        setDraggingListId(list.id)
+                      }}
+                      onDragEnd={() => {
+                        setDraggingListId(null)
+                        setListDropTarget(null)
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = 'move'
+                        if (!draggingListId || draggingListId === list.id) {
+                          setListDropTarget(null)
+                          return
+                        }
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        const midY = rect.top + rect.height / 2
+                        const position = e.clientY < midY ? 'before' : 'after'
+                        setListDropTarget({ id: list.id, position })
+                      }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
+                        const pos =
+                          listDropTarget?.id === list.id ? listDropTarget.position : 'before'
+                        setDraggingListId(null)
+                        setListDropTarget(null)
+                        if (sourceId && sourceId !== list.id) {
+                          await commitListReorder(sourceId, list.id, pos)
+                        }
+                      }}
+                      className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
+                        isActive ? 'active' : ''
+                      } ${isDragging ? 'is-dragging' : ''} ${
+                        dropPos ? `drop-indicator-${dropPos}` : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="sidebar-drag-handle"
+                        title="Arrastar para reordenar"
+                        onTouchStart={(e) => {
+                          const touch = e.touches[0]
+                          listTouchStateRef.current = {
+                            activeId: list.id,
+                            lastTouchY: touch.clientY,
                           }
-                        >
-                          <Pin className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* SEÇÃO NOVA: LISTAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
-          <div className="sidebar-custom-section">
-            <button
-              type="button"
-              className="sidebar-section-header"
-              onClick={toggleListsCollapse}
-              aria-expanded={!listsCollapsed}
-              title={listsCollapsed ? 'Expandir listas' : 'Recolher listas'}
-            >
-              <span className="sidebar-section-title">LISTAS</span>
-              <span className="sidebar-section-meta">
-                {optimisticLists.length > 0 && (
-                  <span className="sidebar-section-count">{optimisticLists.length}</span>
-                )}
-                {listsCollapsed ? (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </span>
-            </button>
-
-            {!listsCollapsed && (
-              <div className="sidebar-custom-list">
-                {optimisticLists.length === 0 ? (
-                  <div className="sidebar-empty-hint">Nenhuma lista criada</div>
-                ) : (
-                  optimisticLists.map((list) => {
-                    const listCount = openCountByList.get(list.id) || 0
-                    const isPinned = !!list.pinned
-                    const isActive = activeUrlList === list.id
-                    const isDragging = draggingListId === list.id
-                    const dropPos = listDropTarget?.id === list.id ? listDropTarget.position : null
-
-                    return (
-                      <div
-                        key={list.id}
-                        data-list-id={list.id}
-                        draggable={true}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', list.id)
-                          e.dataTransfer.effectAllowed = 'move'
                           setDraggingListId(list.id)
                         }}
-                        onDragEnd={() => {
-                          setDraggingListId(null)
-                          setListDropTarget(null)
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          e.dataTransfer.dropEffect = 'move'
-                          if (!draggingListId || draggingListId === list.id) {
-                            setListDropTarget(null)
-                            return
-                          }
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          const midY = rect.top + rect.height / 2
-                          const position = e.clientY < midY ? 'before' : 'after'
-                          setListDropTarget({ id: list.id, position })
-                        }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
-                          const pos =
-                            listDropTarget?.id === list.id ? listDropTarget.position : 'before'
-                          setDraggingListId(null)
-                          setListDropTarget(null)
-                          if (sourceId && sourceId !== list.id) {
-                            await commitListReorder(sourceId, list.id, pos)
-                          }
-                        }}
-                        className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
-                          isActive ? 'active' : ''
-                        } ${isDragging ? 'is-dragging' : ''} ${
-                          dropPos ? `drop-indicator-${dropPos}` : ''
-                        }`}
                       >
-                        <button
-                          type="button"
-                          className="sidebar-drag-handle"
-                          title="Arrastar para reordenar"
-                          onTouchStart={(e) => {
-                            const touch = e.touches[0]
-                            listTouchStateRef.current = {
-                              activeId: list.id,
-                              lastTouchY: touch.clientY,
-                            }
-                            setDraggingListId(list.id)
-                          }}
-                        >
-                          <GripVertical className="w-3 h-3 text-[#71717A]" />
-                        </button>
+                        <GripVertical className="w-3 h-3 text-[#71717A]" />
+                      </button>
 
-                        <button
-                          type="button"
-                          className="sidebar-item-link"
-                          onClick={() => {
-                            // Clicar na lista navega para a visão filtrada da lista
-                            navigate(`/?view=lista&list=${list.id}`)
-                          }}
-                          title={`Filtrar por lista #${list.name}${isPinned ? ' (Prioritária)' : ''}`}
-                        >
-                          <span className="sidebar-item-hash">#</span>
-                          <span className="sidebar-item-name">{list.name}</span>
-                          <span className={`sidebar-item-count ${listCount === 0 ? 'zero' : ''}`}>
-                            {listCount}
-                          </span>
-                        </button>
+                      <button
+                        type="button"
+                        className="sidebar-item-link"
+                        onClick={() => {
+                          navigate(`/?view=lista&list=${list.id}`)
+                          onItemClick?.()
+                        }}
+                        title={`Filtrar por lista #${list.name}${isPinned ? ' (Prioritária)' : ''}`}
+                      >
+                        <span className="sidebar-item-hash">#</span>
+                        <span className="sidebar-item-name">{list.name}</span>
+                        <span className={`sidebar-item-count ${listCount === 0 ? 'zero' : ''}`}>
+                          {listCount}
+                        </span>
+                      </button>
 
-                        <button
-                          type="button"
-                          className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
-                          onClick={(e) => handleToggleListPin(e, list)}
-                          title={
-                            isPinned
-                              ? 'Lista prioritária (80/20) · Clique para desmarcar'
-                              : 'Fixar como lista prioritária (80/20)'
-                          }
-                        >
-                          <Pin className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            )}
-          </div>
+                      <button
+                        type="button"
+                        className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
+                        onClick={(e) => handleToggleListPin(e, list)}
+                        title={
+                          isPinned
+                            ? 'Lista prioritária (80/20) · Clique para desmarcar'
+                            : 'Fixar como lista prioritária (80/20)'
+                        }
+                      >
+                        <Pin className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
         </div>
+      </div>
 
-        <div className="sidebar-footer">
-          <div className="sidebar-profile-row">
-            <button
-              type="button"
-              className={`sidebar-profile-btn ${location.pathname === '/configuracoes' ? 'active' : ''}`}
-              onClick={() => navigate('/configuracoes')}
-              title="Ir para Configurações do perfil"
-            >
-              <span className="avatar">{initials}</span>
-              <span className="sidebar-profile-name">{String(user?.name || 'Usuário')}</span>
-            </button>
+      <div className="sidebar-footer">
+        <div className="sidebar-profile-row">
+          <button
+            type="button"
+            className={`sidebar-profile-btn ${location.pathname === '/configuracoes' ? 'active' : ''}`}
+            onClick={() => {
+              navigate('/configuracoes')
+              onItemClick?.()
+            }}
+            title="Ir para Configurações do perfil"
+          >
+            <span className="avatar">{initials}</span>
+            <span className="sidebar-profile-name">{String(user?.name || 'Usuário')}</span>
+          </button>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="sidebar-logout-btn"
-                  title="Encerrar sessão"
-                  aria-label="Encerrar sessão"
-                >
-                  <LogOut className="w-4 h-4 text-[#a1a1aa]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="end"
-                sideOffset={8}
-                className="logout-popover-content"
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="sidebar-logout-btn"
+                title="Encerrar sessão"
+                aria-label="Encerrar sessão"
               >
-                <div className="logout-confirm-box">
-                  <div className="logout-confirm-title">Sair da conta?</div>
-                  <p className="logout-confirm-desc">
-                    Você precisará fazer login novamente para acessar o sistema.
-                  </p>
-                  <div className="logout-confirm-actions">
-                    <button
-                      type="button"
-                      className="logout-confirm-btn"
-                      onClick={() => {
-                        logout()
-                        navigate('/login')
-                      }}
-                    >
-                      Sair
-                    </button>
-                  </div>
+                <LogOut className="w-4 h-4 text-[#a1a1aa]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="end"
+              sideOffset={8}
+              className="logout-popover-content"
+            >
+              <div className="logout-confirm-box">
+                <div className="logout-confirm-title">Sair da conta?</div>
+                <p className="logout-confirm-desc">
+                  Você precisará fazer login novamente para acessar o sistema.
+                </p>
+                <div className="logout-confirm-actions">
+                  <button
+                    type="button"
+                    className="logout-confirm-btn"
+                    onClick={() => {
+                      logout()
+                      navigate('/login')
+                    }}
+                  >
+                    Sair
+                  </button>
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="app-shell">
+      {/* SIDEBAR DESKTOP (≥1025px) - Mantida intacta */}
+      <aside className="sidebar">
+        <Brand />
+        {renderSidebarBody()}
       </aside>
+
+      {/* CABEÇALHO MOBILE LIMPO (<1025px): Hambúrguer · Monograma compacto · Avatar */}
       <header className="mobile-header">
-        <Brand compact />
+        <div className="mobile-header-left">
+          <button
+            type="button"
+            className="mobile-menu-btn"
+            onClick={() => setMobileDrawerOpen(true)}
+            title="Abrir menu de navegação"
+            aria-label="Abrir menu de navegação"
+          >
+            <Menu className="w-5 h-5 text-[#f4f4f6]" />
+          </button>
+          <Brand compact />
+        </div>
         <div className="mobile-header-actions">
           <button
             type="button"
@@ -725,60 +776,117 @@ export function Layout({
           </button>
         </div>
       </header>
-      <nav className="mobile-nav">
-        {links.map(([to, label]) => (
-          <NavLink
-            key={label}
-            end={to === '/'}
-            to={to}
-            className={({ isActive }) =>
-              isActive && !activeUrlTag && !activeUrlList ? 'active' : ''
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
-        {optimisticTags.map((tag) => (
-          <NavLink
-            key={tag.id}
-            to={`/?view=hoje&tag=${tag.id}`}
-            className={() => (activeUrlTag === tag.id ? 'active' : '')}
-            title={`@${tag.name}`}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                backgroundColor: tag.color || '#C5A880',
-                display: 'inline-block',
-                marginRight: 4,
-              }}
-            />
-            {tag.pinned ? `★ ${tag.name}` : tag.name}
-          </NavLink>
-        ))}
-        {optimisticLists.map((list) => (
-          <NavLink
-            key={list.id}
-            to={`/?view=lista&list=${list.id}`}
-            className={() => (activeUrlList === list.id ? 'active' : '')}
-            title={`#${list.name}`}
-          >
-            #{list.pinned ? `★ ${list.name}` : list.name}
-          </NavLink>
-        ))}
-      </nav>
+
+      {/* DRAWER LATERAL MOBILE VIA SHEET: Desliza da esquerda com a sidebar completa */}
+      <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+        <SheetContent
+          side="left"
+          className="mobile-drawer-sheet p-0 w-[300px] sm:w-[320px] bg-[#090a0e] border-r border-[rgba(255,255,255,0.08)] flex flex-col h-full text-[#f4f4f6]"
+        >
+          <SheetHeader className="p-4 border-b border-[rgba(255,255,255,0.06)] flex flex-row items-center justify-between text-left space-y-0">
+            <div className="flex items-center">
+              <Brand compact />
+            </div>
+            <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
+            <SheetDescription className="sr-only">
+              Navegação principal, etiquetas e listas do Barbosa System
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 flex flex-col min-h-0 px-4 py-3">
+            {renderSidebarBody(() => setMobileDrawerOpen(false))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* CONTEÚDO PRINCIPAL */}
       <main className="main">
         <div className="capture-sticky">
           <CaptureBar onCreated={refresh} />
         </div>
         <Outlet />
       </main>
-      <div className="mobile-capture">
-        <CaptureBar onCreated={refresh} />
+
+      {/* BOTÃO FLUTUANTE DE CAPTURA (+) OU PAINEL EXPANDIDO NO MOBILE */}
+      <div className="mobile-capture-container">
+        {mobileCaptureOpen ? (
+          <div className="mobile-capture-expanded">
+            <div className="mobile-capture-expanded-header">
+              <span className="mobile-capture-expanded-title">NOVA TAREFA</span>
+              <button
+                type="button"
+                className="mobile-capture-close-btn"
+                onClick={() => setMobileCaptureOpen(false)}
+                title="Fechar captura rápida"
+                aria-label="Fechar captura rápida"
+              >
+                <X className="w-4 h-4 text-[#a1a1aa]" />
+              </button>
+            </div>
+            <CaptureBar
+              onCreated={() => {
+                refresh()
+                setMobileCaptureOpen(false)
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="mobile-capture-fab"
+            onClick={() => setMobileCaptureOpen(true)}
+            title="Nova tarefa rápida (+)"
+            aria-label="Nova tarefa rápida"
+          >
+            <Plus className="w-6 h-6 text-[#090a0e]" strokeWidth={2.2} />
+          </button>
+        )}
       </div>
+
+      {/* WIDGET POMODORO FLUTUANTE: Posicionado acima da bottom nav no mobile */}
       {!isPomodoroPage && <PomodoroWidget />}
+
+      {/* BARRA INFERIOR DE NAVEGAÇÃO FIXA (BOTTOM NAV) NO MOBILE */}
+      <nav className="mobile-bottom-nav">
+        {mobileBottomNavLinks.map(([to, label, Icon]) => {
+          const isItemActive =
+            to === '/'
+              ? (location.pathname === '/' || location.pathname === '') &&
+                (searchParams.get('view') === 'hoje' || !searchParams.get('view')) &&
+                !activeUrlTag &&
+                !activeUrlList
+              : to === '/?view=amanha'
+                ? searchParams.get('view') === 'amanha'
+                : to === '/semana'
+                  ? location.pathname === '/semana'
+                  : to === '/pomodoro'
+                    ? location.pathname === '/pomodoro'
+                    : to === '/historico'
+                      ? location.pathname === '/historico'
+                      : false
+
+          return (
+            <NavLink
+              key={label}
+              to={to}
+              className={`mobile-bottom-nav-item ${isItemActive ? 'active' : ''}`}
+            >
+              <div className="mobile-bottom-nav-icon-wrap">
+                <Icon className="w-5 h-5" />
+                {label === 'Hoje' && count('Hoje') > 0 && (
+                  <span className="mobile-bottom-nav-badge">{count('Hoje')}</span>
+                )}
+                {label === 'Amanhã' && count('Amanhã') > 0 && (
+                  <span className="mobile-bottom-nav-badge">{count('Amanhã')}</span>
+                )}
+                {label === 'Semana' && count('Semana') > 0 && (
+                  <span className="mobile-bottom-nav-badge">{count('Semana')}</span>
+                )}
+              </div>
+              <span className="mobile-bottom-nav-label">{label}</span>
+            </NavLink>
+          )
+        })}
+      </nav>
     </div>
   )
 }

@@ -3921,21 +3921,22 @@ a {
   margin: 12px 0;
 }
 .mobile-header,
-.mobile-nav,
-.mobile-capture {
+.mobile-bottom-nav,
+.mobile-capture-container {
   display: none;
 }
 @media (max-width: 1024px) {
   .sidebar,
   .capture-sticky {
-    display: none;
+    display: none !important;
   }
   .main {
     margin: 0;
-    padding: 112px 20px 210px;
+    /* Reduzido de 112px para 62px no topo (recupera os ~112px totais liberando a antiga barra horizontal); 140px no rodapé para bottom nav e FAB */
+    padding: 62px 20px 140px;
   }
   .page {
-    padding-top: 24px;
+    padding-top: 20px;
   }
   .mobile-header {
     display: flex;
@@ -3944,12 +3945,40 @@ a {
     top: 0;
     left: 0;
     right: 0;
-    height: 62px;
+    height: 60px;
     background: #090a0e;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 16px;
+  }
+  .mobile-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mobile-menu-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 150ms ease;
+    padding: 0;
+  }
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn:active {
+    background: rgba(197, 168, 128, 0.08);
+    border-color: rgba(197, 168, 128, 0.3);
+  }
+  .mobile-menu-btn svg {
+    color: #f4f4f6;
+    stroke-width: 1.5;
   }
   .mobile-header .brand img {
     width: 28px;
@@ -3960,82 +3989,244 @@ a {
     align-items: center;
     gap: 12px;
   }
-  .mobile-docs-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+  .mobile-avatar-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     display: grid;
     place-items: center;
-    color: #a1a1aa;
-    text-decoration: none;
-    transition: 150ms;
   }
-  .mobile-docs-btn:hover,
-  .mobile-docs-btn.active {
-    color: #c5a880;
-    border-color: rgba(197, 168, 128, 0.3);
-    background: rgba(197, 168, 128, 0.08);
-  }
-  .mobile-docs-btn svg {
-    width: 16px;
-    height: 16px;
-    stroke-width: 1.5;
-  }
-  .mobile-nav {
+
+  /* BARRA INFERIOR DE NAVEGAÇÃO FIXA (BOTTOM NAV) */
+  .mobile-bottom-nav {
     display: flex;
     position: fixed;
-    z-index: 30;
-    top: 62px;
-    left: 0;
-    right: 0;
-    height: 50px;
-    background: #090a0e;
-    padding: 6px 14px;
-    gap: 5px;
-    overflow: auto;
-  }
-  .mobile-nav a {
-    flex: 1;
-    min-width: 75px;
-    display: grid;
-    place-items: center;
-    text-decoration: none;
-    color: #a1a1aa;
-    font-size: 11px;
-    border-radius: 8px;
-  }
-  .mobile-nav a.active {
-    background: rgba(197, 168, 128, 0.12);
-    color: #c5a880;
-  }
-  .mobile-capture {
-    display: block;
-    position: fixed;
+    z-index: 40;
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 10px 12px;
-    background: #090a0e;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(9, 10, 14, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 40;
+    align-items: stretch;
+    justify-content: space-around;
   }
-  .pomodoro {
+  .mobile-bottom-nav-item {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: #a1a1aa;
+    transition: all 150ms ease;
+    padding: 4px 0;
+    user-select: none;
+  }
+  .mobile-bottom-nav-item:hover,
+  .mobile-bottom-nav-item:active {
+    color: #f4f4f6;
+  }
+  .mobile-bottom-nav-item.active {
+    color: #c5a880;
+  }
+  .mobile-bottom-nav-icon-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+  }
+  .mobile-bottom-nav-icon-wrap svg {
+    stroke-width: 1.5;
+  }
+  .mobile-bottom-nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    padding: 0 2px;
+  }
+  .mobile-bottom-nav-item.active .mobile-bottom-nav-label {
+    font-weight: 600;
+  }
+  .mobile-bottom-nav-badge {
+    position: absolute;
+    top: -3px;
+    right: -8px;
+    background: #c5a880;
+    color: #090a0e;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    min-width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    padding: 0 3px;
+  }
+
+  /* CAPTURA FLUTUANTE (FAB & PAINEL EXPANDIDO) */
+  .mobile-capture-container {
+    display: block;
+    position: fixed;
+    z-index: 45;
+    right: 18px;
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+  .mobile-capture-fab {
+    width: 52px;
+    height: 52px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    background: #c5a880;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(197, 168, 128, 0.35);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+    padding: 0;
+  }
+  .mobile-capture-fab:active {
+    transform: scale(0.92);
+  }
+  .mobile-capture-expanded {
+    position: fixed;
     left: 0;
     right: 0;
-    bottom: 77px;
-    width: 100%;
-    border-radius: 0;
-    padding: 10px 16px;
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    background: #090a0e;
+    border-top: 1px solid rgba(197, 168, 128, 0.3);
+    box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.8);
+    padding: 12px 14px 16px;
+    z-index: 50;
+    animation: slideUpCapture 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes slideUpCapture {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .mobile-capture-expanded-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+  .mobile-capture-expanded-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: #c5a880;
+  }
+  .mobile-capture-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: transparent;
+    border: 0;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* WIDGET POMODORO FLUTUANTE ACIMA DA BOTTOM NAV */
+  .pomodoro {
+    left: 14px;
+    right: 14px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    border-radius: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(197, 168, 128, 0.35);
+    background: #12141c;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    z-index: 38;
   }
   .pomodoro-row {
-    position: absolute;
-    right: 14px;
-    top: 10px;
+    position: static;
+    margin-top: 6px;
+    justify-content: space-between;
   }
   .pomodoro strong {
-    max-width: 42%;
+    max-width: 100%;
   }
+
+  /* DRAWER LATERAL MOBILE (SHEET) ESTILIZAÇÃO COMPACTA */
+  .mobile-drawer-sheet .sidebar-scroll-area {
+    margin-right: -4px;
+    padding-right: 4px;
+  }
+  .mobile-drawer-sheet .sidebar nav {
+    margin-top: 16px;
+  }
+  .mobile-drawer-sheet nav {
+    margin-top: 8px;
+    display: grid;
+    gap: 4px;
+  }
+  .mobile-drawer-sheet nav a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    padding: 0 12px;
+    text-decoration: none;
+    color: #a1a1aa;
+    font-size: 13px;
+    border-radius: 8px;
+    transition: 150ms;
+  }
+  .mobile-drawer-sheet nav a:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #f4f4f6;
+  }
+  .mobile-drawer-sheet nav a.active {
+    background: rgba(197, 168, 128, 0.1);
+    color: #c5a880;
+  }
+  .mobile-drawer-sheet nav a.active:before {
+    display: none;
+  }
+  .mobile-drawer-sheet nav b {
+    margin-left: auto;
+    font: 11px 'Space Mono';
+    color: #c5a880;
+  }
+  .mobile-drawer-sheet .sidebar-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
   .drawer {
     top: auto;
     bottom: 0;

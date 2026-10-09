@@ -580,6 +580,31 @@ export function Docs() {
                 <code>/docs</code>, preservando a rota direta e bookmarkável com fluxo centralizado.
               </li>
               <li>
+                <strong>Navegação Mobile Otimizada (v0.0.28):</strong> arquitetura móvel reformulada
+                para recuperar mais de 100px de altura útil de conteúdo e eliminar scroll
+                horizontal:
+                <ul style={{ marginTop: '6px' }}>
+                  <li>
+                    <strong>Barra inferior de navegação (Bottom Nav):</strong> barra fixa com 5
+                    destinos essenciais (Hoje, Amanhã, Semana, Pomodoro e Histórico), ícone +
+                    rótulo, destaque champagne e alvos de toque ergonômicos (≥44px) com respeito ao
+                    safe-area-inset.
+                  </li>
+                  <li>
+                    <strong>Drawer lateral via hambúrguer:</strong> no cabeçalho superior móvel, o
+                    botão de menu abre gaveta lateral (deslizando da esquerda) contendo a árvore
+                    completa da sidebar: navegação completa, seções ETIQUETAS e LISTAS com contagens
+                    e pin 80/20, e Inbox.
+                  </li>
+                  <li>
+                    <strong>Captura flutuante rápida (FAB):</strong> a antiga barra fixa no rodapé
+                    vira um botão flutuante (+) acima da bottom nav que expande suavemente para a
+                    barra completa de captura sob demanda, mantendo o timer do Pomodoro integrado
+                    acima da barra inferior.
+                  </li>
+                </ul>
+              </li>
+              <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
                 de Segunda para todos os dias úteis ou sincronizar Sábado e Domingo.
               </li>
@@ -728,6 +753,18 @@ export function Docs() {
                   resultado a partir de etiquetas e listas prioritárias fixadas (pinned),
                   respeitando desempates por nível de prioridade (P1–P4), horário agendado e ordem
                   sequencial.
+                </td>
+              </tr>
+              <tr>
+                <td>Navegação Mobile (Bottom Nav + Sheet Drawer)</td>
+                <td>
+                  <code>src/components/Layout.tsx</code>
+                </td>
+                <td>v0.0.28</td>
+                <td>
+                  Barra inferior fixa de 5 destinos ao alcance do polegar, drawer lateral completo
+                  via hambúrguer no topo com suporte a etiquetas/listas/pin 80/20, e botão flutuante
+                  (FAB) de captura rápida responsiva com respeito a safe-area.
                 </td>
               </tr>
               <tr>
