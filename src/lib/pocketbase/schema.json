@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T19:24:56.691Z",
+  "generatedAt": "2026-10-09T19:42:13.746Z",
   "collections": [
     {
       "name": "users",
@@ -29,14 +29,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "daily_focus_goal_minutes",
@@ -91,14 +96,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "order",
@@ -185,14 +195,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "order",
@@ -212,7 +227,13 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["none", "daily", "weekly_days", "weekly", "monthly"]
+          "selectValues": [
+            "none",
+            "daily",
+            "weekly_days",
+            "weekly",
+            "monthly"
+          ]
         },
         {
           "name": "recurrence_interval",
@@ -231,7 +252,10 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["from_date", "from_completion"]
+          "selectValues": [
+            "from_date",
+            "from_completion"
+          ]
         },
         {
           "name": "due_time",
@@ -314,21 +338,29 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["completa", "interrompida"]
+          "selectValues": [
+            "completa",
+            "interrompida"
+          ]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "note",
@@ -403,14 +435,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -453,14 +490,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "order",
@@ -528,14 +570,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
