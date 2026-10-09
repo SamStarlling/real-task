@@ -1987,9 +1987,9 @@ export function Docs() {
         </div>
 
         <div className="docs-card" style={{ marginBottom: '24px' }}>
-          <h3>Arquitetura do Servidor MCP (Etapa 1)</h3>
+          <h3>Arquitetura do Servidor MCP (Etapas 1 e 2)</h3>
           <p>
-            O Barbosa System expõe um servidor MCP compatível com a especificação{' '}
+            O Barbosa System expõe um servidor MCP oficial compatível com a especificação{' '}
             <strong>JSON-RPC 2.0</strong> via transporte <strong>Streamable HTTP</strong> no
             endpoint: <code>/backend/v1/mcp</code> (suporta requisições POST para invocar
             ferramentas e conexões GET para SSE). Todas as chamadas requerem o cabeçalho{' '}
@@ -1997,9 +1997,12 @@ export function Docs() {
             <em>Configurações &gt; Integrações & MCP</em>.
           </p>
           <p style={{ marginTop: '8px' }}>
-            O servidor é <strong>estritamente multiusuário</strong>: o token identifica o
-            proprietário e restringe qualquer leitura ou gravação às tarefas, listas e sessões
-            pertencentes a essa conta.
+            O servidor é <strong>estritamente multiusuário e auditável</strong>: o token identifica
+            o proprietário e restringe qualquer leitura ou gravação às tarefas, listas, etiquetas e
+            sessões pertencentes a essa conta. Na Etapa 2, o servidor passa a contar com{' '}
+            <strong>10 ferramentas nativas</strong>, incluindo o parser em linguagem natural em
+            português rodando 100% no servidor, checklist de sub-tarefas e gestão completa de
+            etiquetas com metodologia 80/20.
           </p>
         </div>
 
@@ -2077,12 +2080,40 @@ export function Docs() {
             <ul className="text-xs text-[#A1A1AA] space-y-2 mt-2">
               <li>
                 <strong className="text-[#F4F4F5]">
-                  &quot;Crie 3 tarefas para revisar o contrato amanhã com prioridade P1 na lista
-                  Jurídico&quot;
+                  &quot;revisar contrato amanhã às 10h p1 @trabalho #jurídico&quot;
                 </strong>
                 <br />
-                O assistente chama <code>create_task</code> três vezes com <code>due_date</code> de
-                amanhã e <code>priority: 1</code>.
+                O assistente invoca <code>capture_task</code>. O parser do servidor interpreta a
+                data de amanhã, horário 10:00, prioridade P1, etiqueta @trabalho e lista #jurídico,
+                higienizando o título para &quot;revisar contrato&quot; e confirmando o resumo
+                estruturado.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Adicione 3 sub-tarefas na tarefa do contrato: 1. Ler cláusulas rescisórias,
+                  2. Validar multas, 3. Enviar ao sócio&quot;
+                </strong>
+                <br />
+                O assistente chama <code>create_subtasks</code> com o <code>task_id</code> e a lista
+                de itens, gravando no campo JSON <code>subtasks</code> compatível com os componentes
+                visuais do app.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Marque a etiqueta @trabalho como foco prioritário 80/20&quot;
+                </strong>
+                <br />
+                O assistente chama <code>manage_tags</code> com <code>action: &quot;pin&quot;</code>
+                , ativando o selo prioritário e integrando a etiqueta ao cálculo do Big3 diário.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Liste todas as minhas etiquetas e quantas tarefas cada uma tem&quot;
+                </strong>
+                <br />
+                O assistente chama <code>manage_tags</code> com{' '}
+                <code>action: &quot;list&quot;</code>, retornando nomes, cores da paleta, status
+                80/20 e contagem exata de tarefas atreladas.
               </li>
               <li>
                 <strong className="text-[#F4F4F5]">
@@ -2110,8 +2141,8 @@ export function Docs() {
               </li>
               <li>
                 <strong className="text-[#F4F4F5]">
-                  &quot;Registre uma sessão de foco de 45 minutos no projeto com a nota 'Revisão das
-                  cláusulas financeiras'&quot;
+                  &quot;Registre uma sessão de foco de 45 minutos com a nota 'Revisão das cláusulas
+                  financeiras'&quot;
                 </strong>
                 <br />
                 O assistente invoca <code>log_focus_session</code> vinculando tempo e descrição no
@@ -2121,15 +2152,76 @@ export function Docs() {
           </article>
         </div>
 
-        {/* AS 7 FERRAMENTAS MCP DO NÚCLEO */}
+        {/* AS 10 FERRAMENTAS MCP DO NÚCLEO (ETAPAS 1 E 2) */}
         <div className="docs-card">
-          <h3>As 7 Ferramentas MCP Nativas (Etapa 1)</h3>
+          <h3>As 10 Ferramentas MCP Nativas (Etapas 1 e 2)</h3>
           <p className="mb-4">
             Todas as ferramentas são idempotentes, auditáveis e executadas no banco SQLite do
-            PocketBase com as mesmas regras e campos do Barbosa System:
+            PocketBase com as mesmas regras, campos e convenções do Barbosa System:
           </p>
 
           <div className="space-y-4">
+            <div className="p-3 bg-[#121214] border border-[#C5A880]/30 rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">capture_task</code>
+                <span className="text-[11px] text-[#C5A880] font-mono font-semibold">
+                  ★ Nova (Etapa 2) — Parser NL no Servidor
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Captura uma nova tarefa a partir de texto em linguagem natural em português com
+                parser nativo rodando diretamente no hook do PocketBase. Reconhece datas (
+                <em>hoje</em>, <em>amanhã</em>, <em>12/11</em>, <em>15 de novembro</em>,{' '}
+                <em>em 3 dias</em>, <em>próxima segunda</em>), horários (<em>às 10h</em>,{' '}
+                <em>às 9h30</em>, <em>14:00</em>), recorrência (<em>todo dia</em>,{' '}
+                <em>toda semana</em>, <em>toda segunda e quinta</em>, <em>todos os dias úteis</em>,{' '}
+                <em>todo dia 15</em>, <em>a cada duas semanas</em>), prioridade (<em>p1..p4</em>,{' '}
+                <em>!</em>, <em>!!</em>), etiquetas (<em>@nome</em>) e listas (<em>#nome</em>).
+                Todos os tokens são removidos do título e a resposta devolve a tarefa persistida
+                mais o resumo estruturado interpretado.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#C5A880]/30 rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">create_subtasks</code>
+                <span className="text-[11px] text-[#C5A880] font-mono font-semibold">
+                  ★ Nova (Etapa 2) — Checklist Estruturada
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Adiciona sub-tarefas (itens de checklist) a uma tarefa existente do usuário pelo{' '}
+                <code>task_id</code>. Grava diretamente no campo JSON <code>subtasks</code> no
+                padrão <code>&#123; id, title, done: false &#125;</code> utilizado pelo frontend e
+                na herança de instâncias recorrentes. Suporta strings simples ou objetos com status
+                e flag opcional <code>replace: true</code> para substituição integral.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#C5A880]/30 rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">manage_tags</code>
+                <span className="text-[11px] text-[#C5A880] font-mono font-semibold">
+                  ★ Nova (Etapa 2) — Gestão de Etiquetas & 80/20
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Gerenciamento completo das etiquetas do usuário autenticado via parâmetro{' '}
+                <code>action</code>:
+                <br />• <code>list</code>: lista todas as etiquetas com a contagem em tempo real de
+                tarefas associadas e indicação de status 80/20.
+                <br />• <code>create</code>: cria etiqueta com resolução case-insensitive e cor
+                opcional da paleta Quiet Luxury.
+                <br />• <code>rename</code> / <code>set_color</code>: atualiza nome ou cor de uma
+                etiqueta existente pelo <code>id</code>.
+                <br />• <code>pin</code> / <code>unpin</code>: ativa ou desativa o selo 80/20 (campo{' '}
+                <code>pinned</code>), influenciando a priorização do Big3 diário.
+                <br />• <code>delete</code>: desassocia a etiqueta de todas as tarefas existentes do
+                usuário antes de excluí-la definitivamente, garantindo integridade referencial sem
+                registros órfãos.
+              </p>
+            </div>
+
             <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
               <div className="flex items-center gap-2 mb-1">
                 <code className="text-[#C5A880] font-bold text-sm">create_task</code>
