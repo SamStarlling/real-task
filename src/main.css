@@ -144,7 +144,7 @@ a {
 }
 .sidebar-section-title {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   font-weight: 600;
 }
@@ -155,8 +155,8 @@ a {
 }
 .sidebar-section-count {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #52525b;
+  font-size: 11px;
+  color: #80808a;
 }
 .sidebar-custom-list {
   display: flex;
@@ -525,8 +525,8 @@ a {
 }
 .capture-hint-item {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #71717a;
+  font-size: 11px;
+  color: #94949e;
   white-space: nowrap;
   letter-spacing: 0.04em;
   display: inline-flex;
@@ -540,7 +540,7 @@ a {
   border-radius: 4px;
   border: 1px solid rgba(197, 168, 128, 0.18);
   font-family: 'Space Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
 }
 .capture {
   height: 56px;
@@ -578,7 +578,7 @@ a {
   border-radius: 6px;
   background: rgba(197, 168, 128, 0.12);
   color: #c5a880;
-  font: 10px 'Space Mono';
+  font: 11px 'Space Mono';
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -639,7 +639,7 @@ a {
 /* Indicador BIG3 nos metadados do card (quiet luxury) */
 .big3-indicator-chip {
   font-family: 'Space Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   font-weight: 700;
   padding: 2.5px 6px;
@@ -695,7 +695,7 @@ a {
 
 .big3-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   font-weight: 700;
   color: #c5a880;
@@ -718,14 +718,14 @@ a {
 
 .big3-counter-text {
   font-family: 'Space Mono', monospace;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #a1a1aa;
   letter-spacing: 0.04em;
 }
 
 .big3-status-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   padding: 3px 8px;
   border-radius: 4px;
@@ -824,7 +824,7 @@ a {
 
 .big3-source-tag {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   padding: 2px 6px;
   border-radius: 4px;
@@ -845,7 +845,7 @@ a {
 
 .big3-time-chip {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #c5a880;
   background: rgba(197, 168, 128, 0.08);
   border: 1px solid rgba(197, 168, 128, 0.25);
@@ -865,7 +865,7 @@ a {
 
 .big3-remaining-text {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   color: #a1a1aa;
 }
@@ -873,7 +873,7 @@ a {
 /* Chip de prioridade nos metadados do card */
 .priority-chip {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   font-weight: 600;
   padding: 3px 6px;
@@ -962,7 +962,7 @@ a {
 /* Seção de Prioridade no TaskDetail */
 .detail-priority-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.05em;
   font-weight: 600;
   padding: 2px 6px;
@@ -1000,7 +1000,7 @@ a {
   border-color: rgba(197, 168, 128, 0.3) !important;
   color: #c5a880 !important;
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
 }
 .time-chip.overdue-time-chip {
   background: rgba(179, 125, 107, 0.12) !important;
@@ -1033,14 +1033,14 @@ a {
 }
 .in-app-reminders-title {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: #c5a880;
   text-transform: uppercase;
 }
 .in-app-reminders-sub {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #a1a1aa;
 }
 .in-app-reminders-chips {
@@ -1076,7 +1076,7 @@ a {
 }
 .in-app-reminder-chip .time-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #c5a880;
 }
 .in-app-reminder-chip.overdue .time-badge {
@@ -1092,7 +1092,7 @@ a {
 /* Campo de horário no detalhe da tarefa */
 .detail-due-time-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #c5a880;
 }
 .due-time-row {
@@ -1175,7 +1175,7 @@ a {
   padding: 6px 14px;
   border-radius: 6px;
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   border: 1px solid rgba(197, 168, 128, 0.2);
   background: transparent;
   color: #a1a1aa;
@@ -1296,8 +1296,8 @@ a {
 }
 .capture-priority-menu-desc {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #71717a;
+  font-size: 11px;
+  color: #94949e;
   margin-left: auto;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1413,7 +1413,7 @@ a {
 /* Painel de recorrência no TaskDetail */
 .detail-recurrence-badge {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #c5a880;
   margin-left: 10px;
   text-transform: none;
@@ -1508,7 +1508,7 @@ a {
 .recurrence-day-btn {
   padding: 4px 8px;
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   border-radius: 6px;
   border: 1px solid rgba(197, 168, 128, 0.2);
@@ -1563,8 +1563,8 @@ a {
   font-weight: 500;
 }
 .recurrence-mode-desc {
-  font-size: 10px;
-  color: #71717a;
+  font-size: 11px;
+  color: #94949e;
   line-height: 1.4;
 }
 
@@ -1675,7 +1675,7 @@ a {
 .capture-mode-btn {
   flex: 1;
   padding: 5px;
-  font-size: 10px;
+  font-size: 11px;
   font-family: 'Space Mono', monospace;
   border: 1px solid rgba(197, 168, 128, 0.2);
   background: transparent;
@@ -1806,7 +1806,7 @@ a {
   align-items: center;
   gap: 9px;
   flex-wrap: wrap;
-  font-size: 10px;
+  font-size: 11px;
 }
 .meta b {
   font-weight: 400;
@@ -1828,7 +1828,7 @@ a {
   border-radius: 8px;
   height: 38px;
   padding: 0 11px;
-  font: 10px 'Space Mono';
+  font: 11px 'Space Mono';
   letter-spacing: 0.08em;
 }
 .completed {
@@ -1944,7 +1944,7 @@ a {
 }
 .compare {
   margin: 28px 0;
-  font: 10px 'Space Mono';
+  font: 11px 'Space Mono';
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -1990,7 +1990,7 @@ a {
   grid-template-columns: 1fr 1fr 1fr;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font: 10px 'Space Mono';
+  font: 11px 'Space Mono';
   color: #a1a1aa;
 }
 .muted {
@@ -2222,7 +2222,7 @@ a {
 }
 
 .tag-filter-count {
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.75;
 }
 
@@ -2261,10 +2261,10 @@ a {
 
 .grouping-label {
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   letter-spacing: 0.08em;
-  color: #71717a;
+  color: #94949e;
   text-transform: uppercase;
   user-select: none;
 }
@@ -2280,7 +2280,7 @@ a {
   border: 1px solid transparent;
   color: #a1a1aa;
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -2988,7 +2988,7 @@ a {
   align-items: center;
   gap: 3px;
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: #c5a880;
   background: rgba(197, 168, 128, 0.14);
@@ -3009,8 +3009,8 @@ a {
 
 .pomodoro-metric-subhint {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #71717a;
+  font-size: 11px;
+  color: #94949e;
   letter-spacing: 0.04em;
   margin-top: 2px;
 }
@@ -3199,7 +3199,7 @@ a {
 
 .pomodoro-bottom-eyebrow {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #a1a1aa;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3341,7 +3341,7 @@ a {
   align-items: center;
   gap: 5px;
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   color: #c5a880;
   text-transform: uppercase;
@@ -4158,7 +4158,7 @@ a {
     stroke-width: 1.5;
   }
   .mobile-bottom-nav-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -4178,7 +4178,7 @@ a {
     background: #c5a880;
     color: #090a0e;
     font-family: 'Space Mono', monospace;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     line-height: 1;
     min-width: 15px;
@@ -4250,7 +4250,7 @@ a {
   }
   .mobile-capture-expanded-title {
     font-family: 'Space Mono', monospace;
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.12em;
     font-weight: 600;
     color: #c5a880;
@@ -5430,10 +5430,10 @@ a {
 
 .metric-label {
   font:
-    9px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   letter-spacing: 0.12em;
-  color: #71717a;
+  color: #94949e;
 }
 
 .metric-value-wrap {
@@ -5452,7 +5452,7 @@ a {
 
 .metric-unit {
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   color: #c5a880;
   letter-spacing: 0.06em;
@@ -5590,7 +5590,7 @@ a {
   align-items: center;
   gap: 6px;
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
 }
 
@@ -5727,7 +5727,7 @@ a {
 .today-badge {
   margin-left: auto;
   font:
-    9px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   letter-spacing: 0.08em;
   padding: 2px 6px;
@@ -5739,7 +5739,7 @@ a {
 
 .col-load-metric {
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   color: #a1a1aa;
   letter-spacing: 0.04em;
@@ -5776,18 +5776,34 @@ a {
 }
 
 .week-task-card .meta {
-  font-size: 9px;
+  font-size: 11px;
   gap: 6px;
 }
 
 .week-task-card .focus {
   height: 28px;
   padding: 0 8px;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .week-task-card .progress {
   margin-top: 8px;
+}
+
+/* Compensação visual para os chips nos cards compactos da Semana */
+.week-task-card .chip,
+.week-task-card .time-chip,
+.week-task-card .priority-chip,
+.week-task-card .subtask-chip,
+.week-task-card .meta-list-chip,
+.week-task-card .big3-indicator-chip {
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .column-empty-dropzone {
@@ -5798,7 +5814,7 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #71717a;
+  color: #94949e;
   font:
     11px 'Space Mono',
     monospace;
@@ -5809,8 +5825,8 @@ a {
 }
 
 .column-empty-dropzone small {
-  font-size: 9px;
-  color: #52525b;
+  font-size: 11px;
+  color: #80808a;
 }
 
 /* Concluídas dentro da coluna */
@@ -5944,7 +5960,7 @@ a {
 
 .inline-stepper span {
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
   color: #f4f4f6;
   padding: 0 4px;
@@ -5961,7 +5977,7 @@ a {
   border-radius: 4px;
   color: #090a0e;
   font:
-    600 10px 'Space Mono',
+    600 11px 'Space Mono',
     monospace;
   cursor: pointer;
 }
@@ -6095,7 +6111,7 @@ a {
 }
 
 .tag-color-label {
-  font: 9px 'Space Mono';
+  font: 11px 'Space Mono';
   letter-spacing: 0.12em;
   color: #a1a1aa;
 }
@@ -6205,9 +6221,9 @@ a {
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  font: 9px 'Space Mono';
+  font: 11px 'Space Mono';
   letter-spacing: 0.1em;
-  color: #71717a;
+  color: #94949e;
 }
 
 .tags-table-body {
@@ -6322,9 +6338,9 @@ a {
   border-radius: 6px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #71717a;
+  color: #94949e;
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 150ms ease;
 }

@@ -1496,7 +1496,7 @@ export function Settings() {
 
                 <div className="mcp-url-box flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3.5 bg-[#121214] border border-[#27272A] rounded-md">
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-mono tracking-wider text-[#A1A1AA] uppercase block mb-1">
+                    <span className="text-[11px] font-mono tracking-wider text-[#A1A1AA] uppercase block mb-1">
                       ENDPOINT OFICIAL MCP
                     </span>
                     <code className="text-xs sm:text-sm font-mono text-[#C5A880] break-all select-all">
@@ -1655,11 +1655,11 @@ export function Settings() {
                                   {token.name}
                                 </span>
                                 {isRevoked ? (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-950/60 border border-red-800/60 text-red-300 uppercase">
+                                  <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-red-950/60 border border-red-800/60 text-red-300 uppercase">
                                     REVOGADO
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#C5A880]/10 border border-[#C5A880]/30 text-[#C5A880] uppercase">
+                                  <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-[#C5A880]/10 border border-[#C5A880]/30 text-[#C5A880] uppercase">
                                     ATIVO
                                   </span>
                                 )}

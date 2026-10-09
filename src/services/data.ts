@@ -35,7 +35,7 @@ import { toPocketDate } from '@/lib/date-parser'
  * - P1: Champagne Ouro Fosco #C5A880 (reservado ao mais urgente)
  * - P2: Champagne Claro/Dourado Acinzentado #D8C7B0
  * - P3: Titânio Acinzentado #A1A1AA
- * - P4: Grafite Sutil #52525B
+ * - P4: Grafite Sutil #80808A (borda #5F606A)
  */
 export type TaskGroupingMode = 'none' | 'tag' | 'list'
 
@@ -81,9 +81,9 @@ export const TASK_PRIORITIES: Record<number, PriorityMeta> = {
     level: 4,
     code: 'P4',
     label: 'P4 · Baixa',
-    color: '#71717A',
-    borderColor: '#52525B',
-    bgSubtle: 'rgba(82, 82, 91, 0.12)',
+    color: '#94949E',
+    borderColor: '#5F606A',
+    bgSubtle: 'rgba(148, 148, 158, 0.12)',
     description: 'Prioridade baixa · Grafite sutil',
   },
 }

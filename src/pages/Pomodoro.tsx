@@ -832,7 +832,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
-                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
                   Mínimo 5 min
                 </span>
               </div>
@@ -852,7 +852,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
-                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
                   Mínimo 5 min
                 </span>
               </div>
@@ -872,7 +872,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
-                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
                   Mínimo 5 min
                 </span>
               </div>
@@ -895,7 +895,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   }
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
-                <span className="text-[10px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
+                <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
                   Mínimo 1 bloco
                 </span>
               </div>
