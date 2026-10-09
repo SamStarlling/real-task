@@ -1614,6 +1614,160 @@ a {
   color: #c5a880;
 }
 
+/* ========================================================
+   AGRUPAMENTO POR ETIQUETA OU LISTA (HOJE E AMANHÃ)
+   Quiet Luxury Barbosa System · #C5A880 · Space Mono
+   ======================================================== */
+.grouping-control-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.16);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.grouping-label {
+  font:
+    10px 'Space Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.grouping-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grouping-pill-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #a1a1aa;
+  font:
+    10px 'Space Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 140ms ease;
+  user-select: none;
+}
+
+.grouping-pill-btn:hover {
+  color: #f4f4f6;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.grouping-pill-btn.active {
+  background: rgba(197, 168, 128, 0.14);
+  color: #c5a880;
+  border-color: rgba(197, 168, 128, 0.4);
+  font-weight: 600;
+}
+
+/* Contêiner de Grupos */
+.task-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.task-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(197, 168, 128, 0.1);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.task-group-header:hover {
+  background: rgba(197, 168, 128, 0.04);
+  border-color: rgba(197, 168, 128, 0.22);
+}
+
+.task-group-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.task-group-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  transition: color 140ms ease;
+}
+
+.task-group-header:hover .task-group-arrow {
+  color: #c5a880;
+}
+
+.task-group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+}
+
+.task-group-title {
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f4f4f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-group-count {
+  font:
+    11px 'Space Mono',
+    monospace;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex: none;
+}
+
+.task-group-items {
+  display: grid;
+  gap: 10px;
+  padding-left: 8px;
+  border-left: 1px dashed rgba(197, 168, 128, 0.12);
+  animation: enter 0.2s both;
+}
+
 /* Sub-tarefas / Checklist no Card (TaskCard e WeekPage) */
 .subtask-chip {
   border-color: rgba(197, 168, 128, 0.35) !important;
@@ -3225,10 +3379,18 @@ a {
   .view-title {
     align-items: flex-start;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
   .view-title h1 {
     font-size: 26px;
+  }
+  .grouping-control-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .grouping-pills {
+    flex: 1;
+    justify-content: flex-end;
   }
   .capture-input {
     padding-left: 12px;

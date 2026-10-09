@@ -6,15 +6,89 @@ import { localDay } from '@/lib/date-parser'
 import { TaskCard } from '@/components/TaskCard'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
-import { compareTasksWithinDay, isTaskOverdue, reorderTasks } from '@/services/data'
-import { AlertCircle, Clock } from 'lucide-react'
+import {
+  compareTasksWithinDay,
+  isTaskOverdue,
+  moveTaskToList,
+  reorderTasks,
+  type TaskGroupingMode,
+} from '@/services/data'
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Folder,
+  Layers,
+  Tag as TagIcon,
+} from 'lucide-react'
+
+interface TaskGroupItem {
+  id: string
+  title: string
+  color?: string
+  icon?: 'tag' | 'list' | 'none'
+  tasks: TaskRecord[]
+}
 
 export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => void }) {
   const [params, setParams] = useSearchParams()
   const [selected, setSelected] = useState<TaskRecord | null>(null)
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
   const [nowMinute, setNowMinute] = useState(() => new Date())
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+
   const view = params.get('view') || 'hoje'
+  const isEligibleForGrouping = view === 'hoje' || view === 'amanha'
+
+  // Agrupamento persistido por visão no localStorage
+  const [groupingMode, setGroupingMode] = useState<TaskGroupingMode>(() => {
+    if (!isEligibleForGrouping) return 'none'
+    try {
+      const saved = localStorage.getItem(`barbosa_grouping_${view}`)
+      if (saved === 'tag' || saved === 'list') return saved
+    } catch {
+      // ignore
+    }
+    return 'none'
+  })
+
+  // Sincroniza o modo de agrupamento salvo ao trocar de visão
+  useEffect(() => {
+    if (!isEligibleForGrouping) {
+      setGroupingMode('none')
+      return
+    }
+    try {
+      const saved = localStorage.getItem(`barbosa_grouping_${view}`)
+      if (saved === 'tag' || saved === 'list') {
+        setGroupingMode(saved)
+      } else {
+        setGroupingMode('none')
+      }
+    } catch {
+      setGroupingMode('none')
+    }
+  }, [view, isEligibleForGrouping])
+
+  const handleSetGroupingMode = (mode: TaskGroupingMode) => {
+    setGroupingMode(mode)
+    if (isEligibleForGrouping) {
+      try {
+        localStorage.setItem(`barbosa_grouping_${view}`, mode)
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }))
+  }
+
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
 
@@ -104,6 +178,118 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     setOptimisticPending(serverPending)
   }, [serverPending])
 
+  // Estrutura de grupos derivada do modo ativo e da lista otimista
+  const taskGroups = useMemo<TaskGroupItem[]>(() => {
+    if (!isEligibleForGrouping || groupingMode === 'none') {
+      return []
+    }
+
+    if (groupingMode === 'tag') {
+      // Coletar todas as tags distintas presentes nas tarefas
+      const tagMap = new Map<string, { id: string; name: string; color: string }>()
+      for (const t of optimisticPending) {
+        if (t.expand?.tags && t.expand.tags.length > 0) {
+          for (const tg of t.expand.tags) {
+            if (!tagMap.has(tg.id)) {
+              tagMap.set(tg.id, { id: tg.id, name: tg.name, color: tg.color })
+            }
+          }
+        }
+      }
+
+      // Ordenar tags alfabeticamente
+      const sortedTags = Array.from(tagMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, 'pt-BR'),
+      )
+
+      const groups: TaskGroupItem[] = []
+
+      for (const tg of sortedTags) {
+        const groupTasks = optimisticPending.filter((t) => {
+          const tIds = t.tags || []
+          const expIds = t.expand?.tags?.map((x) => x.id) || []
+          return tIds.includes(tg.id) || expIds.includes(tg.id)
+        })
+        if (groupTasks.length > 0) {
+          groups.push({
+            id: `tag-${tg.id}`,
+            title: `@${tg.name}`,
+            color: tg.color,
+            icon: 'tag',
+            tasks: groupTasks,
+          })
+        }
+      }
+
+      // Tarefas sem nenhuma etiqueta
+      const untaggedTasks = optimisticPending.filter((t) => {
+        const tIds = t.tags || []
+        const exp = t.expand?.tags || []
+        return tIds.length === 0 && exp.length === 0
+      })
+
+      if (untaggedTasks.length > 0) {
+        groups.push({
+          id: 'tag-none',
+          title: 'SEM ETIQUETA',
+          color: '#71717A',
+          icon: 'none',
+          tasks: untaggedTasks,
+        })
+      }
+
+      return groups
+    }
+
+    if (groupingMode === 'list') {
+      // Coletar listas distintas presentes nas tarefas
+      const listMap = new Map<string, { id: string; name: string }>()
+      for (const t of optimisticPending) {
+        if (t.list && t.expand?.list) {
+          if (!listMap.has(t.list)) {
+            listMap.set(t.list, { id: t.list, name: t.expand.list.name })
+          }
+        } else if (t.list && !listMap.has(t.list)) {
+          listMap.set(t.list, { id: t.list, name: 'Lista' })
+        }
+      }
+
+      const sortedLists = Array.from(listMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, 'pt-BR'),
+      )
+
+      const groups: TaskGroupItem[] = []
+
+      for (const lst of sortedLists) {
+        const groupTasks = optimisticPending.filter((t) => t.list === lst.id)
+        if (groupTasks.length > 0) {
+          groups.push({
+            id: `list-${lst.id}`,
+            title: `#${lst.name}`,
+            icon: 'list',
+            tasks: groupTasks,
+          })
+        }
+      }
+
+      // Tarefas sem lista
+      const unlistedTasks = optimisticPending.filter((t) => !t.list)
+      if (unlistedTasks.length > 0) {
+        groups.push({
+          id: 'list-none',
+          title: 'SEM LISTA',
+          color: '#71717A',
+          icon: 'none',
+          tasks: unlistedTasks,
+        })
+      }
+
+      return groups
+    }
+
+    return []
+  }, [isEligibleForGrouping, groupingMode, optimisticPending])
+
   // Estados do Drag-and-Drop
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<{ id: string; position: 'before' | 'after' } | null>(
@@ -117,7 +303,7 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     lastTouchY: number
   }>({ activeId: null, lastTouchY: 0 })
 
-  // Reordena o array e persiste no banco
+  // Reordena o array e persiste no banco (com suporte a movimentação de lista entre grupos diferentes)
   const commitReorder = useCallback(
     async (fromId: string, toId: string, position: 'before' | 'after') => {
       if (fromId === toId) return
@@ -127,17 +313,45 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
       const toIndex = currentList.findIndex((t) => t.id === toId)
       if (fromIndex === -1 || toIndex === -1) return
 
+      const sourceTask = currentList[fromIndex]
+      const targetTask = currentList[toIndex]
+
+      // Se agrupado por lista e arrastado para o grupo de outra lista, atualiza a lista da tarefa
+      let updatedSourceTask = sourceTask
+      const isCrossListMove =
+        isEligibleForGrouping &&
+        groupingMode === 'list' &&
+        (sourceTask.list || '') !== (targetTask.list || '')
+
+      if (isCrossListMove) {
+        const targetListId = targetTask.list || null
+        const targetListExpand = targetTask.expand?.list
+        updatedSourceTask = {
+          ...sourceTask,
+          list: targetListId || '',
+          expand: {
+            ...sourceTask.expand,
+            list: targetListExpand,
+          },
+        }
+      }
+
       const [movedItem] = currentList.splice(fromIndex, 1)
+      const itemToInsert = isCrossListMove ? updatedSourceTask : movedItem
+
       let targetInsertIndex = currentList.findIndex((t) => t.id === toId)
       if (position === 'after') {
         targetInsertIndex += 1
       }
-      currentList.splice(targetInsertIndex, 0, movedItem)
+      currentList.splice(targetInsertIndex, 0, itemToInsert)
 
       // Atualização otimista imediata na UI
       setOptimisticPending(currentList)
 
       try {
+        if (isCrossListMove) {
+          await moveTaskToList(fromId, targetTask.list || null)
+        }
         await reorderTasks(currentList)
         refresh()
       } catch (err) {
@@ -145,7 +359,7 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
         setOptimisticPending(serverPending)
       }
     },
-    [optimisticPending, serverPending, refresh],
+    [optimisticPending, serverPending, isEligibleForGrouping, groupingMode, refresh],
   )
 
   // Handlers para HTML5 Drag and Drop (Mouse / Desktop)
@@ -259,11 +473,50 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
   return (
     <div className="page">
       <header className="view-title">
-        <h1>{title}</h1>
-        <span>
-          {formatLongDate(view === 'amanha' ? new Date(Date.now() + 86400000) : new Date())}
-        </span>
+        <div>
+          <h1>{title}</h1>
+          <span>
+            {formatLongDate(view === 'amanha' ? new Date(Date.now() + 86400000) : new Date())}
+          </span>
+        </div>
+
+        {/* CONTROLE SELETOR DE AGRUPAMENTO (HOJE E AMANHÃ) */}
+        {isEligibleForGrouping && (
+          <div className="grouping-control-wrap" role="group" aria-label="Modo de agrupamento">
+            <span className="grouping-label">AGRUPAR:</span>
+            <div className="grouping-pills">
+              <button
+                type="button"
+                className={`grouping-pill-btn ${groupingMode === 'none' ? 'active' : ''}`}
+                onClick={() => handleSetGroupingMode('none')}
+                title="Sem agrupamento (lista contínua padrão)"
+              >
+                <Layers className="w-3 h-3 inline mr-1" />
+                PADRÃO
+              </button>
+              <button
+                type="button"
+                className={`grouping-pill-btn ${groupingMode === 'tag' ? 'active' : ''}`}
+                onClick={() => handleSetGroupingMode('tag')}
+                title="Agrupar por etiqueta (@tag)"
+              >
+                <TagIcon className="w-3 h-3 inline mr-1" />
+                ETIQUETA
+              </button>
+              <button
+                type="button"
+                className={`grouping-pill-btn ${groupingMode === 'list' ? 'active' : ''}`}
+                onClick={() => handleSetGroupingMode('list')}
+                title="Agrupar por lista (#lista)"
+              >
+                <Folder className="w-3 h-3 inline mr-1" />
+                LISTA
+              </button>
+            </div>
+          </div>
+        )}
       </header>
+
       {view === 'hoje' && (
         <div className="focus-summary">
           <span>FOCO HOJE — {formatMinutes(actual)}</span>
@@ -372,29 +625,96 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
       )}
 
       <section className="tasks" ref={tasksContainerRef}>
-        {optimisticPending.map((task, i) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            index={i}
-            draggable={true}
-            isDragging={draggingTaskId === task.id}
-            isDropTarget={dropTarget?.id === task.id ? dropTarget.position : null}
-            onDragStart={(e) => handleDragStart(e, task.id)}
-            onDragEnd={handleDragEnd}
-            onDragOver={(e) => handleDragOver(e, task.id)}
-            onDrop={(e) => handleDrop(e, task.id)}
-            onTouchStartHandle={(e) => handleTouchStartHandle(e, task.id)}
-            onChange={refresh}
-            onOpen={() => {
-              setSelected(task)
-              setParams((p) => {
-                p.set('taskId', task.id)
-                return p
-              })
-            }}
-          />
-        ))}
+        {/* MODO AGRUPADO (POR ETIQUETA OU POR LISTA) */}
+        {isEligibleForGrouping && groupingMode !== 'none' && taskGroups.length > 0 ? (
+          <div className="task-groups-container">
+            {taskGroups.map((group) => {
+              const isCollapsed = !!collapsedGroups[group.id]
+              return (
+                <div key={group.id} className="task-group-section">
+                  <button
+                    type="button"
+                    className="task-group-header"
+                    onClick={() => toggleGroupCollapse(group.id)}
+                    aria-expanded={!isCollapsed}
+                    title={
+                      isCollapsed ? 'Clique para expandir grupo' : 'Clique para recolher grupo'
+                    }
+                  >
+                    <div className="task-group-title-wrap">
+                      <span className="task-group-arrow">
+                        {isCollapsed ? (
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )}
+                      </span>
+                      {group.color && (
+                        <span className="task-group-dot" style={{ backgroundColor: group.color }} />
+                      )}
+                      <span className="task-group-title">{group.title}</span>
+                    </div>
+                    <span className="task-group-count">{group.tasks.length}</span>
+                  </button>
+
+                  {!isCollapsed && (
+                    <div className="task-group-items">
+                      {group.tasks.map((task, i) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          index={i}
+                          draggable={true}
+                          isDragging={draggingTaskId === task.id}
+                          isDropTarget={dropTarget?.id === task.id ? dropTarget.position : null}
+                          onDragStart={(e) => handleDragStart(e, task.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => handleDragOver(e, task.id)}
+                          onDrop={(e) => handleDrop(e, task.id)}
+                          onTouchStartHandle={(e) => handleTouchStartHandle(e, task.id)}
+                          onChange={refresh}
+                          onOpen={() => {
+                            setSelected(task)
+                            setParams((p) => {
+                              p.set('taskId', task.id)
+                              return p
+                            })
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* MODO PLANO PADRÃO (SEM AGRUPAMENTO OU INBOX) */
+          optimisticPending.map((task, i) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              index={i}
+              draggable={true}
+              isDragging={draggingTaskId === task.id}
+              isDropTarget={dropTarget?.id === task.id ? dropTarget.position : null}
+              onDragStart={(e) => handleDragStart(e, task.id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, task.id)}
+              onDrop={(e) => handleDrop(e, task.id)}
+              onTouchStartHandle={(e) => handleTouchStartHandle(e, task.id)}
+              onChange={refresh}
+              onOpen={() => {
+                setSelected(task)
+                setParams((p) => {
+                  p.set('taskId', task.id)
+                  return p
+                })
+              }}
+            />
+          ))
+        )}
+
         {!optimisticPending.length && (
           <div className="empty">
             <BrandMark />
@@ -404,6 +724,7 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
             </p>
           </div>
         )}
+
         {done.length > 0 && (
           <details className="completed">
             <summary>Concluídas — {done.length}</summary>

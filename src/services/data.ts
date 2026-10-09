@@ -37,6 +37,8 @@ import { toPocketDate } from '@/lib/date-parser'
  * - P3: Titânio Acinzentado #A1A1AA
  * - P4: Grafite Sutil #52525B
  */
+export type TaskGroupingMode = 'none' | 'tag' | 'list'
+
 export interface PriorityMeta {
   level: TaskPriority
   code: 'P1' | 'P2' | 'P3' | 'P4' | 'NONE'
@@ -301,6 +303,18 @@ export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
 export const updateTask = (id: string, data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list,tags' })
+
+/**
+ * Move uma tarefa para outra lista (ou limpa a lista se targetListId for vazio/null)
+ */
+export async function moveTaskToList(
+  taskId: string,
+  targetListId: string | null,
+): Promise<TaskRecord> {
+  return pb
+    .collection<TaskRecord>('tasks')
+    .update(taskId, { list: targetListId || '' }, { expand: 'list,tags' })
+}
 
 /**
  * Reordena uma lista ordenada de tarefas afetadas, persistindo o novo índice sequencial no banco.

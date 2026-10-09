@@ -149,6 +149,19 @@ export function Docs() {
                 restaura a visualização integral sem recarregar a tela.
               </li>
               <li>
+                <strong>Agrupamento nas Visões Hoje e Amanhã (TickTick / Todoist):</strong> seletor
+                discreto no cabeçalho das visões Hoje e Amanhã permitindo alternar instantaneamente
+                entre <code>PADRÃO</code> (lista contínua), <code>ETIQUETA</code> (agrupamento por
+                @tag com ponto de cor) ou <code>LISTA</code> (agrupamento por #lista). Cada grupo
+                conta com cabeçalho colapsável em Space Mono com contador de tarefas e transição
+                fluida, agrupando pendências sem atributos no bloco final (<code>SEM ETIQUETA</code>{' '}
+                / <code>SEM LISTA</code>). A preferência de agrupamento é persistida por visão no
+                armazenamento local do usuário. O drag-and-drop de reordenação manual (campo{' '}
+                <code>order</code>) continua integralmente funcional dentro de cada grupo e, no
+                agrupamento por lista, arrastar um cartão para o grupo de outra lista reatribui a
+                lista da tarefa em tempo real com sincronização no banco.
+              </li>
+              <li>
                 <strong>Histórico:</strong> registro auditável de esforço com painel analítico de 14
                 dias e lista cronológica detalhada.
               </li>
@@ -605,7 +618,7 @@ export function Docs() {
                 <td>
                   <code>src/lib/date-parser.ts</code>
                 </td>
-                <td>Interno (v0.0.20)</td>
+                <td>Interno (v0.0.21)</td>
                 <td>
                   Mecanismo autônomo de linguagem natural em pt-BR: datas futuras (dd/mm, dia N de
                   mês, em N dias, próxima segunda), recorrência (todo dia, toda semana, todo dia 15,
