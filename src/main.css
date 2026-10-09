@@ -6087,6 +6087,37 @@ a {
   }
 }
 
+@media (min-width: 769px) and (max-width: 1024px) {
+  .week-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .week-summary-cards {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .week-metric-card {
+    min-width: 0;
+    padding: 10px 14px;
+  }
+
+  .metric-value-wrap {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .metric-sub {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 @media (max-width: 768px) {
   .week-page-container {
     padding: 16px 14px 120px;
@@ -6452,4 +6483,37 @@ a {
   font-size: 12px;
   margin: 0;
   max-width: 380px;
+}
+
+/* ==========================================================================
+   ACESSIBILIDADE: PREFERS-REDUCED-MOTION (WCAG 2.1)
+   Desativa animações de entrada de cards, transições decorativas e efeitos
+   visuais contínuos. A contagem do Pomodoro em JavaScript permanece inalterada.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .task-card,
+  .week-task-card,
+  .pomodoro-card,
+  .pomodoro-phase-card,
+  .inbox-shelf-item,
+  .drawer-panel,
+  .pomodoro-note-banner,
+  .dialog-content,
+  .modal-overlay {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .pomodoro-card.pulse-active {
+    animation: none !important;
+  }
 }

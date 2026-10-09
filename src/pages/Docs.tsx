@@ -912,6 +912,45 @@ export function Docs() {
                 <td>Texto secundário, rótulos auxiliares, ícones desativados, subtítulos</td>
               </tr>
               <tr>
+                <td>Cinza Acessível Secundário (WCAG AA)</td>
+                <td>
+                  <code>#94949E</code>
+                </td>
+                <td>
+                  <span className="color-swatch" style={{ background: '#94949e' }} />
+                </td>
+                <td>
+                  Rótulos de dados, cabeçalhos de Space Mono, hints de Pomodoro e texto secundário
+                  com contraste auditado ≥4.5:1
+                </td>
+              </tr>
+              <tr>
+                <td>Cinza Acessível Terciário (WCAG AA)</td>
+                <td>
+                  <code>#80808A</code>
+                </td>
+                <td>
+                  <span className="color-swatch" style={{ background: '#80808a' }} />
+                </td>
+                <td>
+                  Placeholders, metadados de suporte e legendas atenuadas com legibilidade garantida
+                  em fundo dark
+                </td>
+              </tr>
+              <tr>
+                <td>Borda Estrutural P4 / Painéis</td>
+                <td>
+                  <code>#5F606A</code>
+                </td>
+                <td>
+                  <span className="color-swatch" style={{ background: '#5f606a' }} />
+                </td>
+                <td>
+                  Contorno com contraste WCAG AA para prioridade P4 (baixa), bordas táteis de
+                  formulários e divisões secundárias
+                </td>
+              </tr>
+              <tr>
                 <td>Borda Ouro Champagne</td>
                 <td>
                   <code>rgba(197, 168, 128, 0.12)</code>
@@ -1029,6 +1068,207 @@ export function Docs() {
               </li>
             </ul>
           </article>
+        </div>
+
+        {/* DIRETRIZES DE ACESSIBILIDADE WCAG AA & RESPONSIVIDADE (ETAPAS 1 E 2) */}
+        <h3 className="docs-subsection-title" style={{ marginTop: '36px' }}>
+          Acessibilidade (WCAG 2.1 AA) & Engenharia Responsiva
+        </h3>
+        <div className="docs-card" style={{ marginBottom: '20px' }}>
+          <p>
+            O Barbosa System implementa uma arquitetura rigorosa de acessibilidade digital aliada à
+            filosofia estética <em>quiet luxury</em>. Todas as interfaces respeitam contraste mínimo
+            de 4.5:1, áreas de toque generosas conforme diretrizes de ergonomia móvel, respeito
+            irrestrito às preferências de movimento do usuário e adaptação proporcional de layouts
+            em tablets, desktops e telas ultrawide.
+          </p>
+        </div>
+
+        <div className="docs-grid">
+          <article className="docs-card">
+            <h3>Piso Tipográfico & Contraste WCAG AA</h3>
+            <ul>
+              <li>
+                <strong>Piso tipográfico de 11px:</strong> erradicação total de fontes
+                sub-dimensionadas (9px e 10px). Todas as métricas em Space Mono, datas, tags,
+                badges, contadores e rótulos estruturais operam com no mínimo 11px, garantindo
+                legibilidade perfeita em qualquer display.
+              </li>
+              <li>
+                <strong>Tokens de Contraste Recalibrados:</strong> substituição dos cinzas de baixo
+                contraste (<code>#71717A</code> / <code>#52525B</code>) pelos tokens oficiais WCAG
+                AA: <code>#94949E</code> (secundário, contraste ≥4.5:1 em <code>#090A0E</code> e{' '}
+                <code>#12141C</code>), <code>#80808A</code> (terciário legível) e{' '}
+                <code>#5F606A</code> (bordas estruturais e prioridade P4).
+              </li>
+              <li>
+                <strong>Aplicação Abrangente:</strong> contraste validado em histórico, gráficos de
+                14 dias, formulários de criação, cabeçalhos de seção da sidebar, chips de filtro,
+                hints de pausa do Pomodoro e colunas de planejamento semanal.
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
+            <h3>Hit-boxes de Toque Ergonômicas (≥40px / 44px)</h3>
+            <ul>
+              <li>
+                <strong>Checkboxes principais:</strong> pseudo-elemento invisível{' '}
+                <code>::before</code> de <code>44x44px</code> em <code>.check</code> (cartões das
+                visões Hoje/Amanhã/Inbox) e <code>.big3-check-btn</code>, garantindo ativação por
+                toque sem esforço motor.
+              </li>
+              <li>
+                <strong>Checkboxes secundários:</strong> área mínima expandida de{' '}
+                <code>40x40px</code> em <code>.week-task-card .check</code> e{' '}
+                <code>.subtask-checkbox</code> no drawer de detalhes.
+              </li>
+              <li>
+                <strong>Botões interativos e cabeçalhos colapsáveis:</strong> altura mínima e
+                hit-box de pelo menos <code>40px</code> nos botões FOCUS (<code>.focus</code>,{' '}
+                <code>.week-task-card .focus</code>), chips de filtro por etiqueta (
+                <code>.tag-filter-chip</code>), cabeçalhos colapsáveis da sidebar (
+                <code>.sidebar-section-header</code>), grupos colapsáveis de tarefas (
+                <code>.task-group-header</code>) e sumários de tarefas concluídas (
+                <code>.completed summary</code>, <code>.column-completed summary</code>).
+              </li>
+              <li>
+                <strong>Preservação de Arrastar-e-Soltar:</strong> hit-boxes otimizadas sem
+                interferência no <code>task-drag-handle</code>, mantendo a reordenação manual por
+                toque e mouse fluida e estável.
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
+            <h3>Suporte a prefers-reduced-motion</h3>
+            <p>
+              Media query global <code>@media (prefers-reduced-motion: reduce)</code> implementada
+              na folha de estilos mestre (<code>src/main.css</code>):
+            </p>
+            <ul>
+              <li>
+                <strong>Eliminação de Animações Decorativas:</strong> keyframes decorativos de
+                entrada de cards, drawers laterais e banners são desativados (
+                <code>animation: none</code> e <code>animation-duration: 0.01ms</code>).
+              </li>
+              <li>
+                <strong>Transições Imediatas:</strong> transições CSS reduzidas para{' '}
+                <code>0.01ms</code> e rolagem suave revertida para salto imediato (
+                <code>scroll-behavior: auto</code>), prevenindo náusea e desconforto vestibular.
+              </li>
+              <li>
+                <strong>Integridade do Temporizador Pomodoro:</strong> a lógica de contagem do
+                temporizador Pomodoro é executada puramente em tempo de execução JavaScript
+                (intervalos de segundo), sem qualquer dependência de animações CSS, preservando a
+                precisão absoluta do foco.
+              </li>
+            </ul>
+          </article>
+
+          <article className="docs-card">
+            <h3>Breakpoints Responsivos & Cabeçalho Tablet (769–1024px)</h3>
+            <p>
+              Arquitetura de visualização calibrada por largura de viewport e área real de conteúdo:
+            </p>
+            <ul>
+              <li>
+                <strong>Cabeçalho da Semana no Tablet (769–1024px):</strong> bloco de título
+                empilhado de forma limpa com as 3 métricas de topo (Carga da Semana, Estimativa
+                Total e Inbox não agendada) reorganizadas em um grid de 3 colunas dedicadas abaixo
+                do título, impedindo aperto visual e quebra desordenada de texto.
+              </li>
+              <li>
+                <strong>Mobile (&lt;768px):</strong> cabeçalho empilhado verticalmente com métricas
+                em 2 colunas e inbox ocupando largura total, otimizado para interação com uma mão.
+              </li>
+              <li>
+                <strong>Desktop (≥1025px):</strong> layout em linha ampla com métricas alinhadas à
+                direita e grade de 7 colunas com cálculo contido na área útil descontando a sidebar
+                fixa.
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        <h4 className="docs-subsection-title" style={{ marginTop: '24px' }}>
+          Tabela de Breakpoints e Escala de Área Útil (Etapa 1 & 2)
+        </h4>
+        <div className="docs-table-wrap">
+          <table className="docs-table">
+            <thead>
+              <tr>
+                <th>Dispositivo / Resolução</th>
+                <th>Intervalo Viewport</th>
+                <th>Largura Máx. do Conteúdo</th>
+                <th>Comportamento da Visão Semana</th>
+                <th>Navegação & Painéis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mobile (Smartphones)</td>
+                <td>
+                  <code>&le; 768px</code>
+                </td>
+                <td>
+                  <code>100%</code> (padding 14–16px)
+                </td>
+                <td>7 colunas empilhadas verticalmente; métricas em grade 2 colunas</td>
+                <td>Bottom nav fixa (5 itens), FAB de captura flutuante e gaveta via hambúrguer</td>
+              </tr>
+              <tr>
+                <td>Tablet / iPad Portrait</td>
+                <td>
+                  <code>769px – 1024px</code>
+                </td>
+                <td>
+                  <code>100%</code> (fluido)
+                </td>
+                <td>
+                  Cabeçalho com métricas em grid de 3 colunas abaixo do título; colunas adaptadas
+                </td>
+                <td>Sidebar colapsável, drawer lateral fluido (máx. 420px)</td>
+              </tr>
+              <tr>
+                <td>Laptop Compacto / Médio</td>
+                <td>
+                  <code>1025px – 1280px</code>
+                </td>
+                <td>
+                  <code>816px</code> (centrado)
+                </td>
+                <td>
+                  7 colunas completas com scroll horizontal contido na área real (-260px sidebar)
+                </td>
+                <td>Sidebar fixa 260px, drawer TaskDetail deslizante à direita</td>
+              </tr>
+              <tr>
+                <td>Desktop Padrão (Full HD)</td>
+                <td>
+                  <code>1281px – 1600px</code>
+                </td>
+                <td>
+                  <code>960px</code> (centrado)
+                </td>
+                <td>Grade ampla de 7 colunas perfeitamente visíveis sem overflow de janela</td>
+                <td>Sidebar fixa com área de expansão e foco livre</td>
+              </tr>
+              <tr>
+                <td>Monitores Grandes / 27&quot; / 4K</td>
+                <td>
+                  <code>&ge; 1601px</code>
+                </td>
+                <td>
+                  <code>1080px</code> (centrado)
+                </td>
+                <td>
+                  Exibição monumental com respiros generosos e proporção áurea <em>quiet luxury</em>
+                </td>
+                <td>Layout centralizado com limites estritos anti-dispersão visual</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
