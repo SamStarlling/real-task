@@ -11,6 +11,7 @@ import {
   cleanPriorityToken,
   getSubtaskProgress,
   resetSubtasksForRecurrence,
+  sortPrioritizedItems,
 } from '@/services/data'
 import { computeBestDayStats } from './best-day'
 import type { SubtaskItem, SessionRecord } from '@/types'
@@ -328,6 +329,31 @@ export function runDateParserTests() {
     assertEquals(statsNewRecord.todayMinutes, 240, 'Hoje soma 240 min')
     assertEquals(statsNewRecord.isTodayRecord, true, 'Hoje é o novo recorde')
     assertEquals(statsNewRecord.minutesRemainingToBeat, 0, 'Déficit zero quando é recorde')
+  }
+
+  // 7. Testes de Priorização 80/20 e Ordenação de Etiquetas & Listas
+  {
+    const sampleItems = [
+      { id: '1', name: 'Tarefas Gerais', order: 30, pinned: false },
+      { id: '2', name: 'Big3 Metodologia', order: 20, pinned: true },
+      { id: '3', name: 'Foco Profundo', order: 10, pinned: true },
+      { id: '4', name: 'Arquivadas', order: 10, pinned: false },
+      { id: '5', name: 'Estudos', order: 20, pinned: false },
+    ]
+
+    const sorted = sortPrioritizedItems(sampleItems)
+
+    // Os itens pinned (prioritários) devem vir obrigatoriamente primeiro
+    assertEquals(sorted[0].pinned, true, 'Primeiro item é prioritário (pinned)')
+    assertEquals(sorted[1].pinned, true, 'Segundo item é prioritário (pinned)')
+    assertEquals(sorted[0].name, 'Foco Profundo', 'Pinned com menor order (10) vem antes')
+    assertEquals(sorted[1].name, 'Big3 Metodologia', 'Big3 (order 20, pinned) vem no topo')
+
+    // Os itens não-pinned seguem ordenados por order crescente
+    assertEquals(sorted[2].pinned, false, 'Terceiro item é não-prioritário')
+    assertEquals(sorted[2].name, 'Arquivadas', 'Ordem 10 não-pinned')
+    assertEquals(sorted[3].name, 'Estudos', 'Ordem 20 não-pinned')
+    assertEquals(sorted[4].name, 'Tarefas Gerais', 'Ordem 30 não-pinned')
   }
 
   return true

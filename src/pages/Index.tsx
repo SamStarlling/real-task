@@ -39,7 +39,16 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   const view = params.get('view') || 'hoje'
+  const urlTagParam = params.get('tag')
+  const urlListParam = params.get('list')
   const isEligibleForGrouping = view === 'hoje' || view === 'amanha'
+
+  // Sincronizar activeTagId com parâmetro de URL se houver
+  useEffect(() => {
+    if (urlTagParam) {
+      setActiveTagId(urlTagParam)
+    }
+  }, [urlTagParam])
 
   // Agrupamento persistido por visão no localStorage
   const [groupingMode, setGroupingMode] = useState<TaskGroupingMode>(() => {
@@ -108,16 +117,20 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     }
   }, [params, tasks])
 
-  // Tarefas da visão ativa antes do filtro de etiqueta
+  // Tarefas da visão ativa antes do filtro de etiqueta/lista
   const viewTasks = useMemo(
     () =>
-      tasks.filter((t) =>
-        view === 'hoje'
+      tasks.filter((t) => {
+        // Se estiver em modo de filtro direto de lista (view === 'lista')
+        if (view === 'lista') {
+          return true
+        }
+        return view === 'hoje'
           ? !!t.due_date && pbDay(t.due_date) <= today
           : view === 'amanha'
             ? pbDay(t.due_date) === tomorrow
-            : !t.due_date,
-      ),
+            : !t.due_date
+      }),
     [tasks, view, today, tomorrow],
   )
 
@@ -137,16 +150,19 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [viewTasks])
 
-  // Filtragem adicional por etiqueta se selecionada
+  // Filtragem adicional por etiqueta ou lista se selecionada
   const filtered = useMemo(
     () =>
       viewTasks.filter((t) => {
+        if (urlListParam && t.list !== urlListParam) {
+          return false
+        }
         if (!activeTagId) return true
         const tagIds = t.tags || []
         const expandedTagIds = t.expand?.tags?.map((tag) => tag.id) || []
         return tagIds.includes(activeTagId) || expandedTagIds.includes(activeTagId)
       }),
-    [viewTasks, activeTagId],
+    [viewTasks, activeTagId, urlListParam],
   )
 
   // Separar concluídas e pendentes com ordenação estável por due_time, order e created
@@ -457,7 +473,32 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
     }
   }, [draggingTaskId, dropTarget, commitReorder])
 
-  const title = view === 'hoje' ? 'Hoje' : view === 'amanha' ? 'Amanhã' : 'Inbox'
+  // Nome da lista se filtrado por list
+  const activeListName = useMemo(() => {
+    if (!urlListParam) return null
+    const firstWithList = tasks.find((t) => t.list === urlListParam)
+    return firstWithList?.expand?.list?.name || 'Lista'
+  }, [tasks, urlListParam])
+
+  // Nome da etiqueta se filtrado por tag na URL
+  const activeTagName = useMemo(() => {
+    if (!activeTagId) return null
+    for (const t of tasks) {
+      const match = t.expand?.tags?.find((tg) => tg.id === activeTagId)
+      if (match) return match.name
+    }
+    return null
+  }, [tasks, activeTagId])
+
+  const title = urlListParam
+    ? `#${activeListName}`
+    : view === 'hoje'
+      ? 'Hoje'
+      : view === 'amanha'
+        ? 'Amanhã'
+        : view === 'lista'
+          ? `#${activeListName}`
+          : 'Inbox'
   const estimated = optimisticPending.reduce((n, t) => n + t.estimated_minutes, 0),
     actual = filtered.reduce((n, t) => n + t.actual_minutes, 0)
 
@@ -476,7 +517,11 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
         <div>
           <h1>{title}</h1>
           <span>
-            {formatLongDate(view === 'amanha' ? new Date(Date.now() + 86400000) : new Date())}
+            {urlListParam
+              ? `VISÃO FILTRADA PELA LISTA #${activeListName}`
+              : activeTagName
+                ? `FILTRO ATIVO: @${activeTagName} · ${formatLongDate(view === 'amanha' ? new Date(Date.now() + 86400000) : new Date())}`
+                : formatLongDate(view === 'amanha' ? new Date(Date.now() + 86400000) : new Date())}
           </span>
         </div>
 
@@ -614,10 +659,33 @@ export function Index({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () => 
             {activeTagId && (
               <button
                 type="button"
-                className="tag-filter-clear-btn"
-                onClick={() => setActiveTagId(null)}
+                className="tag-filter-clear-btn active-state"
+                onClick={() => {
+                  setActiveTagId(null)
+                  if (urlTagParam) {
+                    setParams((p) => {
+                      p.delete('tag')
+                      return p
+                    })
+                  }
+                }}
               >
-                Limpar filtro
+                Limpar filtro @{activeTagName || ''}
+              </button>
+            )}
+            {urlListParam && (
+              <button
+                type="button"
+                className="tag-filter-clear-btn active-state"
+                onClick={() => {
+                  setParams((p) => {
+                    p.delete('list')
+                    p.set('view', 'hoje')
+                    return p
+                  })
+                }}
+              >
+                Limpar filtro de lista #{activeListName}
               </button>
             )}
           </div>

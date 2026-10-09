@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T00:06:34.150Z",
+  "generatedAt": "2026-10-09T00:46:27.318Z",
   "collections": [
     {
       "name": "users",
@@ -99,11 +99,24 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pinned",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_lists_user_name ON lists (user, name)",
-        "CREATE INDEX idx_lists_user ON lists (user)"
+        "CREATE INDEX idx_lists_user ON lists (user)",
+        "CREATE INDEX `idx_lists_user_pinned_order` ON `lists` (user, pinned, order)"
       ]
     },
     {
@@ -448,11 +461,24 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pinned",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_tags_user_name ON tags (user, name)",
-        "CREATE INDEX idx_tags_user ON tags (user)"
+        "CREATE INDEX idx_tags_user ON tags (user)",
+        "CREATE INDEX `idx_tags_user_pinned_order` ON `tags` (user, pinned, order)"
       ]
     }
   ]

@@ -20,6 +20,8 @@ import {
   X,
   AlertCircle,
   Hash,
+  Folder,
+  Pin,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -31,9 +33,16 @@ import {
   WEEKDAY_LABELS,
   getTags,
   getTasks,
+  getLists,
   createTag,
   updateTag,
   deleteTag,
+  toggleTagPinned,
+  createList,
+  updateList,
+  deleteList,
+  toggleListPinned,
+  sortPrioritizedItems,
   TAG_PALETTE,
   getNextTagColor,
   type NotificationPreferences,
@@ -41,11 +50,11 @@ import {
   type WeeklyFocusGoals,
   type TagRecord,
 } from '@/services/data'
-import type { TaskRecord } from '@/types'
+import type { ListRecord, TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { playReminderSound } from '@/lib/sounds'
 
-type SettingsTab = 'produtividade' | 'etiquetas' | 'conta'
+type SettingsTab = 'produtividade' | 'etiquetas' | 'listas' | 'conta'
 
 interface EditingState {
   day: WeekdayKey | null
@@ -65,8 +74,11 @@ export function Settings() {
   // Estado de Etiquetas (Tags)
   const [tags, setTags] = useState<TagRecord[]>([])
   const [tasks, setTasks] = useState<TaskRecord[]>([])
+  const [lists, setLists] = useState<ListRecord[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
+  const [listsLoading, setListsLoading] = useState(false)
   const [tagSearch, setTagSearch] = useState('')
+  const [listSearch, setListSearch] = useState('')
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState<string>(TAG_PALETTE[0].color)
   const [tagCreating, setTagCreating] = useState(false)
@@ -74,6 +86,13 @@ export function Settings() {
   const [editingTagName, setEditingTagName] = useState('')
   const [editingTagColor, setEditingTagColor] = useState('')
   const [tagActionError, setTagActionError] = useState<string | null>(null)
+
+  // Estado de Listas
+  const [newListName, setNewListName] = useState('')
+  const [listCreating, setListCreating] = useState(false)
+  const [editingListId, setEditingListId] = useState<string | null>(null)
+  const [editingListName, setEditingListName] = useState('')
+  const [listActionError, setListActionError] = useState<string | null>(null)
 
   // Estado de Notificações / Alertas (Etapa 3)
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(() =>
@@ -90,14 +109,17 @@ export function Settings() {
 
   const loadTagsAndTasks = async () => {
     setTagsLoading(true)
+    setListsLoading(true)
     try {
-      const [allTags, allTasks] = await Promise.all([getTags(), getTasks()])
-      setTags(allTags)
+      const [allTags, allTasks, allLists] = await Promise.all([getTags(), getTasks(), getLists()])
+      setTags(sortPrioritizedItems(allTags))
       setTasks(allTasks)
+      setLists(sortPrioritizedItems(allLists))
     } catch (err) {
-      console.error('Erro ao carregar etiquetas e tarefas:', err)
+      console.error('Erro ao carregar etiquetas, listas e tarefas:', err)
     } finally {
       setTagsLoading(false)
+      setListsLoading(false)
     }
   }
 
@@ -166,6 +188,19 @@ export function Settings() {
     }
   }
 
+  const handleToggleTagPin = async (tag: TagRecord) => {
+    const nextPinned = !tag.pinned
+    setTags((prev) =>
+      sortPrioritizedItems(prev.map((t) => (t.id === tag.id ? { ...t, pinned: nextPinned } : t))),
+    )
+    try {
+      await toggleTagPinned(tag.id, !!tag.pinned)
+    } catch (err) {
+      console.error('Erro ao alternar pin da etiqueta:', err)
+      loadTagsAndTasks()
+    }
+  }
+
   const handleDeleteTag = async (tag: TagRecord) => {
     const count = tasks.filter((t) => Array.isArray(t.tags) && t.tags.includes(tag.id)).length
     const confirmMsg =
@@ -190,6 +225,85 @@ export function Settings() {
     } catch (err) {
       console.error('Erro ao remover etiqueta:', err)
       setTagActionError('Não foi possível excluir a etiqueta.')
+    }
+  }
+
+  // Operações de Listas
+  const handleCreateList = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = newListName.trim()
+    if (!trimmed || !user?.id) return
+    setListCreating(true)
+    setListActionError(null)
+    try {
+      const created = await createList(trimmed, user.id, (lists.length + 1) * 10)
+      setLists((prev) => sortPrioritizedItems([...prev, created]))
+      setNewListName('')
+    } catch (err) {
+      console.error('Erro ao criar lista:', err)
+      setListActionError('Não foi possível criar a lista. Verifique o nome digitado.')
+    } finally {
+      setListCreating(false)
+    }
+  }
+
+  const handleStartEditList = (list: ListRecord) => {
+    setEditingListId(list.id)
+    setEditingListName(list.name)
+  }
+
+  const handleSaveEditList = async () => {
+    if (!editingListId) return
+    const trimmed = editingListName.trim()
+    if (!trimmed) {
+      setListActionError('O nome da lista não pode ficar vazio.')
+      return
+    }
+    try {
+      const updated = await updateList(editingListId, { name: trimmed })
+      setLists((prev) =>
+        sortPrioritizedItems(prev.map((l) => (l.id === editingListId ? updated : l))),
+      )
+      setEditingListId(null)
+      setEditingListName('')
+      setListActionError(null)
+    } catch (err) {
+      console.error('Erro ao atualizar lista:', err)
+      setListActionError('Falha ao salvar lista.')
+    }
+  }
+
+  const handleToggleListPin = async (list: ListRecord) => {
+    const nextPinned = !list.pinned
+    setLists((prev) =>
+      sortPrioritizedItems(prev.map((l) => (l.id === list.id ? { ...l, pinned: nextPinned } : l))),
+    )
+    try {
+      await toggleListPinned(list.id, !!list.pinned)
+    } catch (err) {
+      console.error('Erro ao alternar pin da lista:', err)
+      loadTagsAndTasks()
+    }
+  }
+
+  const handleDeleteList = async (list: ListRecord) => {
+    const count = tasks.filter((t) => t.list === list.id).length
+    const confirmMsg =
+      count > 0
+        ? `Excluir a lista "${list.name}"? Ela será desvinculada de ${count} tarefa(s).`
+        : `Deseja excluir a lista "${list.name}"?`
+    if (!window.confirm(confirmMsg)) return
+
+    try {
+      await deleteList(list.id)
+      setLists((prev) => prev.filter((l) => l.id !== list.id))
+      setTasks((prev) => prev.map((tk) => (tk.list === list.id ? { ...tk, list: '' } : tk)))
+      if (editingListId === list.id) {
+        setEditingListId(null)
+      }
+    } catch (err) {
+      console.error('Erro ao remover lista:', err)
+      setListActionError('Não foi possível excluir a lista.')
     }
   }
 
@@ -328,8 +442,14 @@ export function Settings() {
     {
       id: 'etiquetas' as SettingsTab,
       label: 'Etiquetas & Tags',
-      desc: 'Cores, renomeação e tarefas vinculadas',
+      desc: 'Cores, prioridade 80/20 e tarefas vinculadas',
       icon: Tag,
+    },
+    {
+      id: 'listas' as SettingsTab,
+      label: 'Listas & Projetos',
+      desc: 'Organização estrutural, prioridade e tarefas',
+      icon: Folder,
     },
     {
       id: 'conta' as SettingsTab,
@@ -833,7 +953,8 @@ export function Settings() {
                     <div className="tags-table-header">
                       <span className="col-tag">ETIQUETA</span>
                       <span className="col-color">CÓDIGO HEX</span>
-                      <span className="col-count">TAREFAS VINCULADAS</span>
+                      <span className="col-count">TAREFAS</span>
+                      <span className="col-pin">80/20</span>
                       <span className="col-actions">AÇÕES</span>
                     </div>
 
@@ -842,6 +963,7 @@ export function Settings() {
                         .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
                         .map((tag) => {
                           const isEditing = editingTagId === tag.id
+                          const isPinned = !!tag.pinned
                           const linkedCount = tasks.filter(
                             (tk) => Array.isArray(tk.tags) && tk.tags.includes(tag.id),
                           ).length
@@ -882,6 +1004,9 @@ export function Settings() {
                                 </div>
                                 <div className="col-count">
                                   <span className="tag-task-badge">{linkedCount} tarefa(s)</span>
+                                </div>
+                                <div className="col-pin">
+                                  <span className="text-xs text-[#71717A]">—</span>
                                 </div>
                                 <div className="col-actions">
                                   <button
@@ -926,6 +1051,21 @@ export function Settings() {
                                   {linkedCount} {linkedCount === 1 ? 'tarefa' : 'tarefas'}
                                 </span>
                               </div>
+                              <div className="col-pin">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleTagPin(tag)}
+                                  className={`settings-pin-btn ${isPinned ? 'pinned' : ''}`}
+                                  title={
+                                    isPinned
+                                      ? 'Etiqueta prioritária (80/20) · Clique para desmarcar'
+                                      : 'Fixar como prioritária no topo (80/20)'
+                                  }
+                                >
+                                  <Pin size={13} />
+                                  <span>{isPinned ? 'Prioritária' : 'Normal'}</span>
+                                </button>
+                              </div>
                               <div className="col-actions">
                                 <button
                                   type="button"
@@ -958,11 +1098,237 @@ export function Settings() {
                   <Tag size={18} />
                 </div>
                 <div className="info-text">
-                  <h4>Captura Rápida com # na Barra</h4>
+                  <h4>Priorização 80/20 & Captura Rápida com # na Barra</h4>
                   <p>
-                    Ao digitar uma nova tarefa na barra de captura superior, use a hashtag como no
-                    TickTick ou Todoist (ex.: <code>Planejar sprint #Trabalho amanhã às 14h</code>).
-                    O sistema reconhece e associa a etiqueta automaticamente.
+                    Marque etiquetas estratégicas (ex.: <code>Big3</code>,{' '}
+                    <code>Foco Profundo</code>) como <strong>Prioritária</strong> para fixá-las no
+                    topo da sidebar com destaque champagne. Ao digitar uma nova tarefa na barra
+                    superior, use a hashtag (ex.: <code>Planejar sprint #Big3 amanhã às 14h</code>).
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'listas' && (
+            <div className="settings-panel lists-panel">
+              <header className="panel-header">
+                <div>
+                  <h2>Gerenciamento de Listas & Projetos</h2>
+                  <p>
+                    Crie, renomeie, defina prioridade 80/20 e gerencie as listas e projetos do
+                    Barbosa System. A sidebar reflete a ordem e a fixação prioritária
+                    instantaneamente.
+                  </p>
+                </div>
+              </header>
+
+              {/* CARD: CRIAR NOVA LISTA */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">NOVA LISTA</div>
+                    <h3>Criar lista ou projeto</h3>
+                    <p>Defina o nome da nova lista estrutural de tarefas.</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleCreateList} className="tag-create-form">
+                  <div className="tag-input-group">
+                    <div className="tag-input-field-wrap">
+                      <Folder size={14} className="tag-input-icon text-[#C5A880]" />
+                      <input
+                        type="text"
+                        placeholder="Nome da lista (ex.: Trabalho, Estudos, Pessoal, Big3)..."
+                        value={newListName}
+                        onChange={(e) => setNewListName(e.target.value)}
+                        className="tag-text-input"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!newListName.trim() || listCreating}
+                      className="primary tag-create-btn"
+                    >
+                      <Plus size={14} />
+                      <span>{listCreating ? 'Criando...' : 'Criar lista'}</span>
+                    </button>
+                  </div>
+                </form>
+
+                {listActionError && (
+                  <div className="tag-error-banner">
+                    <AlertCircle size={14} />
+                    <span>{listActionError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* CARD: LISTA DE LISTAS EXISTENTES */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">LISTAS CADASTRADAS</div>
+                    <h3>Acervo de listas ({lists.length})</h3>
+                    <p>
+                      Visualize a quantidade de tarefas em cada lista, altere o status de prioridade
+                      80/20, renomeie ou remova listas descontinuadas.
+                    </p>
+                  </div>
+
+                  <div className="tag-list-search-wrap">
+                    <Search size={13} className="text-[#a1a1aa]" />
+                    <input
+                      type="text"
+                      placeholder="Filtrar listas..."
+                      value={listSearch}
+                      onChange={(e) => setListSearch(e.target.value)}
+                      className="tag-list-search-input"
+                    />
+                  </div>
+                </div>
+
+                {listsLoading ? (
+                  <div className="tags-loading-state">
+                    <span>Carregando listas do sistema...</span>
+                  </div>
+                ) : lists.length === 0 ? (
+                  <div className="tags-empty-state">
+                    <Folder size={24} className="text-[#C5A880]/50 mb-2" />
+                    <h4>Nenhuma lista cadastrada</h4>
+                    <p>Crie sua primeira lista acima para agrupar e organizar suas tarefas.</p>
+                  </div>
+                ) : (
+                  <div className="tags-table-wrap">
+                    <div className="tags-table-header">
+                      <span className="col-tag">LISTA</span>
+                      <span className="col-count">TAREFAS VINCULADAS</span>
+                      <span className="col-pin">80/20</span>
+                      <span className="col-actions">AÇÕES</span>
+                    </div>
+
+                    <div className="tags-table-body">
+                      {lists
+                        .filter((l) => l.name.toLowerCase().includes(listSearch.toLowerCase()))
+                        .map((list) => {
+                          const isEditing = editingListId === list.id
+                          const isPinned = !!list.pinned
+                          const linkedCount = tasks.filter((tk) => tk.list === list.id).length
+
+                          if (isEditing) {
+                            return (
+                              <div key={list.id} className="tags-table-row editing">
+                                <div className="col-tag">
+                                  <input
+                                    type="text"
+                                    value={editingListName}
+                                    onChange={(e) => setEditingListName(e.target.value)}
+                                    className="tag-edit-input"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveEditList()
+                                      if (e.key === 'Escape') setEditingListId(null)
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-count">
+                                  <span className="tag-task-badge">{linkedCount} tarefa(s)</span>
+                                </div>
+                                <div className="col-pin">
+                                  <span className="text-xs text-[#71717A]">—</span>
+                                </div>
+                                <div className="col-actions">
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveEditList}
+                                    className="tag-action-icon-btn save"
+                                    title="Salvar alterações"
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingListId(null)}
+                                    className="tag-action-icon-btn cancel"
+                                    title="Cancelar edição"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          }
+
+                          return (
+                            <div key={list.id} className="tags-table-row">
+                              <div className="col-tag">
+                                <div className="tag-pill-preview">
+                                  <span className="font-mono text-[#C5A880] font-bold text-xs">
+                                    #
+                                  </span>
+                                  <span className="tag-name-text">{list.name}</span>
+                                </div>
+                              </div>
+                              <div className="col-count">
+                                <span
+                                  className={`tag-task-badge ${linkedCount > 0 ? 'has-tasks' : ''}`}
+                                >
+                                  {linkedCount} {linkedCount === 1 ? 'tarefa' : 'tarefas'}
+                                </span>
+                              </div>
+                              <div className="col-pin">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleListPin(list)}
+                                  className={`settings-pin-btn ${isPinned ? 'pinned' : ''}`}
+                                  title={
+                                    isPinned
+                                      ? 'Lista prioritária (80/20) · Clique para desmarcar'
+                                      : 'Fixar como prioritária no topo (80/20)'
+                                  }
+                                >
+                                  <Pin size={13} />
+                                  <span>{isPinned ? 'Prioritária' : 'Normal'}</span>
+                                </button>
+                              </div>
+                              <div className="col-actions">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditList(list)}
+                                  className="tag-action-icon-btn"
+                                  title="Editar lista"
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteList(list)}
+                                  className="tag-action-icon-btn danger"
+                                  title="Excluir lista"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* DICA */}
+              <div className="settings-info-card">
+                <div className="info-icon-wrap">
+                  <Folder size={18} />
+                </div>
+                <div className="info-text">
+                  <h4>Priorização 80/20 na Sidebar</h4>
+                  <p>
+                    Listas marcadas como prioritárias são fixadas imediatamente no topo da seção
+                    LISTAS da barra lateral. Você pode ordená-las por arrastar e soltar livremente
+                    tanto no desktop quanto no mobile.
                   </p>
                 </div>
               </div>

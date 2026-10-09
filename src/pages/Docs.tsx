@@ -510,13 +510,19 @@ export function Docs() {
                 <code>weekly_focus_goals</code> da coleção <code>users</code>.
               </li>
               <li>
-                <strong>Gerenciamento Completo de Etiquetas (/configuracoes):</strong> aba dedicada
-                para administração integral das etiquetas da coleção <code>tags</code>. Permite
-                criar com seletor visual da paleta <em>quiet luxury</em>, renomear inline com tecla
-                Enter/Esc, alterar cor, inspecionar o código HEX e acompanhar o contador em tempo
-                real de tarefas vinculadas a cada tag. Na exclusão, executa desassociação segura em
-                cascata, removendo a referência do array de tags de todas as tarefas afetadas antes
-                de deletar o registro.
+                <strong>Gerenciamento Completo de Etiquetas & Listas (/configuracoes):</strong> abas
+                dedicadas para administração integral das etiquetas (<code>tags</code>) e
+                listas/projetos (<code>lists</code>). Permite criar com seletor visual da paleta{' '}
+                <em>quiet luxury</em>, renomear inline com tecla Enter/Esc, alternar prioridade
+                80/20 (marcador de pin), inspecionar o código HEX e acompanhar o contador em tempo
+                real de tarefas vinculadas. Na exclusão, executa desassociação segura em cascata.
+              </li>
+              <li>
+                <strong>Priorização 80/20 na Sidebar:</strong> seções colapsáveis ETIQUETAS e LISTAS
+                na barra lateral com contagem de tarefas abertas em Space Mono. As etiquetas e
+                listas marcadas como prioritárias (ex.: Big3) ficam fixadas no topo com indicador
+                champagne sutil. A ordem é personalizada via arrastar-e-soltar (desktop e mobile) e
+                sincronizada via Server-Sent Events.
               </li>
               <li>
                 <strong>Atalhos em lote:</strong> botões de sincronização rápida para copiar a meta
@@ -1096,6 +1102,31 @@ export function Docs() {
                 </tr>
                 <tr>
                   <td>
+                    <code>order</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Índice de priorização sequencial na sidebar e listas via arrastar-e-soltar.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>pinned</code>
+                  </td>
+                  <td>
+                    <code>bool</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Marcação de prioridade 80/20 (true = fixada no topo da sidebar com destaque
+                    champagne).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
                     <code>created</code> / <code>updated</code>
                   </td>
                   <td>
@@ -1109,7 +1140,8 @@ export function Docs() {
           </div>
           <div className="docs-indices">
             <span>ÍNDICES:</span> <code>idx_tags_user_name (UNIQUE: user, name)</code> ·{' '}
-            <code>idx_tags_user (user)</code>
+            <code>idx_tags_user (user)</code> ·{' '}
+            <code>idx_tags_user_pinned_order (user, pinned, order)</code>
           </div>
         </div>
 
@@ -1176,6 +1208,30 @@ export function Docs() {
                 </tr>
                 <tr>
                   <td>
+                    <code>order</code>
+                  </td>
+                  <td>
+                    <code>number</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Índice numérico de ordenação sequencial na barra lateral (arrastar e soltar).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>pinned</code>
+                  </td>
+                  <td>
+                    <code>bool</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Selo de prioridade 80/20 (true = fixada no topo da seção LISTAS na sidebar).
+                  </td>
+                </tr>
+                <tr>
+                  <td>
                     <code>created</code> / <code>updated</code>
                   </td>
                   <td>
@@ -1189,7 +1245,8 @@ export function Docs() {
           </div>
           <div className="docs-indices">
             <span>ÍNDICES:</span> <code>idx_lists_user_name (UNIQUE: user, name)</code> ·{' '}
-            <code>idx_lists_user (user)</code>
+            <code>idx_lists_user (user)</code> ·{' '}
+            <code>idx_lists_user_pinned_order (user, pinned, order)</code>
           </div>
         </div>
 

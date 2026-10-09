@@ -21,12 +21,16 @@ export interface UserRecord extends RecordModel {
 export interface ListRecord extends RecordModel {
   name: string
   user: string
+  order?: number
+  pinned?: boolean
 }
 
 export interface TagRecord extends RecordModel {
   name: string
   user: string
   color: string
+  order?: number
+  pinned?: boolean
 }
 
 export type RecurrenceType = 'none' | 'daily' | 'weekly_days' | 'weekly' | 'monthly'

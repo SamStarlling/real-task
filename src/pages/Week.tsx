@@ -55,8 +55,10 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
   const [params, setParams] = useSearchParams()
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [activeTagId, setActiveTagId] = useState<string | null>(null)
+  const urlTagParam = params.get('tag')
+  const urlListParam = params.get('list')
 
-  // Sincroniza seleção de tarefa com a URL ?taskId=...
+  // Sincroniza seleção de tarefa com a URL ?taskId=... e filtro de tag ?tag=...
   useEffect(() => {
     const id = params.get('taskId')
     if (id) {
@@ -64,6 +66,12 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
       if (task) setSelectedTask(task)
     }
   }, [params, tasks])
+
+  useEffect(() => {
+    if (urlTagParam) {
+      setActiveTagId(urlTagParam)
+    }
+  }, [urlTagParam])
 
   // Gerar a janela dos 7 dias: hoje + 6 dias seguintes (sem dias passados)
   const days: DayColumnInfo[] = useMemo(() => {
@@ -128,11 +136,12 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
   }, [tasks, todayStr, lastDayStr])
 
-  // Tarefas da Inbox filtradas por etiqueta se ativa
+  // Tarefas da Inbox filtradas por etiqueta ou lista se ativa
   const inboxTasks = useMemo(() => {
     return tasks
       .filter((t) => {
         if (t.due_date || t.done) return false
+        if (urlListParam && t.list !== urlListParam) return false
         if (!activeTagId) return true
         const tagIds = t.tags || []
         const expandedTagIds = t.expand?.tags?.map((tag) => tag.id) || []
@@ -144,7 +153,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
         if (orderA !== orderB) return orderA - orderB
         return new Date(b.created).getTime() - new Date(a.created).getTime()
       })
-  }, [tasks, activeTagId])
+  }, [tasks, activeTagId, urlListParam])
 
   // Mapa de tarefas organizadas por dia (dateKey -> { pending: TaskRecord[], done: TaskRecord[] })
   // Também acolhe tarefas atrasadas pendentes no dia de "hoje"
@@ -156,6 +165,10 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
 
     for (const t of tasks) {
       if (!t.due_date) continue
+
+      if (urlListParam && t.list !== urlListParam) {
+        continue
+      }
 
       // Filtro ativo de etiqueta
       if (activeTagId) {
@@ -191,7 +204,7 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
     }
 
     return map
-  }, [days, tasks, todayStr, activeTagId])
+  }, [days, tasks, todayStr, activeTagId, urlListParam])
 
   // Totalizadores da semana inteira
   const summary = useMemo(() => {
@@ -586,9 +599,31 @@ export function WeekPage({ tasks, refresh }: { tasks: TaskRecord[]; refresh: () 
               <button
                 type="button"
                 className="tag-filter-clear-btn"
-                onClick={() => setActiveTagId(null)}
+                onClick={() => {
+                  setActiveTagId(null)
+                  if (urlTagParam) {
+                    setParams((p) => {
+                      p.delete('tag')
+                      return p
+                    })
+                  }
+                }}
               >
-                Limpar filtro
+                Limpar filtro de etiqueta
+              </button>
+            )}
+            {urlListParam && (
+              <button
+                type="button"
+                className="tag-filter-clear-btn"
+                onClick={() => {
+                  setParams((p) => {
+                    p.delete('list')
+                    return p
+                  })
+                }}
+              >
+                Limpar filtro de lista
               </button>
             )}
           </div>

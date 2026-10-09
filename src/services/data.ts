@@ -271,18 +271,49 @@ export function getGoalForDate(date: Date = new Date(), user?: Partial<UserRecor
   return goals[key] ?? 0
 }
 
-export const getLists = () => pb.collection<ListRecord>('lists').getFullList({ sort: 'name' })
-export const getTags = () => pb.collection<TagRecord>('tags').getFullList({ sort: 'name' })
+export const getLists = () =>
+  pb.collection<ListRecord>('lists').getFullList({ sort: '-pinned,order,name' })
+export const getTags = () =>
+  pb.collection<TagRecord>('tags').getFullList({ sort: '-pinned,order,name' })
 export const getTasks = () =>
   pb.collection<TaskRecord>('tasks').getFullList({ sort: 'order,-created', expand: 'list,tags' })
 export const getSessions = () =>
   pb.collection<SessionRecord>('sessions').getFullList({ sort: '-started_at', expand: 'task' })
-export const createList = (name: string, user: string) =>
-  pb.collection<ListRecord>('lists').create({ name, user })
-export const createTag = (data: { name: string; user: string; color: string }) =>
-  pb.collection<TagRecord>('tags').create(data)
-export const updateTag = (id: string, data: Partial<{ name: string; color: string }>) =>
-  pb.collection<TagRecord>('tags').update(id, data)
+export const createList = (name: string, user: string, order?: number) =>
+  pb.collection<ListRecord>('lists').create({ name, user, order: order ?? 10, pinned: false })
+export const updateList = (
+  id: string,
+  data: Partial<{ name: string; order: number; pinned: boolean }>,
+) => pb.collection<ListRecord>('lists').update(id, data)
+export const deleteList = async (id: string) => {
+  // Remove a referência de lista das tarefas antes de deletar
+  try {
+    const tasksWithList = await pb.collection<TaskRecord>('tasks').getFullList({
+      filter: pb.filter('list = {:listId}', { listId: id }),
+    })
+    for (const task of tasksWithList) {
+      await pb.collection('tasks').update(task.id, { list: '' })
+    }
+  } catch (err) {
+    console.warn('Aviso ao desvincular lista de tarefas:', err)
+  }
+  return pb.collection<ListRecord>('lists').delete(id)
+}
+export const toggleListPinned = (id: string, currentPinned: boolean) =>
+  pb.collection<ListRecord>('lists').update(id, { pinned: !currentPinned })
+export const createTag = (data: {
+  name: string
+  user: string
+  color: string
+  order?: number
+  pinned?: boolean
+}) => pb.collection<TagRecord>('tags').create({ pinned: false, ...data })
+export const updateTag = (
+  id: string,
+  data: Partial<{ name: string; color: string; order: number; pinned: boolean }>,
+) => pb.collection<TagRecord>('tags').update(id, data)
+export const toggleTagPinned = (id: string, currentPinned: boolean) =>
+  pb.collection<TagRecord>('tags').update(id, { pinned: !currentPinned })
 export const deleteTag = async (id: string) => {
   // Remove a referência da tag das tarefas que a utilizam antes de deletar
   try {
@@ -298,6 +329,62 @@ export const deleteTag = async (id: string) => {
     console.warn('Aviso ao desvincular tag de tarefas:', err)
   }
   return pb.collection<TagRecord>('tags').delete(id)
+}
+
+/**
+ * Função utilitária de ordenação 80/20 para etiquetas ou listas:
+ * 1. Itens prioritários (pinned === true) vêm primeiro.
+ * 2. Entre os pinned, ordena por `order` crescente (valores positivos) e depois por `name`.
+ * 3. Depois, itens não-pinned, também ordenados por `order` crescente e depois por `name`.
+ */
+export function sortPrioritizedItems<T extends { order?: number; pinned?: boolean; name: string }>(
+  items: T[],
+): T[] {
+  return [...items].sort((a, b) => {
+    const pinnedA = !!a.pinned
+    const pinnedB = !!b.pinned
+    if (pinnedA !== pinnedB) {
+      return pinnedA ? -1 : 1
+    }
+    const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
+    const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
+    if (orderA !== orderB) {
+      return orderA - orderB
+    }
+    return a.name.localeCompare(b.name, 'pt-BR')
+  })
+}
+
+/**
+ * Reordena uma lista ordenada de etiquetas, persistindo a nova sequência no banco.
+ */
+export async function reorderTags(orderedTags: TagRecord[]): Promise<void> {
+  const updates: Promise<unknown>[] = []
+  orderedTags.forEach((tag, idx) => {
+    const newOrder = (idx + 1) * 10
+    if (tag.order !== newOrder) {
+      updates.push(pb.collection('tags').update(tag.id, { order: newOrder }))
+    }
+  })
+  if (updates.length > 0) {
+    await Promise.all(updates)
+  }
+}
+
+/**
+ * Reordena uma lista ordenada de listas, persistindo a nova sequência no banco.
+ */
+export async function reorderLists(orderedLists: ListRecord[]): Promise<void> {
+  const updates: Promise<unknown>[] = []
+  orderedLists.forEach((list, idx) => {
+    const newOrder = (idx + 1) * 10
+    if (list.order !== newOrder) {
+      updates.push(pb.collection('lists').update(list.id, { order: newOrder }))
+    }
+  })
+  if (updates.length > 0) {
+    await Promise.all(updates)
+  }
 }
 export const createTask = (data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
