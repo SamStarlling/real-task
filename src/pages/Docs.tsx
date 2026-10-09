@@ -8,15 +8,42 @@ export function Docs() {
           <span className="eyebrow">DOCUMENTAÇÃO DO SISTEMA</span>
           <h1 className="docs-heading">Barbosa System</h1>
         </div>
-        <span className="docs-badge">VERSÃO INTERNA · V1.0</span>
+        <span className="docs-badge">VERSÃO INTERNA · V1.0 · MCP ETAPA 1</span>
       </header>
 
       <p className="docs-intro">
         O <strong>Barbosa System</strong> é uma plataforma minimalista de alto desempenho voltada à
         captura instantânea de tarefas, priorização diária e execução focada com temporizador
-        Pomodoro integrado. Projetado com estética <em>quiet luxury</em>, tempo real bidirecional e
-        dados 100% persistidos e isolados por usuário.
+        Pomodoro integrado. Projetado com estética <em>quiet luxury</em>, tempo real bidirecional,
+        servidor MCP oficial (JSON-RPC 2.0 / Streamable HTTP) e dados 100% persistidos e isolados
+        por usuário.
       </p>
+
+      {/* ÍNDICE RÁPIDO */}
+      <nav className="mb-8 p-3.5 bg-[#121214] border border-[#27272A] rounded-md flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-mono">
+        <span className="text-[#71717A] tracking-wider uppercase">SEÇÕES:</span>
+        <a
+          href="#funcionalidades"
+          className="text-[#A1A1AA] hover:text-[#C5A880] transition-colors"
+        >
+          01. Funcionalidades
+        </a>
+        <a href="#ferramentas" className="text-[#A1A1AA] hover:text-[#C5A880] transition-colors">
+          02. Ferramentas & Atalhos
+        </a>
+        <a href="#design-system" className="text-[#A1A1AA] hover:text-[#C5A880] transition-colors">
+          03. Design System
+        </a>
+        <a href="#banco-de-dados" className="text-[#A1A1AA] hover:text-[#C5A880] transition-colors">
+          04. Banco & Schema PB
+        </a>
+        <a
+          href="#conectar-agentes-mcp"
+          className="text-[#C5A880] font-semibold hover:underline transition-colors"
+        >
+          05. Conectar Agentes (MCP)
+        </a>
+      </nav>
 
       {/* SEÇÃO 1: FUNCIONALIDADES */}
       <section className="docs-section" id="funcionalidades">
@@ -1825,6 +1852,384 @@ export function Docs() {
           <div className="docs-indices">
             <span>ÍNDICES:</span> <code>idx_focus_presets_user (user)</code> ·{' '}
             <code>idx_focus_presets_user_archived (user, archived)</code>
+          </div>
+        </div>
+
+        {/* COLEÇÃO: mcp_tokens */}
+        <div className="docs-collection-card">
+          <div className="docs-collection-header">
+            <div>
+              <span className="docs-collection-type">BASE COLLECTION (ETAPA 1 MCP)</span>
+              <h3>mcp_tokens</h3>
+            </div>
+            <div className="docs-rule-badge">
+              <code>
+                @request.auth.id != '' && user.id = @request.auth.id (create: null/servidor)
+              </code>
+            </div>
+          </div>
+          <p className="docs-collection-desc">
+            Tokens de acesso pessoal para clientes Model Context Protocol (Claude Code, Claude
+            Desktop, Gemini CLI). Armazena apenas o hash criptográfico SHA-256 (o token cru{' '}
+            <code>bs_mcp_...</code> é exibido apenas uma vez na criação).
+          </p>
+          <div className="docs-table-wrap">
+            <table className="docs-table">
+              <thead>
+                <tr>
+                  <th>Campo</th>
+                  <th>Tipo</th>
+                  <th>Obrigatório</th>
+                  <th>Descrição / Restrições</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <code>id</code>
+                  </td>
+                  <td>
+                    <code>text</code> (PK)
+                  </td>
+                  <td>Sim</td>
+                  <td>Identificador alfanumérico primário gerado pelo PocketBase (15 chars)</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>name</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Rótulo descritivo do token (máx. 100 caracteres, ex: &quot;Claude Code&quot;,
+                    &quot;Gemini CLI&quot;)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>user</code>
+                  </td>
+                  <td>
+                    <code>relation</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    FK referenciando <code>users.id</code> (cascadeDelete: true, maxSelect: 1)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>token_hash</code>
+                  </td>
+                  <td>
+                    <code>text</code>
+                  </td>
+                  <td>Sim</td>
+                  <td>
+                    Hash SHA-256 do token (máx. 128 chars). O valor cru nunca é persistido no banco.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>last_used_at</code>
+                  </td>
+                  <td>
+                    <code>date</code>
+                  </td>
+                  <td>Não</td>
+                  <td>Timestamp ISO do último uso bem-sucedido via header Authorization</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>revoked</code>
+                  </td>
+                  <td>
+                    <code>bool</code>
+                  </td>
+                  <td>Não</td>
+                  <td>
+                    Indicador de revogação imediata (default: false). Tokens revogados retornam HTTP
+                    403.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>created</code> / <code>updated</code>
+                  </td>
+                  <td>
+                    <code>autodate</code>
+                  </td>
+                  <td>Automático</td>
+                  <td>Timestamps de auditoria de geração e última alteração do token</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="docs-indices">
+            <span>ÍNDICES:</span> <code>idx_mcp_tokens_hash (token_hash)</code> ·{' '}
+            <code>idx_mcp_tokens_user (user)</code>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO 5: CONECTAR AGENTES (MCP) */}
+      <section className="docs-section" id="conectar-agentes-mcp">
+        <div className="docs-section-header">
+          <span className="docs-section-num">05</span>
+          <div>
+            <h2>Conectar Agentes (MCP — Model Context Protocol)</h2>
+            <p>
+              Integração oficial de Claude Code, Claude Desktop e Gemini CLI com o Barbosa System
+            </p>
+          </div>
+        </div>
+
+        <div className="docs-card" style={{ marginBottom: '24px' }}>
+          <h3>Arquitetura do Servidor MCP (Etapa 1)</h3>
+          <p>
+            O Barbosa System expõe um servidor MCP compatível com a especificação{' '}
+            <strong>JSON-RPC 2.0</strong> via transporte <strong>Streamable HTTP</strong> no
+            endpoint: <code>/backend/v1/mcp</code> (suporta requisições POST para invocar
+            ferramentas e conexões GET para SSE). Todas as chamadas requerem o cabeçalho{' '}
+            <code>Authorization: Bearer &lt;token&gt;</code> gerado na aba{' '}
+            <em>Configurações &gt; Integrações & MCP</em>.
+          </p>
+          <p style={{ marginTop: '8px' }}>
+            O servidor é <strong>estritamente multiusuário</strong>: o token identifica o
+            proprietário e restringe qualquer leitura ou gravação às tarefas, listas e sessões
+            pertencentes a essa conta.
+          </p>
+        </div>
+
+        {/* RECEITAS PRONTAS */}
+        <div className="docs-grid" style={{ marginBottom: '24px' }}>
+          <article className="docs-card">
+            <h3>1. Claude Code (CLI)</h3>
+            <p>
+              Adicione o servidor MCP ao Claude Code usando o comando <code>claude mcp add</code>{' '}
+              com transporte HTTP e cabeçalho de autenticação:
+            </p>
+            <pre className="p-3 bg-[#121214] border border-[#27272A] rounded font-mono text-xs text-[#C5A880] overflow-x-auto my-3">
+              <code>{`claude mcp add --transport http barbosa \\
+  https://captura-de-tarefas-e-pomodoro-1239f.shrd00.internal.goskip.dev/backend/v1/mcp \\
+  --header "Authorization: Bearer bs_mcp_SEU_TOKEN_AQUI"`}</code>
+            </pre>
+            <p className="text-xs text-[#A1A1AA]">
+              Substitua <code>bs_mcp_SEU_TOKEN_AQUI</code> pelo token gerado nas Configurações.
+            </p>
+          </article>
+
+          <article className="docs-card">
+            <h3>2. Claude Desktop</h3>
+            <p>
+              No arquivo <code>claude_desktop_config.json</code> (no macOS:{' '}
+              <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>; no
+              Windows: <code>%APPDATA%\\Claude\\claude_desktop_config.json</code>):
+            </p>
+            <pre className="p-3 bg-[#121214] border border-[#27272A] rounded font-mono text-xs text-[#C5A880] overflow-x-auto my-3">
+              <code>{`{
+  "mcpServers": {
+    "barbosa": {
+      "url": "https://captura-de-tarefas-e-pomodoro-1239f.shrd00.internal.goskip.dev/backend/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer bs_mcp_SEU_TOKEN_AQUI"
+      }
+    }
+  }
+}`}</code>
+            </pre>
+            <p className="text-xs text-[#A1A1AA]">
+              Reinicie o Claude Desktop após salvar o arquivo para ativar as ferramentas.
+            </p>
+          </article>
+
+          <article className="docs-card">
+            <h3>3. Gemini CLI / Extensões MCP</h3>
+            <p>
+              Em clientes baseados em <code>settings.json</code> ou CLI com suporte a servidores MCP
+              remotos HTTP:
+            </p>
+            <pre className="p-3 bg-[#121214] border border-[#27272A] rounded font-mono text-xs text-[#C5A880] overflow-x-auto my-3">
+              <code>{`{
+  "mcp": {
+    "servers": {
+      "barbosa-system": {
+        "type": "http",
+        "url": "https://captura-de-tarefas-e-pomodoro-1239f.shrd00.internal.goskip.dev/backend/v1/mcp",
+        "headers": {
+          "Authorization": "Bearer bs_mcp_SEU_TOKEN_AQUI"
+        }
+      }
+    }
+  }
+}`}</code>
+            </pre>
+            <p className="text-xs text-[#A1A1AA]">
+              Compatível com qualquer cliente que suporte Streamable HTTP / SSE JSON-RPC 2.0.
+            </p>
+          </article>
+
+          <article className="docs-card">
+            <h3>Exemplos de Prompts com IA</h3>
+            <p>Interaja naturalmente com o seu assistente de IA conectado ao Barbosa System:</p>
+            <ul className="text-xs text-[#A1A1AA] space-y-2 mt-2">
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Crie 3 tarefas para revisar o contrato amanhã com prioridade P1 na lista
+                  Jurídico&quot;
+                </strong>
+                <br />
+                O assistente chama <code>create_task</code> três vezes com <code>due_date</code> de
+                amanhã e <code>priority: 1</code>.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Quais tarefas pendentes eu tenho para hoje?&quot;
+                </strong>
+                <br />
+                O assistente chama <code>list_tasks</code> com <code>view: &quot;hoje&quot;</code> e
+                resume suas prioridades.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Quanto foquei esta semana e qual é meu melhor dia?&quot;
+                </strong>
+                <br />
+                O assistente chama <code>get_focus_summary</code> com{' '}
+                <code>period: &quot;todos&quot;</code> e detalha seu recorde absoluto.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Conclua a tarefa de preparar o relatório&quot;
+                </strong>
+                <br />
+                O assistente busca o ID e chama <code>complete_task</code>, avançando a recorrência
+                se houver.
+              </li>
+              <li>
+                <strong className="text-[#F4F4F5]">
+                  &quot;Registre uma sessão de foco de 45 minutos no projeto com a nota 'Revisão das
+                  cláusulas financeiras'&quot;
+                </strong>
+                <br />
+                O assistente invoca <code>log_focus_session</code> vinculando tempo e descrição no
+                histórico.
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        {/* AS 7 FERRAMENTAS MCP DO NÚCLEO */}
+        <div className="docs-card">
+          <h3>As 7 Ferramentas MCP Nativas (Etapa 1)</h3>
+          <p className="mb-4">
+            Todas as ferramentas são idempotentes, auditáveis e executadas no banco SQLite do
+            PocketBase com as mesmas regras e campos do Barbosa System:
+          </p>
+
+          <div className="space-y-4">
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">create_task</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">Criação de tarefas</span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Cria uma nova tarefa no banco de dados. Parâmetros: <code>title</code>{' '}
+                (obrigatório), <code>due_date</code> (YYYY-MM-DD), <code>due_time</code> (HH:MM),{' '}
+                <code>priority</code> (1=P1 a 4=P4), <code>estimated_minutes</code> (5–240),{' '}
+                <code>list</code> (nome legível da lista, criada se não existir) e <code>tags</code>{' '}
+                (array de nomes de etiquetas, criadas se não existirem na paleta da casa).
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">list_tasks</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">Listagem com filtros</span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Consulta tarefas do usuário autenticado. Filtros opcionais: <code>view</code>{' '}
+                (&quot;hoje&quot;, &quot;amanhã&quot;, &quot;inbox&quot;, &quot;semana&quot;),{' '}
+                <code>date</code> (YYYY-MM-DD), <code>tag</code> (nome da etiqueta),{' '}
+                <code>list</code> (nome da lista), <code>done</code> (boolean, padrão false) e{' '}
+                <code>limit</code> (máx. 100, padrão 50).
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">complete_task</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">
+                  Conclusão & Recorrência
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Marca a tarefa como concluída (<code>done = true</code>,{' '}
+                <code>completed_at = now</code>). Se a tarefa possuir regra de recorrência (diária,
+                semanal, dias específicos ou mensal), cria automaticamente a próxima instância
+                calculada com a mesma lógica do aplicativo, preservando sub-tarefas e o histórico
+                auditável.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">update_task</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">
+                  Atualização de atributos
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Atualiza os dados de uma tarefa existente pelo <code>id</code>. Permite modificar{' '}
+                <code>title</code>, <code>due_date</code>, <code>due_time</code>,{' '}
+                <code>priority</code>, <code>estimated_minutes</code>, <code>list</code> e{' '}
+                <code>tags</code>.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">delete_task</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">Exclusão permanente</span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Exclui definitivamente uma tarefa pertencente ao usuário a partir do seu{' '}
+                <code>id</code>.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">get_focus_summary</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">
+                  Métricas de Foco & Best-Day
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Retorna o volume de esforço focado em minutos e quantidade de sessões concluídas.
+                Suporta <code>period: &quot;hoje&quot;</code>, <code>&quot;semana&quot;</code> e{' '}
+                <code>&quot;todos&quot;</code>. Para o período integral, computa o recorde absoluto
+                (melhor dia) do usuário em conformidade com o módulo <code>best-day</code>.
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#121214] border border-[#27272A] rounded">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-[#C5A880] font-bold text-sm">log_focus_session</code>
+                <span className="text-[11px] text-[#A1A1AA] font-mono">
+                  Registro de Sessão Pomodoro
+                </span>
+              </div>
+              <p className="text-xs text-[#A1A1AA] mb-2">
+                Registra uma sessão concluída de foco (<code>status = &quot;completa&quot;</code>,{' '}
+                <code>session_date = hoje</code>). Parâmetros: <code>duration_minutes</code>{' '}
+                (obrigatório, &gt; 0), <code>task_id</code> (opcional, atualiza o{' '}
+                <code>actual_minutes</code> da tarefa) e <code>note</code> (opcional, nota
+                descritiva de até 500 caracteres).
+              </p>
+            </div>
           </div>
         </div>
       </section>

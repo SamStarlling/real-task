@@ -24,6 +24,9 @@ import {
   Folder,
   Pin,
   BookOpen,
+  Cpu,
+  Copy,
+  Key,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -56,7 +59,16 @@ import type { ListRecord, TaskRecord } from '@/types'
 import { formatMinutes } from '@/lib/format'
 import { playReminderSound } from '@/lib/sounds'
 
-type SettingsTab = 'produtividade' | 'etiquetas' | 'listas' | 'conta'
+import {
+  getMcpServerUrl,
+  getMcpTokens,
+  createMcpToken,
+  revokeMcpToken,
+  deleteMcpToken,
+} from '@/services/mcp'
+import type { McpTokenRecord, CreatedMcpTokenResponse } from '@/types'
+
+type SettingsTab = 'produtividade' | 'etiquetas' | 'listas' | 'integracoes' | 'conta'
 
 interface EditingState {
   day: WeekdayKey | null
@@ -97,6 +109,18 @@ export function Settings() {
   const [editingListName, setEditingListName] = useState('')
   const [listActionError, setListActionError] = useState<string | null>(null)
 
+  // Estado de Integrações / Tokens MCP
+  const [mcpTokens, setMcpTokens] = useState<McpTokenRecord[]>([])
+  const [mcpLoading, setMcpLoading] = useState(false)
+  const [newMcpTokenName, setNewMcpTokenName] = useState('')
+  const [mcpCreating, setMcpCreating] = useState(false)
+  const [mcpActionError, setMcpActionError] = useState<string | null>(null)
+  const [newlyCreatedToken, setNewlyCreatedToken] = useState<CreatedMcpTokenResponse | null>(null)
+  const [copiedUrl, setCopiedUrl] = useState(false)
+  const [copiedToken, setCopiedToken] = useState(false)
+  const [revokingTokenId, setRevokingTokenId] = useState<string | null>(null)
+  const [deletingTokenId, setDeletingTokenId] = useState<string | null>(null)
+
   // Estado de Notificações / Alertas (Etapa 3)
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(() =>
     resolveNotificationPreferences(user),
@@ -126,16 +150,100 @@ export function Settings() {
     }
   }
 
+  const loadMcpTokens = async () => {
+    setMcpLoading(true)
+    try {
+      const tokens = await getMcpTokens()
+      setMcpTokens(tokens)
+    } catch (err) {
+      console.error('Erro ao carregar tokens MCP:', err)
+    } finally {
+      setMcpLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (user) {
       setGoals(resolveWeeklyGoals(user))
       setNotifPrefs(resolveNotificationPreferences(user))
       loadTagsAndTasks()
+      loadMcpTokens()
     }
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPermission(Notification.permission)
     }
   }, [user])
+
+  const handleCreateMcpToken = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = newMcpTokenName.trim()
+    if (!trimmed) {
+      setMcpActionError('Digite um nome para o token (ex: "Claude Code", "Gemini CLI").')
+      return
+    }
+    setMcpCreating(true)
+    setMcpActionError(null)
+    try {
+      const created = await createMcpToken(trimmed)
+      setNewlyCreatedToken(created)
+      setNewMcpTokenName('')
+      await loadMcpTokens()
+    } catch (err) {
+      console.error('Erro ao criar token MCP:', err)
+      setMcpActionError('Não foi possível gerar o token. Verifique os dados e tente novamente.')
+    } finally {
+      setMcpCreating(false)
+    }
+  }
+
+  const handleRevokeMcpToken = async (token: McpTokenRecord) => {
+    if (
+      !window.confirm(
+        `Deseja revogar o token "${token.name}"? Qualquer cliente (Claude, Gemini) conectado com este token perderá o acesso imediatamente.`,
+      )
+    ) {
+      return
+    }
+    setRevokingTokenId(token.id)
+    try {
+      await revokeMcpToken(token.id)
+      setMcpTokens((prev) => prev.map((t) => (t.id === token.id ? { ...t, revoked: true } : t)))
+    } catch (err) {
+      console.error('Erro ao revogar token:', err)
+      setMcpActionError('Falha ao revogar token.')
+    } finally {
+      setRevokingTokenId(null)
+    }
+  }
+
+  const handleDeleteMcpToken = async (token: McpTokenRecord) => {
+    if (!window.confirm(`Excluir permanentemente o token "${token.name}"?`)) {
+      return
+    }
+    setDeletingTokenId(token.id)
+    try {
+      await deleteMcpToken(token.id)
+      setMcpTokens((prev) => prev.filter((t) => t.id !== token.id))
+    } catch (err) {
+      console.error('Erro ao excluir token:', err)
+      setMcpActionError('Falha ao excluir token.')
+    } finally {
+      setDeletingTokenId(null)
+    }
+  }
+
+  const handleCopyMcpUrl = () => {
+    const url = getMcpServerUrl()
+    navigator.clipboard.writeText(url)
+    setCopiedUrl(true)
+    setTimeout(() => setCopiedUrl(false), 2000)
+  }
+
+  const handleCopyRawToken = (tokenValue: string) => {
+    navigator.clipboard.writeText(tokenValue)
+    setCopiedToken(true)
+    setTimeout(() => setCopiedToken(false), 2000)
+  }
 
   const handleCreateTag = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -453,6 +561,12 @@ export function Settings() {
       label: 'Listas & Projetos',
       desc: 'Organização estrutural, prioridade e tarefas',
       icon: Folder,
+    },
+    {
+      id: 'integracoes',
+      label: 'Integrações & MCP',
+      desc: 'Servidor MCP, tokens de acesso e agentes AI',
+      icon: Cpu,
     },
     {
       id: 'conta',
@@ -1350,6 +1464,306 @@ export function Settings() {
                     LISTAS da barra lateral. Você pode ordená-las por arrastar e soltar livremente
                     tanto no desktop quanto no mobile.
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'integracoes' && (
+            <div className="settings-panel integrations-panel">
+              <header className="panel-header">
+                <div>
+                  <h2>Integrações & Servidor MCP</h2>
+                  <p>
+                    Conecte o Claude Code, Claude Desktop ou Gemini CLI ao seu Barbosa System usando
+                    o protocolo aberto Model Context Protocol (MCP) com autenticação pessoal Bearer.
+                  </p>
+                </div>
+              </header>
+
+              {/* BLOCO 1: URL DO SERVIDOR MCP */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">TRANSPORTE STREAMABLE HTTP</div>
+                    <h3>URL do Servidor MCP</h3>
+                    <p>
+                      Endpoint compatível com clientes JSON-RPC 2.0 (Streamable HTTP / SSE) com
+                      isolamento estrito de dados para a sua conta.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mcp-url-box flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3.5 bg-[#121214] border border-[#27272A] rounded-md">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] font-mono tracking-wider text-[#A1A1AA] uppercase block mb-1">
+                      ENDPOINT OFICIAL MCP
+                    </span>
+                    <code className="text-xs sm:text-sm font-mono text-[#C5A880] break-all select-all">
+                      {getMcpServerUrl()}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyMcpUrl}
+                    className="flex-none inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#1C1C1F] hover:bg-[#27272A] border border-[#3F3F46] text-[#E4E4E7] text-xs font-mono rounded transition-colors"
+                    title="Copiar URL do endpoint MCP"
+                  >
+                    {copiedUrl ? (
+                      <>
+                        <Check size={14} className="text-[#C5A880]" />
+                        <span>COPIADO</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>COPIAR URL</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* MODAL / BANNER DE NOVO TOKEN GERADO (EXIBE UMA ÚNICA VEZ) */}
+              {newlyCreatedToken && (
+                <div className="mcp-token-banner p-4 rounded-md border border-[#C5A880]/50 bg-[#171511] mb-6">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-[#C5A880]" />
+                      <h4 className="text-sm font-semibold text-[#F4F4F5]">
+                        Token &quot;{newlyCreatedToken.name}&quot; Gerado com Sucesso
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewlyCreatedToken(null)}
+                      className="text-[#A1A1AA] hover:text-[#F4F4F5] p-1"
+                      title="Fechar aviso de token gerado"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] mb-3">
+                    Este valor <strong>nunca mais será exibido</strong>. O Barbosa System armazena
+                    apenas o hash criptográfico seguro (SHA-256). Copie agora e guarde na sua
+                    configuração do Claude ou Gemini:
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-[#0D0D0E] border border-[#C5A880]/40 rounded font-mono text-xs">
+                    <code className="flex-1 text-[#C5A880] break-all select-all">
+                      {newlyCreatedToken.raw_token}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyRawToken(newlyCreatedToken.raw_token)}
+                      className="flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#C5A880] hover:bg-[#D8C7B0] text-[#121214] font-medium text-xs rounded transition-colors"
+                    >
+                      {copiedToken ? (
+                        <>
+                          <Check size={13} />
+                          <span>COPIADO</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} />
+                          <span>COPIAR TOKEN</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* BLOCO 2: FORMULÁRIO DE NOVO TOKEN E LISTAGEM */}
+              <div className="settings-section-card">
+                <div className="section-card-header">
+                  <div>
+                    <div className="card-tag">CREDENCIAS PESSOAIS (BEARER)</div>
+                    <h3>Tokens de Acesso Pessoal</h3>
+                    <p>
+                      Conecte o Claude Code, Claude Desktop ou Gemini CLI ao seu Barbosa System
+                      usando este token como Bearer. Cada token opera de forma restrita e segura sob
+                      o seu usuário.
+                    </p>
+                  </div>
+                </div>
+
+                {mcpActionError && (
+                  <div className="p-3 mb-4 rounded bg-red-950/40 border border-red-800/60 text-xs text-red-200 flex items-center gap-2">
+                    <AlertCircle size={14} className="flex-none" />
+                    <span>{mcpActionError}</span>
+                  </div>
+                )}
+
+                {/* Formulário de criação inline */}
+                <form onSubmit={handleCreateMcpToken} className="mb-6">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        placeholder="Nome do token (ex: Claude Desktop, Gemini CLI, Terminal Pessoal)..."
+                        value={newMcpTokenName}
+                        onChange={(e) => setNewMcpTokenName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-[#121214] border border-[#27272A] focus:border-[#C5A880] focus:outline-none rounded text-sm text-[#F4F4F5] placeholder-[#71717A]"
+                        maxLength={100}
+                        disabled={mcpCreating}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={mcpCreating || !newMcpTokenName.trim()}
+                      className="flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#C5A880] hover:bg-[#D8C7B0] disabled:opacity-40 disabled:hover:bg-[#C5A880] text-[#121214] text-xs font-semibold uppercase tracking-wider rounded transition-colors"
+                    >
+                      <Plus size={15} />
+                      <span>{mcpCreating ? 'Gerando...' : 'Criar Token'}</span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* Lista de Tokens */}
+                <div className="mcp-tokens-list">
+                  {mcpLoading ? (
+                    <div className="py-8 text-center text-xs text-[#71717A] font-mono">
+                      CARREGANDO TOKENS MCP...
+                    </div>
+                  ) : mcpTokens.length === 0 ? (
+                    <div className="py-8 px-4 text-center border border-dashed border-[#27272A] rounded-md bg-[#121214]/50">
+                      <Cpu size={24} className="mx-auto text-[#71717A] mb-2 opacity-50" />
+                      <p className="text-xs text-[#A1A1AA] mb-1">
+                        Nenhum token MCP criado até o momento.
+                      </p>
+                      <span className="text-[11px] text-[#71717A]">
+                        Gere um token acima para conectar agentes inteligentes ao Barbosa System.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[#27272A] border border-[#27272A] rounded-md overflow-hidden bg-[#121214]">
+                      {mcpTokens.map((token) => {
+                        const isRevoked = !!token.revoked
+                        const isRevoking = revokingTokenId === token.id
+                        const isDeleting = deletingTokenId === token.id
+
+                        return (
+                          <div
+                            key={token.id}
+                            className={`p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                              isRevoked ? 'opacity-60 bg-[#161618]/50' : 'hover:bg-[#18181B]'
+                            } transition-colors`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm font-medium text-[#F4F4F5] truncate">
+                                  {token.name}
+                                </span>
+                                {isRevoked ? (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-950/60 border border-red-800/60 text-red-300 uppercase">
+                                    REVOGADO
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#C5A880]/10 border border-[#C5A880]/30 text-[#C5A880] uppercase">
+                                    ATIVO
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono text-[#71717A]">
+                                <span>
+                                  Criado em:{' '}
+                                  <strong className="text-[#A1A1AA]">
+                                    {new Date(token.created).toLocaleDateString('pt-BR', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                    })}
+                                  </strong>
+                                </span>
+                                <span>·</span>
+                                <span>
+                                  Último uso:{' '}
+                                  <strong className="text-[#A1A1AA]">
+                                    {token.last_used_at
+                                      ? new Date(token.last_used_at).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : 'Nunca utilizado'}
+                                  </strong>
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-none">
+                              {!isRevoked && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevokeMcpToken(token)}
+                                  disabled={isRevoking}
+                                  className="px-2.5 py-1.5 text-xs text-[#A1A1AA] hover:text-red-300 hover:bg-red-950/40 border border-[#27272A] hover:border-red-800/60 rounded transition-colors"
+                                  title="Revogar este token imediatamente"
+                                >
+                                  {isRevoking ? 'Revogando...' : 'Revogar'}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMcpToken(token)}
+                                disabled={isDeleting}
+                                className="p-1.5 text-[#71717A] hover:text-red-400 hover:bg-[#27272A] rounded transition-colors"
+                                title="Excluir registro do token"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* BLOCO 3: 7 FERRAMENTAS MCP NUCLEARES DISPONÍVEIS */}
+              <div className="settings-info-card">
+                <div className="info-icon-wrap">
+                  <Cpu size={18} />
+                </div>
+                <div className="info-text">
+                  <h4>7 Ferramentas MCP Ativas no Servidor</h4>
+                  <p className="mb-2">
+                    O servidor MCP do Barbosa System expõe nativamente 7 operações idempotentes
+                    executadas sobre o banco de dados do usuário:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-[#A1A1AA] mt-2">
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">create_task</strong>: título, data, hora,
+                      prioridade, lista e tags
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">list_tasks</strong>: filtros por visão
+                      (hoje/amanhã/inbox/semana), tag, lista e status
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">complete_task</strong>: conclusão com
+                      cálculo automático de recorrência
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">update_task</strong>: ajuste de campos e
+                      metadados da tarefa
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">delete_task</strong>: remoção de tarefas do
+                      usuário
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A]">
+                      <strong className="text-[#C5A880]">get_focus_summary</strong>: métricas de
+                      foco, minutos e melhor dia (recorde)
+                    </div>
+                    <div className="p-2 rounded bg-[#121214] border border-[#27272A] sm:col-span-2">
+                      <strong className="text-[#C5A880]">log_focus_session</strong>: registro de
+                      sessão com duração, nota e vínculo de tarefa
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

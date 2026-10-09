@@ -87,3 +87,21 @@ export interface FocusPresetRecord extends RecordModel {
   blocks_before_long_break: number // mínimo 1
   archived?: boolean
 }
+
+export interface McpTokenRecord extends RecordModel {
+  name: string
+  user: string
+  token_hash: string
+  last_used_at?: string
+  revoked?: boolean
+}
+
+export interface CreatedMcpTokenResponse {
+  id: string
+  name: string
+  user: string
+  raw_token: string
+  created: string
+  revoked: boolean
+  message: string
+}

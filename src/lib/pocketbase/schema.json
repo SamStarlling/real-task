@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T01:12:23.881Z",
+  "generatedAt": "2026-10-09T03:21:46.166Z",
   "collections": [
     {
       "name": "users",
@@ -479,6 +479,68 @@
         "CREATE UNIQUE INDEX idx_tags_user_name ON tags (user, name)",
         "CREATE INDEX idx_tags_user ON tags (user)",
         "CREATE INDEX `idx_tags_user_pinned_order` ON `tags` (user, pinned, order)"
+      ]
+    },
+    {
+      "name": "mcp_tokens",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user.id = @request.auth.id",
+        "view": "@request.auth.id != '' && user.id = @request.auth.id",
+        "create": null,
+        "update": "@request.auth.id != '' && user.id = @request.auth.id",
+        "delete": "@request.auth.id != '' && user.id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "token_hash",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "last_used_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "revoked",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_mcp_tokens_hash ON mcp_tokens (token_hash)",
+        "CREATE INDEX idx_mcp_tokens_user ON mcp_tokens (user)"
       ]
     }
   ]
