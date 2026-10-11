@@ -17,6 +17,7 @@ import {
   selectBig3ForDay,
 } from '@/services/data'
 import { computeBestDayStats } from './best-day'
+import { computeWeeklyReport, getMondayOfIsoWeek } from './weekly-report'
 import type { SubtaskItem, SessionRecord, TaskRecord, TagRecord, ListRecord } from '@/types'
 
 function assert(condition: boolean, message: string) {
@@ -528,6 +529,172 @@ export function runDateParserTests() {
     assertEquals(completedSelection.top3.length, 3, 'Top 3 com 3 concluídas')
     assertEquals(completedSelection.top3DoneCount, 3, '3 concluídas no top3')
     assertEquals(completedSelection.isCompleted, true, 'Deve marcar Big3 completo')
+  }
+
+  // 10. Testes do Relatório Semanal de Foco (cruzamento com metas, deltas e edge cases)
+  {
+    // 10.1 Cálculo de segunda-feira ISO (semana padrão Brasil)
+    const refQuarta = new Date(2025, 9, 15, 14, 0, 0) // Quarta-feira 15/10/2025
+    const monday = getMondayOfIsoWeek(refQuarta)
+    assertEquals(monday.getFullYear(), 2025, 'Ano correto para a segunda-feira')
+    assertEquals(monday.getMonth(), 9, 'Mês de outubro (9)')
+    assertEquals(monday.getDate(), 13, 'Segunda-feira correspondente é dia 13/10/2025')
+    assertEquals(monday.getDay(), 1, 'Dia da semana deve ser 1 (segunda)')
+
+    const refDomingo = new Date(2025, 9, 19, 22, 0, 0) // Domingo 19/10/2025
+    const mondayFromDom = getMondayOfIsoWeek(refDomingo)
+    assertEquals(mondayFromDom.getDate(), 13, 'Domingo pertence à semana iniciada no dia 13/10')
+
+    // 10.2 Semana sem sessões e metas zeradas/padrão
+    const userZeroGoals = {
+      weekly_focus_goals: {
+        seg: 0,
+        ter: 0,
+        qua: 0,
+        qui: 0,
+        sex: 0,
+        sab: 0,
+        dom: 0,
+      },
+    } as any
+
+    const emptyReport = computeWeeklyReport({
+      sessions: [],
+      user: userZeroGoals,
+      referenceDate: refQuarta,
+      weekOffset: 0,
+    })
+
+    assertEquals(emptyReport.totalFocusMinutes, 0, 'Total focado de semana vazia deve ser 0')
+    assertEquals(emptyReport.totalGoalMinutes, 0, 'Total de metas zeradas deve ser 0')
+    assertEquals(emptyReport.overallPercentage, 0, 'Sem metas e sem foco deve dar 0%')
+    assertEquals(emptyReport.daysWithGoalCount, 0, 'Nenhum dia com meta')
+    assertEquals(emptyReport.daysGoalMetCount, 0, 'Nenhum dia atingido')
+    assertEquals(emptyReport.bestDay, null, 'Melhor dia nulo quando não há foco')
+    assertEquals(emptyReport.deltaMinutes, 0, 'Delta 0 sem sessões anteriores')
+    assertEquals(emptyReport.deltaPercentage, null, 'Delta % nulo quando base anterior é zero')
+    assertEquals(emptyReport.topTasks.length, 0, 'Sem tarefas na semana')
+
+    // 10.3 Cruzamento de sessões com metas variadas por dia da semana
+    const customUser = {
+      weekly_focus_goals: {
+        seg: 120, // 2h
+        ter: 100,
+        qua: 60,
+        qui: 120,
+        sex: 90,
+        sab: 0, // folga
+        dom: 0, // folga
+      },
+    } as any
+
+    const sampleSessions: any[] = [
+      // Segunda 13/10: 130 min focados (meta 120 -> bateu)
+      {
+        id: 's1',
+        task: 'task_a',
+        session_date: '2025-10-13',
+        started_at: '2025-10-13T09:00:00',
+        duration_minutes: 70,
+        status: 'completa',
+        expand: { task: { title: 'Tarefa Alpha' } },
+      },
+      {
+        id: 's2',
+        task: 'task_a',
+        session_date: '2025-10-13',
+        started_at: '2025-10-13T14:00:00',
+        duration_minutes: 60,
+        status: 'completa',
+        expand: { task: { title: 'Tarefa Alpha' } },
+      },
+      // Terça 14/10: 50 min focados (meta 100 -> não bateu)
+      {
+        id: 's3',
+        task: 'task_b',
+        session_date: '2025-10-14',
+        started_at: '2025-10-14T10:00:00',
+        duration_minutes: 50,
+        status: 'interrompida',
+        expand: { task: { title: 'Tarefa Beta' } },
+      },
+      // Quarta 15/10: 60 min focados (meta 60 -> bateu exatamente 100%)
+      {
+        id: 's4',
+        task: 'task_b',
+        session_date: '2025-10-15',
+        started_at: '2025-10-15T11:00:00',
+        duration_minutes: 60,
+        status: 'completa',
+        expand: { task: { title: 'Tarefa Beta' } },
+      },
+      // Sábado 18/10: 30 min focados em dia sem meta (hasGoal=false, isGoalReached=false)
+      {
+        id: 's5',
+        task: 'task_c',
+        session_date: '2025-10-18',
+        started_at: '2025-10-18T16:00:00',
+        duration_minutes: 30,
+        status: 'completa',
+        expand: { task: { title: 'Tarefa Gama' } },
+      },
+      // Semana anterior (Quinta 09/10): 100 min focados para testar delta
+      {
+        id: 's_prev',
+        task: 'task_a',
+        session_date: '2025-10-09',
+        started_at: '2025-10-09T10:00:00',
+        duration_minutes: 100,
+        status: 'completa',
+        expand: { task: { title: 'Tarefa Alpha' } },
+      },
+    ]
+
+    const fullReport = computeWeeklyReport({
+      sessions: sampleSessions,
+      user: customUser,
+      referenceDate: refQuarta,
+      weekOffset: 0,
+    })
+
+    // Total focado semana: 130 + 50 + 60 + 30 = 270 min
+    assertEquals(fullReport.totalFocusMinutes, 270, 'Total focado deve somar 270 min')
+    // Total metas: 120 + 100 + 60 + 120 + 90 + 0 + 0 = 490 min
+    assertEquals(fullReport.totalGoalMinutes, 490, 'Total de metas semanais deve ser 490 min')
+    // % cumprido: round(270 / 490 * 100) = 55%
+    assertEquals(fullReport.overallPercentage, 55, 'Percentual geral de 55%')
+
+    // Dias com meta: seg, ter, qua, qui, sex = 5 dias
+    assertEquals(fullReport.daysWithGoalCount, 5, '5 dias da semana possuem meta ativa')
+    // Dias que bateram: seg (130>=120) e qua (60>=60) = 2 dias
+    assertEquals(fullReport.daysGoalMetCount, 2, '2 dias atingiram a meta')
+
+    // Sessões: 4 na semana atual (3 completas, 1 interrompida)
+    assertEquals(fullReport.totalSessionsCount, 4, '4 sessões na semana')
+    assertEquals(fullReport.completedSessionsCount, 3, '3 sessões completas')
+    assertEquals(fullReport.interruptedSessionsCount, 1, '1 sessão interrompida')
+    assertEquals(fullReport.completionRate, 75, 'Taxa de conclusão de 75%')
+
+    // Melhor dia da semana: Segunda-feira com 130 min
+    assertEquals(fullReport.bestDay?.dateStr, '2025-10-13', 'Melhor dia foi 13/10')
+    assertEquals(fullReport.bestDay?.minutes, 130, 'Melhor dia teve 130 minutos')
+
+    // Delta com semana anterior: 270 - 100 = +170 min
+    assertEquals(fullReport.previousWeekTotalMinutes, 100, 'Semana passada teve 100 min')
+    assertEquals(fullReport.deltaMinutes, 170, 'Delta de +170 minutos')
+    // delta %: round(170 / 100 * 100) = +170%
+    assertEquals(fullReport.deltaPercentage, 170, 'Variação relativa de +170%')
+
+    // Top tarefas:
+    // task_a: 130 min (2 sessões)
+    // task_b: 110 min (2 sessões)
+    // task_c: 30 min (1 sessão)
+    assertEquals(fullReport.topTasks[0].taskId, 'task_a', 'Top 1 tarefa é task_a')
+    assertEquals(fullReport.topTasks[0].minutes, 130, 'Task A acumulou 130 min')
+    assertEquals(fullReport.topTasks[1].taskId, 'task_b', 'Top 2 tarefa é task_b')
+    assertEquals(fullReport.topTasks[1].minutes, 110, 'Task B acumulou 110 min')
+    assertEquals(fullReport.topTasks[2].taskId, 'task_c', 'Top 3 tarefa é task_c')
+    assertEquals(fullReport.topTasks[2].minutes, 30, 'Task C acumulou 30 min')
   }
 
   // 9. Testes de Vinculação de Tarefa ao Pomodoro (selectedTask & fallback de UI)

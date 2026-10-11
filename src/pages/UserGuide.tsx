@@ -4,6 +4,7 @@ import { DocSidebar, TocItem, useActiveSection } from '@/components/docs/DocSide
 import {
   ArrowLeft,
   ArrowRight,
+  BarChart3,
   BookmarkCheck,
   Calendar,
   CheckCircle2,
@@ -578,6 +579,45 @@ export function UserGuide() {
                       destacando seu pico de produtividade.
                     </li>
                   </ul>
+                </div>
+              </div>
+
+              {/* RELATÓRIO SEMANAL DE FOCO (NOVO) */}
+              <div className="p-4 rounded-xl bg-[#090A0E] border border-[#27272A] space-y-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#C5A880]" />
+                  <span className="font-mono text-xs uppercase tracking-wider text-[#F4F4F6] font-semibold">
+                    Relatório Semanal de Foco (Aba no Histórico)
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  Dentro de <strong>Histórico</strong>, acesse a aba{' '}
+                  <strong className="text-[#C5A880]">RELATÓRIO SEMANAL</strong> para auditar seu
+                  esforço:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+                  <div className="p-3 rounded-lg bg-[#12141C] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Cruzamento Diário</strong>
+                    <span className="text-[#A1A1AA]">
+                      Para cada dia da semana (segunda a domingo), barra visual de foco real vs.
+                      meta configurada. A barra acende em ouro champagne quando o objetivo é
+                      alcançado.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#12141C] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Deltas & Picos</strong>
+                    <span className="text-[#A1A1AA]">
+                      Comparativo em tempo real com a semana anterior (delta de horas e percentual),
+                      dias cumpridos (ex.: 4/5 dias) e o dia com maior dedicação.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#12141C] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Navegação Temporal</strong>
+                    <span className="text-[#A1A1AA]">
+                      Consulte qualquer semana passada usando os botões de navegação, com estados
+                      vazios limpos e sem mocks quando não houver sessões registradas.
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -26,7 +26,8 @@ Este documento consolida o histórico de entregas do Barbosa System (versões v0
 | **v0.0.29 – v0.0.31** | MCP Etapa 2                       | Expansão para 10 ferramentas no MCP (parser no servidor, sub-tarefas, gestão de tags e listas 80/20, sessions) e autenticação via hash SHA-256 (`mcp_tokens`).                                | Concluído |
 | **v0.0.32 – v0.0.33** | Ajustes de Responsividade         | Correções em modais, visão de Semana em telas compactas e robustez no arrastar-e-soltar em dispositivos móveis.                                                                               | Concluído |
 | **v0.0.34**           | Divisão da Documentação (Etapa 1) | Hub de documentação `/docs` com roteamento separado para o Guia do Usuário (`/guia`) e Documentação Técnica de Desenvolvedor e MCP (`/dev`).                                                  | Concluído |
-| **v0.0.35** _(atual)_ | Documentação Privada Corporativa  | Implementação da base de conhecimento restrita da empresa no repositório GitHub (`docs/privado/`: arquitetura, regras de negócio, ADRs, 80/20 e roadmap).                                     | Concluído |
+| **v0.0.35**           | Documentação Privada Corporativa  | Implementação da base de conhecimento restrita da empresa no repositório GitHub (`docs/privado/`: arquitetura, regras de negócio, ADRs, 80/20 e roadmap).                                     | Concluído |
+| **v0.0.36** _(atual)_ | Relatório Semanal de Foco         | Cruzamento de sessões com metas por dia da semana (segunda a domingo), navegação temporal entre semanas, deltas comparativos, taxa de sessões completas e top tarefas na aba de Histórico.    | Concluído |
 
 ---
 
@@ -34,7 +35,13 @@ Este documento consolida o histórico de entregas do Barbosa System (versões v0
 
 Os itens a seguir foram catalogados a partir de decisões deliberadas e demandas identificadas:
 
-### 2.1. Controle de Acesso e Cadastro por Convite
+### 2.1. Relatório Semanal de Foco (Cruzamento com Metas Diárias)
+
+- **Status**: Concluído (Entregue na v0.0.36)
+- **Descrição**: Cruzamento diário de sessões reais (`sessions`) com as metas configuradas por dia da semana nas Configurações do perfil. Disponível na aba "Relatório Semanal" em `/historico?aba=relatorio`, com histórico navegável, 4 números executivos agregados (total focado vs esperado, dias cumpridos, pico da semana e delta vs semana anterior), barras de progresso com acento ouro champagne quando a meta é alcançada e ranking de tarefas mais focadas.
+- **Impacto**: Fecha o ciclo de planejamento e prestação de contas pessoal do usuário.
+
+### 2.2. Controle de Acesso e Cadastro por Convite
 
 - **Status**: Pendente
 - **Descrição**: O registro de novos usuários (`users`) atualmente está aberto para testes. É necessário restringir a criação de contas por meio de tokens de convite exclusivos gerados pela liderança ou fechamento do endpoint público.
@@ -51,10 +58,10 @@ Os itens a seguir foram catalogados a partir de decisões deliberadas e demandas
 - **Descrição**: O servidor MCP nativo utiliza tokens pessoais (PAT) com hash SHA-256, funcionando perfeitamente em Claude Code, Claude Desktop e Gemini CLI. Conectores remotos na web (Claude Web) exigem fluxo OAuth 2.0 completo com redirection URI e token refresh.
 - **Impacto**: Expansão da interoperabilidade de IA para usuários que não usam clientes locais.
 
-### 2.4. Relatório Semanal Automatizado de Foco
+### 2.4. Envio Automatizado por E-mail do Relatório Semanal
 
 - **Status**: Proposto
-- **Descrição**: Criação de um resumo executivo semanal disparado por hook cron no PocketBase, consolidando horas de foco, cumprimento das metas por dia e taxa de sucesso do Big3.
+- **Descrição**: Disparo automatizado por hook cron no PocketBase nas segundas-feiras às 08:00 com o resumo do Relatório Semanal por e-mail para o usuário.
 
 ### 2.5. Alternador Granular de Sons nas Configurações
 

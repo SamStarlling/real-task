@@ -875,6 +875,10 @@ export function DevDocs() {
                   <li>
                     <code>BroadcastChannel</code> — trava de timer multi-abas
                   </li>
+                  <li>
+                    <code>weekly-report.ts</code> — motor de agregação semanal e cruzamento com
+                    metas diárias
+                  </li>
                 </ul>
               </div>
             </div>
