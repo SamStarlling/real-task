@@ -7,6 +7,8 @@ import { Layout } from '@/components/Layout'
 import { Index } from '@/pages/Index'
 import { History } from '@/pages/History'
 import { Docs } from '@/pages/Docs'
+import { UserGuide } from '@/pages/UserGuide'
+import { DevDocs } from '@/pages/DevDocs'
 import { WeekPage } from '@/pages/Week'
 import { Settings } from '@/pages/Settings'
 import { PomodoroPage } from '@/pages/Pomodoro'
@@ -57,6 +59,8 @@ function Protected() {
         <Route path="/historico" element={<History sessions={sessions} />} />
         <Route path="/configuracoes" element={<Settings />} />
         <Route path="/docs" element={<Docs />} />
+        <Route path="/guia" element={<UserGuide />} />
+        <Route path="/dev" element={<DevDocs />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

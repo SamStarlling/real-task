@@ -577,7 +577,7 @@ export function Settings() {
     {
       id: 'documentacao',
       label: 'Documentação',
-      desc: 'Guia do sistema, arquitetura e atalhos',
+      desc: 'Hub por audiência: Guia do usuário (/guia) e Integração (/dev)',
       icon: BookOpen,
       isExternalLink: true,
       onClick: () => navigate('/docs'),
