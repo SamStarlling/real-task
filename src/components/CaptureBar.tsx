@@ -36,6 +36,11 @@ import {
 import type { ListRecord, RecurrenceMode, RecurrenceType, TagRecord, TaskPriority } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
+import {
+  invalidateSessionAndRedirect,
+  isAuthSessionExpiredError,
+  SESSION_EXPIRED_MESSAGE,
+} from '@/lib/pocketbase/auth-session'
 
 export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const { user } = useAuth()
@@ -207,11 +212,25 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
       toast({ title: 'Digite o título da tarefa.', variant: 'destructive' })
       return
     }
+    if (!user) return
 
     // Resolver lista nova ou existente
     let list = selectedList
     if (list?.id === 'new') {
-      list = await createList(list.name, user!.id)
+      try {
+        list = await createList(list.name, user.id)
+      } catch (err) {
+        console.error('Erro ao criar lista durante captura:', err)
+        if (isAuthSessionExpiredError(err)) {
+          invalidateSessionAndRedirect({ reason: SESSION_EXPIRED_MESSAGE })
+          return
+        }
+        toast({
+          title: 'Não foi possível criar a lista. Tente novamente.',
+          variant: 'destructive',
+        })
+        return
+      }
       setLists((prev) => [...prev, list!])
     }
 
@@ -223,13 +242,17 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         try {
           const created = await createTag({
             name: tagItem.name,
-            user: user!.id,
+            user: user.id,
             color: tagItem.color || getNextTagColor(updatedTagsList.length),
           })
           finalTagIds.push(created.id)
           updatedTagsList.push(created)
         } catch (err) {
           console.error('Erro ao criar etiqueta durante captura:', err)
+          if (isAuthSessionExpiredError(err)) {
+            invalidateSessionAndRedirect({ reason: SESSION_EXPIRED_MESSAGE })
+            return
+          }
         }
       } else {
         finalTagIds.push(tagItem.id)
@@ -244,24 +267,38 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         ? toPocketDate(new Date())
         : ''
 
-    await createTask({
-      title,
-      user: user!.id,
-      list: list?.id || '',
-      tags: finalTagIds,
-      due_date: effectiveDueDate,
-      due_time: effectiveTime || '',
-      done: false,
-      estimated_minutes: minutes,
-      actual_minutes: 0,
-      order: 0,
-      priority: effectivePriority,
-      recurrence_type: effectiveRecurrenceType,
-      recurrence_interval: effectiveRecurrenceInterval,
-      recurrence_weekdays:
-        effectiveRecurrenceType === 'weekly_days' ? effectiveRecurrenceWeekdays : null,
-      recurrence_mode: recurrenceMode,
-    })
+    try {
+      await createTask({
+        title,
+        user: user.id,
+        list: list?.id || '',
+        tags: finalTagIds,
+        due_date: effectiveDueDate,
+        due_time: effectiveTime || '',
+        done: false,
+        estimated_minutes: minutes,
+        actual_minutes: 0,
+        order: 0,
+        priority: effectivePriority,
+        recurrence_type: effectiveRecurrenceType,
+        recurrence_interval: effectiveRecurrenceInterval,
+        recurrence_weekdays:
+          effectiveRecurrenceType === 'weekly_days' ? effectiveRecurrenceWeekdays : null,
+        recurrence_mode: recurrenceMode,
+      })
+    } catch (err) {
+      console.error('Erro ao capturar tarefa:', err)
+      // Token expirado / sessão inválida: avisa o usuário e leva ao /login
+      if (isAuthSessionExpiredError(err)) {
+        invalidateSessionAndRedirect({ reason: SESSION_EXPIRED_MESSAGE })
+        return
+      }
+      toast({
+        title: 'Não foi possível capturar a tarefa. Tente novamente.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     const recurrenceSuffix =
       effectiveRecurrenceType !== 'none'

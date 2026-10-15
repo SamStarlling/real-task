@@ -25,6 +25,11 @@ export type {
   WeeklyFocusGoals,
 } from '@/types'
 import { toPocketDate } from '@/lib/date-parser'
+import {
+  invalidateSessionAndRedirect,
+  isAuthSessionExpiredError,
+  SESSION_EXPIRED_MESSAGE,
+} from '@/lib/pocketbase/auth-session'
 
 /**
  * Paleta de cores discretas (quiet luxury) Barbosa System para etiquetas.
@@ -583,8 +588,17 @@ export async function reorderLists(orderedLists: ListRecord[]): Promise<void> {
     await Promise.all(updates)
   }
 }
-export const createTask = (data: Record<string, unknown>) =>
-  pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
+export async function createTask(data: Record<string, unknown>): Promise<TaskRecord> {
+  try {
+    return await pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
+  } catch (err) {
+    // 401 ou 400/regra falha = token expirado ou sessão inválida: avisa e redireciona ao /login
+    if (isAuthSessionExpiredError(err)) {
+      invalidateSessionAndRedirect({ reason: SESSION_EXPIRED_MESSAGE })
+    }
+    throw err
+  }
+}
 export const updateTask = (id: string, data: Record<string, unknown>) =>
   pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list,tags' })
 

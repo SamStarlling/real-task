@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
 import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
@@ -27,7 +27,29 @@ export function AuthPage({ mode }: { mode: Mode }) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
-  if (user) return <Navigate to="/" replace />
+
+  // Mensagens de retorno (ex: sessão expirada detectada em outra parte do app)
+  const flashMessage = (() => {
+    try {
+      const flash = sessionStorage.getItem('barbosa_auth_flash_message')
+      if (flash) {
+        sessionStorage.removeItem('barbosa_auth_flash_message')
+        return flash
+      }
+    } catch {
+      // ignora
+    }
+    return null
+  })()
+
+  useEffect(() => {
+    if (flashMessage) {
+      setMessage(flashMessage)
+    }
+  }, [flashMessage])
+
+  const returnTo = params.get('redirect')
+  if (user) return <Navigate to={returnTo || '/'} replace />
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setErrors({})
@@ -36,7 +58,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     try {
       if (mode === 'login') {
         await login(form.email, form.password)
-        nav('/')
+        nav(returnTo || '/')
       }
       if (mode === 'signup') {
         if (form.password.length < 8) {

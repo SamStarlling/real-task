@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import pb from '@/lib/pocketbase/client'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   ArrowRight,
@@ -31,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import type { ListRecord, TagRecord, TaskRecord } from '@/types'
 import { localDay } from '@/lib/date-parser'
 import { pbDay } from '@/lib/format'
+import { isTokenNearExpiry, refreshAuthSession } from '@/lib/pocketbase/auth-session'
 import {
   reorderLists,
   reorderTags,
@@ -393,6 +395,29 @@ export function Layout({
   useEffect(() => {
     setMobileDrawerOpen(false)
   }, [location.pathname, location.search])
+
+  // Renovação proativa de sessão: na montagem, ao retomar visibilidade da aba e ao voltar o foco
+  const renewSessionIfCloseToExpiry = useCallback(() => {
+    if (!pb.authStore.token || !pb.authStore.record) return
+    if (isTokenNearExpiry(pb.authStore.token)) {
+      refreshAuthSession()
+    }
+  }, [])
+
+  useEffect(() => {
+    renewSessionIfCloseToExpiry()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        renewSessionIfCloseToExpiry()
+      }
+    }
+    window.addEventListener('focus', renewSessionIfCloseToExpiry)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('focus', renewSessionIfCloseToExpiry)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [renewSessionIfCloseToExpiry])
 
   const initials = String(user?.name || user?.email || 'U')
     .split(' ')

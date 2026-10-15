@@ -19,7 +19,7 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { useTaskNotifications } from '@/hooks/use-task-notifications'
 
 function Protected() {
-  const { user } = useAuth()
+  const { user, ready } = useAuth()
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [tags, setTags] = useState<TagRecord[]>([])
@@ -40,6 +40,8 @@ function Protected() {
   // Alertas nativos e som Web Audio em background enquanto o app estiver aberto
   useTaskNotifications(tasks, user)
 
+  // Aguarda o bootstrap da sessão (validação do token salvo / authRefresh) antes de decidir
+  if (!ready) return null
   if (!user) return <Navigate to="/login" replace />
   return (
     <Routes>
