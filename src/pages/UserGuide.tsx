@@ -414,14 +414,68 @@ export function UserGuide() {
                 </div>
               </div>
 
+              {/* DESCRIÇÃO DA TAREFA & LINKS CLICÁVEIS (ETAPA 1.5 TODOIST) */}
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#C5A880]/20 text-[#C5A880] border border-[#C5A880]/30">
+                    NOVO NO PAINEL
+                  </span>
+                  <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                    Descrição da Tarefa: Vínculo Obsidian, Cursos & Links Clicáveis
+                  </h3>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
+                  Clique em qualquer tarefa para abrir a gaveta lateral de detalhes. Agora você
+                  conta com o campo <strong>DESCRIÇÃO</strong>, indispensável para manter contexto
+                  rico sem poluir o título:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">🔗 Links Obsidian Diretos</strong>
+                    <span className="text-[#A1A1AA]">
+                      Cole links do tipo <code>obsidian://open?vault=...</code> ou notas de cursos.
+                      Eles são detectados automaticamente e abrem direto no app do Obsidian com 1
+                      clique.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">
+                      🌐 Referências & Links Web
+                    </strong>
+                    <span className="text-[#A1A1AA]">
+                      Qualquer link <code>https://</code> ou <code>http://</code> (aulas,
+                      dashboards, docs) vira link clicável seguro que abre em nova aba.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">
+                      📁 Projeto & Prazo Integrados
+                    </strong>
+                    <span className="text-[#A1A1AA]">
+                      No topo da gaveta, visualize e edite o Projeto associado (com dot de cor) e o
+                      Prazo em uma única linha limpa e sem atrito.
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-[#D4D4D8]">
+                  <strong>Edição ágil:</strong> digite livremente com suporte a quebras de linha.
+                  Para salvar, basta clicar fora (salva em blur), pressionar{' '}
+                  <kbd className="font-mono text-[10px] bg-[#1F2028] px-1 py-0.5 rounded text-[#C5A880]">
+                    Ctrl+Enter
+                  </kbd>{' '}
+                  ou clicar no botão Salvar. A captura rápida continua rápida e leve sem campos
+                  adicionais.
+                </p>
+              </div>
+
               {/* SUB-TAREFAS COM CHECKLIST */}
               <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
                 <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6] mb-2">
                   Subdividir tarefas complexas (Checklist)
                 </h3>
                 <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
-                  Clique no título de qualquer tarefa para abrir o painel lateral de detalhes. Lá
-                  você encontra a seção <strong>Sub-tarefas</strong>:
+                  No mesmo painel lateral de detalhes, logo abaixo da descrição, você encontra a
+                  seção <strong>Sub-tarefas</strong>:
                 </p>
                 <ul className="list-disc list-inside space-y-1.5 text-xs text-[#D4D4D8]">
                   <li>

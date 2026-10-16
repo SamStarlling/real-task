@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   X,
   Play,
@@ -11,8 +11,13 @@ import {
   ChevronUp,
   ChevronDown,
   Check,
+  Folder,
+  Calendar,
+  ExternalLink,
+  Edit2,
 } from 'lucide-react'
 import type {
+  ListRecord,
   RecurrenceMode,
   RecurrenceType,
   SessionRecord,
@@ -21,11 +26,12 @@ import type {
   TaskPriority,
   TaskRecord,
 } from '@/types'
-import { formatMinutes } from '@/lib/format'
+import { formatMinutes, formatShortDate } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
 import {
   createTag,
   formatRecurrenceRule,
+  getLists,
   getNextTagColor,
   getPriorityMeta,
   getSubtaskProgress,
@@ -36,6 +42,57 @@ import {
 } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
+
+/**
+ * Renderiza texto convertendo URLs (https://, http:// e obsidian://) em links clicáveis.
+ * Preserva quebras de linha e caracteres intactos.
+ */
+function renderDescriptionWithLinks(text: string): ReactNode[] {
+  // Regex para casar https://..., http://... e obsidian://...
+  const urlRegex = /(https?:\/\/[^\s]+|obsidian:\/\/[^\s]+)/g
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = urlRegex.exec(text)) !== null) {
+    const matchIndex = match.index
+    const url = match[0]
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex))
+    }
+
+    const isObsidian = url.startsWith('obsidian://')
+    parts.push(
+      <a
+        key={`${matchIndex}-${url}`}
+        href={url}
+        target={isObsidian ? '_self' : '_blank'}
+        rel={isObsidian ? undefined : 'noopener noreferrer'}
+        className={`task-description-link ${isObsidian ? 'obsidian-link' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (isObsidian) {
+            // Permite que o protocolo nativo obsidian:// abra direto
+            window.location.href = url
+          }
+        }}
+        title={isObsidian ? `Abrir nota no Obsidian: ${url}` : `Abrir link externo: ${url}`}
+      >
+        {url}
+        {!isObsidian && <ExternalLink className="w-3 h-3 inline-block ml-1 opacity-70" />}
+      </a>,
+    )
+
+    lastIndex = matchIndex + url.length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts
+}
 
 export function TaskDetail({
   task,
@@ -48,9 +105,12 @@ export function TaskDetail({
 }) {
   const { user } = useAuth()
   const [title, setTitle] = useState(task.title)
+  const [description, setDescription] = useState(task.description || '')
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [estimate, setEstimate] = useState(task.estimated_minutes)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [userTags, setUserTags] = useState<TagRecord[]>([])
+  const [allProjects, setAllProjects] = useState<ListRecord[]>([])
   const [newTagName, setNewTagName] = useState('')
   const [isAddingTag, setIsAddingTag] = useState(false)
   const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(
@@ -73,10 +133,12 @@ export function TaskDetail({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null)
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('')
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
   const { start } = usePomodoro()
 
   useEffect(() => {
     setTitle(task.title)
+    setDescription(task.description || '')
     setEstimate(task.estimated_minutes)
     setPriority(task.priority || 0)
     setRecurrenceType(task.recurrence_type || 'none')
@@ -90,7 +152,17 @@ export function TaskDetail({
   useEffect(() => {
     sessionsForTask(task.id).then(setSessions)
     getTags().then(setUserTags)
+    getLists(true).then(setAllProjects)
   }, [task.id])
+
+  // Auto-ajuste de altura da textarea de descrição
+  useEffect(() => {
+    if (isEditingDescription && descriptionTextareaRef.current) {
+      const el = descriptionTextareaRef.current
+      el.style.height = 'auto'
+      el.style.height = `${Math.max(84, el.scrollHeight)}px`
+    }
+  }, [isEditingDescription, description])
 
   // Lista dos IDs das tags associadas à tarefa
   const assignedTagIds = task.tags || []
@@ -262,12 +334,157 @@ export function TaskDetail({
           <X />
         </button>
         <div className="eyebrow">DETALHE DA TAREFA</div>
+
+        {/* METADADOS DO CABEÇALHO: PROJETO E DATA/PRAZO (ETAPA 1.5) */}
+        {(() => {
+          const currentProject = allProjects.find((p) => p.id === task.list) || task.expand?.list
+          return (
+            <div className="detail-meta-row">
+              {/* Projeto com dot de cor e seletor inline */}
+              <div className="inline-flex items-center gap-1.5 flex-1 min-w-0">
+                <Folder className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+                  Projeto:
+                </span>
+                <select
+                  value={task.list || ''}
+                  onChange={(e) => save({ list: e.target.value || null, section: null })}
+                  className="bg-transparent text-xs text-foreground font-sans border-0 border-b border-border/40 focus:border-[#C5A880] focus:ring-0 py-0.5 px-1 cursor-pointer outline-none max-w-[170px] truncate"
+                  title="Alterar projeto da tarefa"
+                >
+                  <option value="" className="bg-[#12141C] text-[#f4f4f6]">
+                    📥 Inbox (Sem projeto)
+                  </option>
+                  {allProjects.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#12141C] text-[#f4f4f6]">
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                {currentProject && (
+                  <span
+                    className="detail-meta-dot"
+                    style={{ backgroundColor: currentProject.color || '#C5A880' }}
+                    title={`Cor do projeto: ${currentProject.color || '#C5A880'}`}
+                  />
+                )}
+              </div>
+
+              {/* Prazo/Data de uma linha */}
+              <div className="inline-flex items-center gap-1.5 flex-shrink-0">
+                <Calendar className="w-3.5 h-3.5 text-[#C5A880] flex-shrink-0" />
+                <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+                  Prazo:
+                </span>
+                <span className="text-xs font-mono text-[#f4f4f6]">
+                  {task.due_date ? formatShortDate(task.due_date) : 'Sem data'}
+                </span>
+              </div>
+            </div>
+          )
+        })()}
+
         <input
           className="detail-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && save({ title: title.trim() })}
         />
+
+        {/* SEÇÃO DESCRIÇÃO (ETAPA 1.5 TODOIST REVERSE-ENGINEERING) */}
+        <label className="detail-label flex items-center justify-between">
+          <span>DESCRIÇÃO</span>
+          {description.trim() && !isEditingDescription && (
+            <button
+              type="button"
+              onClick={() => setIsEditingDescription(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-mono text-[#C5A880] hover:underline"
+              title="Editar descrição da tarefa"
+            >
+              <Edit2 className="w-2.5 h-2.5" />
+              Editar
+            </button>
+          )}
+        </label>
+        <div className="task-description-box">
+          {isEditingDescription ? (
+            <div className="flex flex-col gap-2">
+              <textarea
+                ref={descriptionTextareaRef}
+                value={description}
+                placeholder="Cole aqui links do Obsidian, cursos, referências… (opcional)"
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={async () => {
+                  setIsEditingDescription(false)
+                  if (description !== (task.description || '')) {
+                    await save({ description: description.trim() })
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Ctrl+Enter ou Cmd+Enter salva
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault()
+                    e.currentTarget.blur()
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault()
+                    setDescription(task.description || '')
+                    setIsEditingDescription(false)
+                  }
+                }}
+                className="task-description-textarea"
+                autoFocus
+                maxLength={5000}
+              />
+              <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                <span className="text-[10px] font-mono text-[#71717a]">
+                  {description.length}/5000 · URLs e obsidian:// viram links
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDescription(task.description || '')
+                      setIsEditingDescription(false)
+                    }}
+                    className="text-[11px] font-mono text-muted-foreground hover:text-foreground px-2 py-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsEditingDescription(false)
+                      if (description !== (task.description || '')) {
+                        await save({ description: description.trim() })
+                      }
+                    }}
+                    className="text-[11px] font-mono font-semibold bg-[#C5A880] text-[#090A0E] px-3 py-1 rounded hover:bg-[#d8c29d]"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : description.trim() ? (
+            <div
+              className="task-description-display"
+              onClick={() => setIsEditingDescription(true)}
+              title="Clique para editar a descrição"
+            >
+              {renderDescriptionWithLinks(description)}
+            </div>
+          ) : (
+            <div
+              className="task-description-placeholder"
+              onClick={() => setIsEditingDescription(true)}
+              title="Clique para adicionar descrição"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#C5A880]" />
+              <span>Cole aqui links do Obsidian, cursos, referências… (opcional)</span>
+            </div>
+          )}
+        </div>
+
         {/* SEÇÃO PRIORIDADE (P1–P4 + NENHUMA) */}
         <label className="detail-label flex items-center justify-between">
           <span>PRIORIDADE</span>

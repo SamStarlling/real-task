@@ -83,6 +83,7 @@ export interface TaskRecord extends RecordModel {
   priority?: TaskPriority // 1-4 ou 0/undefined
   subtasks?: SubtaskItem[]
   section?: string
+  description?: string
   expand?: {
     list?: ListRecord
     tags?: TagRecord[]

@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.49'
+export const APP_VERSION = '0.0.50'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,22 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.49).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.50).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.50',
+    title: 'Etapa 1.5: Descrição da Tarefa Todoist & Links Clicáveis',
+    tag: 'Engenharia Todoist',
+    highlights: [
+      'Migration 0022 adicionando campo description (texto longo opcional até 5000 caracteres) na coleção tasks no PocketBase com persistência e sincronização realtime.',
+      'Bloco DESCRIÇÃO no painel de detalhe da tarefa (TaskDetail drawer) com rótulo em Space Mono, auto-expansão, atalhos de salvar (blur, botão ou Ctrl+Enter) e cancelar (Esc).',
+      'Parser inteligente de links: URLs web (https://, http://) e protocolo nativo obsidian:// detectados automaticamente e transformados em links clicáveis com visual champagne.',
+      'Abertura direta do Obsidian (obsidian://) sem embeds e links externos em nova aba segura (target="_blank" rel="noopener noreferrer").',
+      'Cabeçalho de metadados do painel de detalhe unificado: Projeto com dot de cor dinâmico e seletor inline, e Prazo/Data em uma única linha clara.',
+      'Captura rápida mantida ágil e veloz sem sobrecarga de campos; edição de contexto detalhado centralizada no drawer.',
+    ],
+  },
   {
     version: '0.0.49',
     title: 'Etapa 1: Arquitetura de Projetos Todoist & Seções',

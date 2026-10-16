@@ -939,10 +939,10 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas do Pomodoro (v0.0.40–v0.0.48)
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.50)
                 </h2>
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
-                  Histórico de arquitetura, banco de dados e refinamentos de interface
+                  Histórico de arquitetura, engenharia reversa Todoist/TickTick e refinamentos
                 </p>
               </div>
             </div>

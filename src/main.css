@@ -2655,6 +2655,124 @@ a {
   font-size: 12px;
 }
 
+/* Detalhe da Tarefa - Descrição (Etapa 1.5 Todoist Quiet Luxury) */
+.task-description-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(197, 168, 128, 0.14);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease;
+}
+.task-description-box:focus-within {
+  border-color: rgba(197, 168, 128, 0.4);
+  background: rgba(255, 255, 255, 0.035);
+}
+.task-description-textarea {
+  width: 100%;
+  min-height: 84px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  resize: none;
+  font-family:
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #f4f4f6;
+  padding: 0;
+  box-sizing: border-box;
+}
+.task-description-textarea::placeholder {
+  color: #71717a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.task-description-display {
+  font-family:
+    'Plus Jakarta Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #f4f4f6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  min-height: 52px;
+  padding: 2px 0;
+}
+.task-description-display:hover {
+  opacity: 0.95;
+}
+.task-description-placeholder {
+  color: #71717a;
+  font-size: 12px;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.task-description-link {
+  color: #c5a880;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  word-break: break-all;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease;
+}
+.task-description-link:hover {
+  opacity: 0.85;
+  color: #dfcaa7;
+}
+.task-description-link.obsidian-link {
+  font-weight: 500;
+  text-decoration-style: dotted;
+}
+
+/* Detalhe da Tarefa - Cabeçalho Metadados (Projeto e Prazo de uma linha) */
+.detail-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.detail-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #a1a1aa;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(197, 168, 128, 0.15);
+}
+.detail-meta-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 /* Detalhe da Tarefa - Gestão de Etiquetas */
 .detail-tags-section {
   display: flex;
