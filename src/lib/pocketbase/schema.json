@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T16:09:26.639Z",
+  "generatedAt": "2026-10-16T15:59:18.166Z",
   "collections": [
     {
       "name": "users",
@@ -335,6 +335,19 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "objective",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "outcome_status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["batido", "parcial", "nao_foi"]
         }
       ],
       "indexes": [

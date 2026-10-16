@@ -15,6 +15,13 @@ import {
   MessageSquare,
   Trophy,
   X as XIcon,
+  Target,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  CheckSquare,
+  AlertCircle,
+  HelpCircle,
 } from 'lucide-react'
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,6 +31,7 @@ import {
   createFocusPreset,
   updateFocusPreset,
   deleteFocusPreset,
+  updateSessionDetails,
 } from '@/services/data'
 import { toast } from '@/hooks/use-toast'
 import { formatMinutes } from '@/lib/format'
@@ -54,6 +62,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const {
     state,
     selectedTask,
+    currentObjective,
+    setCurrentObjective,
     seconds,
     overtimeSeconds,
     isOvertime,
@@ -64,6 +74,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     finish,
     discard,
     selectTask,
+    setObjectiveForRunningBlock,
     startBreakFromOvertime,
     startNextBlockFromBreak,
     pendingNote,
@@ -72,8 +83,23 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     isReadOnlyTab,
   } = usePomodoro()
 
-  // Estado do campo inline de nota na barra inferior
-  const [bottomNoteInput, setBottomNoteInput] = useState('')
+  // Formulário do painel de notas pós-foco
+  const [doneInput, setDoneInput] = useState('')
+  const [nextInput, setNextInput] = useState('')
+  const [pendingVerdict, setPendingVerdict] = useState<SessionRecord['outcome_status'] | null>(null)
+
+  // Filtro de período da timeline (Hoje | 7 dias | 30 dias | Tudo)
+  const [timeFilter, setTimeFilter] = useState<'hoje' | '7dias' | '30dias' | 'tudo'>('7dias')
+  const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
+
+  // Modal de edição de sessão existente na timeline
+  const [editingSession, setEditingSession] = useState<SessionRecord | null>(null)
+  const [editSessionNote, setEditSessionNote] = useState('')
+  const [editSessionObjective, setEditSessionObjective] = useState('')
+  const [editSessionOutcome, setEditSessionOutcome] = useState<
+    SessionRecord['outcome_status'] | ''
+  >('')
+  const [savingEditSession, setSavingEditSession] = useState(false)
 
   // Lista de Presets vinda do PocketBase
   const [presets, setPresets] = useState<FocusPresetRecord[]>([])
@@ -286,16 +312,68 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     return `${mins}m`
   }
 
+  // Filtro de data: Hoje · 7 dias (padrão) · 30 dias · Tudo
+  const filteredSessions = useMemo(() => {
+    if (timeFilter === 'tudo') return sessions
+    const now = new Date()
+    const nowLocal = localDay(now)
+
+    if (timeFilter === 'hoje') {
+      return sessions.filter(
+        (s) =>
+          (s.session_date ? s.session_date.slice(0, 10) : s.started_at.slice(0, 10)) === nowLocal,
+      )
+    }
+
+    const daysCount = timeFilter === '7dias' ? 7 : 30
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - (daysCount - 1))
+    cutoffDate.setHours(0, 0, 0, 0)
+    const cutoffIso = cutoffDate.toISOString().slice(0, 10)
+
+    return sessions.filter((s) => {
+      const d = s.session_date ? s.session_date.slice(0, 10) : s.started_at.slice(0, 10)
+      return d >= cutoffIso
+    })
+  }, [sessions, timeFilter])
+
   // Agrupamento cronológico da timeline "Foco em registro"
   const sessionsByDay = useMemo(() => {
     const groups: Record<string, SessionRecord[]> = {}
-    sessions.forEach((s) => {
+    filteredSessions.forEach((s) => {
       const day = s.session_date ? s.session_date.slice(0, 10) : s.started_at.slice(0, 10)
       if (!groups[day]) groups[day] = []
       groups[day].push(s)
     })
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
-  }, [sessions])
+  }, [filteredSessions])
+
+  // Agrupamento por mês quando 'tudo' estiver ativo para agrupamento colapsável
+  const sessionsByMonth = useMemo(() => {
+    if (timeFilter !== 'tudo') return null
+    const months: Record<
+      string,
+      { monthKey: string; monthLabel: string; days: [string, SessionRecord[]][] }
+    > = {}
+
+    sessionsByDay.forEach(([day, daySessions]) => {
+      const [y, m] = day.split('-').map(Number)
+      const monthKey = `${y}-${String(m).padStart(2, '0')}`
+      const date = new Date(y, m - 1, 1, 12, 0, 0)
+      const monthLabel = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+      if (!months[monthKey]) {
+        months[monthKey] = {
+          monthKey,
+          monthLabel: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
+          days: [],
+        }
+      }
+      months[monthKey].days.push([day, daySessions])
+    })
+
+    return Object.values(months).sort((a, b) => b.monthKey.localeCompare(a.monthKey))
+  }, [sessionsByDay, timeFilter])
 
   // Formatação de data amigável estilo print: "1 out", "30 set", "Hoje", "Ontem"
   const formatDayHeader = (dayStr: string) => {
@@ -310,6 +388,148 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
     return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '')
   }
+
+  // Abertura do modal de edição de sessão da timeline
+  const handleOpenEditSession = (session: SessionRecord) => {
+    setEditingSession(session)
+    setEditSessionNote(session.note || '')
+    setEditSessionObjective(session.objective || '')
+    setEditSessionOutcome(session.outcome_status || '')
+  }
+
+  // Renderizador do card individual da sessão com redesign completo
+  const renderSessionCard = (s: SessionRecord) => {
+    const startD = new Date(s.started_at)
+    const endD = new Date(s.ended_at)
+    const timeRange = `${startD.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })} - ${endD.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`
+    const durationFormatted = formatTotalTime(Number(s.duration_minutes || 0))
+    const task = s.expand?.task
+
+    return (
+      <div
+        key={s.id}
+        onClick={() => handleOpenEditSession(s)}
+        className={`pomodoro-timeline-card ${s.objective ? 'has-objective' : ''}`}
+        title="Clique para editar nota, objetivo ou veredito"
+      >
+        <div className="pomodoro-timeline-card-header">
+          <div className="pomodoro-timeline-badge-group">
+            {/* Badge de status de término: Completa / Interrompida */}
+            <span className={`pomodoro-status-pill ${s.status}`}>
+              {s.status === 'completa' ? (
+                <>
+                  <Check size={10} />
+                  Completa
+                </>
+              ) : (
+                <>
+                  <AlertCircle size={10} />
+                  Interrompida
+                </>
+              )}
+            </span>
+
+            {/* Selo do veredito: Batido / Parcial / Não foi */}
+            {s.outcome_status && (
+              <span className={`pomodoro-outcome-badge ${s.outcome_status}`}>
+                {s.outcome_status === 'batido' && (
+                  <>
+                    <Check size={10} />
+                    Batido
+                  </>
+                )}
+                {s.outcome_status === 'parcial' && (
+                  <>
+                    <span>~</span>
+                    Parcial
+                  </>
+                )}
+                {s.outcome_status === 'nao_foi' && (
+                  <>
+                    <XIcon size={10} />
+                    Não foi
+                  </>
+                )}
+              </span>
+            )}
+
+            {/* Chip da tarefa vinculada clicável */}
+            {task ? (
+              <span
+                className="pomodoro-task-chip-btn"
+                title={`Tarefa: ${task.title}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleOpenEditSession(s)
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C5A880] shrink-0" />
+                <span className="truncate">{task.title}</span>
+              </span>
+            ) : (
+              <span className="text-[11px] font-['Space_Mono'] text-[#71717A]">Foco livre</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="font-['Space_Mono'] text-[11px] text-[#A1A1AA]">{timeRange}</span>
+            <span className="font-['Space_Mono'] text-xs font-bold text-[#F4F4F6] bg-white/5 px-2 py-0.5 rounded">
+              {durationFormatted}
+            </span>
+            <span className="pomodoro-timeline-edit-hint hidden sm:inline-flex">
+              <Edit2 size={11} />
+            </span>
+          </div>
+        </div>
+
+        {/* Objetivo declarado visível */}
+        {s.objective && (
+          <div className="pomodoro-timeline-objective-line">
+            <span className="objective-tag">OBJETIVO:</span>
+            <span className="truncate">{s.objective}</span>
+          </div>
+        )}
+
+        {/* Nota da sessão */}
+        {s.note && s.note.trim() && <div className="pomodoro-timeline-note-body">{s.note}</div>}
+      </div>
+    )
+  }
+
+  const handleSaveEditedSession = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingSession) return
+    setSavingEditSession(true)
+    try {
+      await updateSessionDetails(editingSession.id, {
+        note: editSessionNote,
+        objective: editSessionObjective,
+        outcome_status: editSessionOutcome || null,
+      })
+      toast({ title: 'Sessão atualizada com sucesso' })
+      setEditingSession(null)
+      if (refreshSessions) refreshSessions()
+    } catch {
+      toast({ title: 'Erro ao atualizar sessão', variant: 'destructive' })
+    } finally {
+      setSavingEditSession(false)
+    }
+  }
+
+  // Sincroniza estado inicial do veredito quando o pendingNote mudar
+  useEffect(() => {
+    if (pendingNote) {
+      setDoneInput('')
+      setNextInput('')
+      setPendingVerdict(pendingNote.outcomeStatus || null)
+    }
+  }, [pendingNote])
 
   // Helper de minutos / segundos do timer da barra fixa
   const timerMinutes = Math.floor(seconds / 60)
@@ -526,66 +746,172 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             </div>
           </div>
 
-          {/* TIMELINE: FOCO EM REGISTRO */}
+          {/* TIMELINE: FOCO EM REGISTRO COM FILTRO DE DATA E REDESIGN DE CARDS */}
           <div className="pomodoro-timeline-section">
-            <div className="pomodoro-timeline-header">
-              <h3>Foco em registro.</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-[17px] font-['Clash_Display'] font-semibold text-[#F4F4F6]">
+                  Foco em registro
+                </h3>
+                <span className="text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
+                  {filteredSessions.length}{' '}
+                  {filteredSessions.length === 1 ? 'bloco registrado' : 'blocos registrados'}
+                </span>
+              </div>
+
+              {/* Seletor de período: Hoje · 7 dias · 30 dias · Tudo */}
+              <div className="inline-flex items-center gap-1 bg-[#12141C] border border-[#C5A880]/20 rounded-lg p-1 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setTimeFilter('hoje')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded transition-colors ${
+                    timeFilter === 'hoje'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                >
+                  Hoje
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeFilter('7dias')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded transition-colors ${
+                    timeFilter === '7dias'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                >
+                  7 dias
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeFilter('30dias')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded transition-colors ${
+                    timeFilter === '30dias'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                >
+                  30 dias
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeFilter('tudo')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded transition-colors ${
+                    timeFilter === 'tudo'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                >
+                  Tudo
+                </button>
+              </div>
             </div>
 
             {sessionsByDay.length === 0 ? (
-              <p className="pomodoro-timeline-empty">Nenhuma sessão registrada ainda.</p>
-            ) : (
-              <div className="pomodoro-timeline-days">
-                {sessionsByDay.map(([day, daySessions]) => (
-                  <div key={day} className="pomodoro-timeline-day-group">
-                    <span className="pomodoro-timeline-day-title">{formatDayHeader(day)}</span>
+              <p className="pomodoro-timeline-empty">Nenhuma sessão registrada neste período.</p>
+            ) : timeFilter === 'tudo' && sessionsByMonth ? (
+              /* MODO TUDO: Agrupado e colapsável por mês */
+              <div className="space-y-6">
+                {sessionsByMonth.map((monthGroup) => {
+                  const isCollapsed = !!collapsedMonths[monthGroup.monthKey]
+                  const monthTotalMin = monthGroup.days.reduce(
+                    (acc, [, dSessions]) =>
+                      acc + dSessions.reduce((sum, s) => sum + Number(s.duration_minutes || 0), 0),
+                    0,
+                  )
+                  const monthBlockCount = monthGroup.days.reduce(
+                    (acc, [, dSessions]) => acc + dSessions.length,
+                    0,
+                  )
 
-                    <div className="pomodoro-timeline-events">
-                      {daySessions.map((s, idx) => {
-                        const startD = new Date(s.started_at)
-                        const endD = new Date(s.ended_at)
-                        const timeRange = `${startD.toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })} - ${endD.toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}`
-                        const durationFormatted = formatTotalTime(Number(s.duration_minutes || 0))
-                        const taskName = s.expand?.task?.title || 'Foco livre'
+                  return (
+                    <div
+                      key={monthGroup.monthKey}
+                      className="border border-white/5 rounded-xl bg-[#090a0e]/40 overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCollapsedMonths((curr) => ({
+                            ...curr,
+                            [monthGroup.monthKey]: !curr[monthGroup.monthKey],
+                          }))
+                        }
+                        className="w-full flex items-center justify-between px-4 py-3 bg-[#12141c]/60 hover:bg-[#12141c] transition-colors border-b border-white/5 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? (
+                            <ChevronRight size={15} className="text-[#C5A880]" />
+                          ) : (
+                            <ChevronDown size={15} className="text-[#C5A880]" />
+                          )}
+                          <span className="font-['Clash_Display'] font-semibold text-sm text-[#F4F4F6]">
+                            {monthGroup.monthLabel}
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
+                          {formatTotalTime(monthTotalMin)} · {monthBlockCount}{' '}
+                          {monthBlockCount === 1 ? 'bloco' : 'blocos'}
+                        </span>
+                      </button>
 
-                        return (
-                          <div key={s.id} className="pomodoro-timeline-item">
-                            <div className="pomodoro-timeline-left-node">
-                              <span className="pomodoro-timeline-dot" />
-                              {idx < daySessions.length - 1 && (
-                                <span className="pomodoro-timeline-connector" />
-                              )}
-                            </div>
-
-                            <div className="pomodoro-timeline-content">
-                              <div className="pomodoro-timeline-row">
-                                <span className="pomodoro-timeline-hours">{timeRange}</span>
-                                <span className="pomodoro-timeline-duration">
-                                  {durationFormatted}
-                                </span>
-                              </div>
-                              <div className="pomodoro-timeline-task-name">{taskName}</div>
-                              {s.note && s.note.trim() && (
-                                <div
-                                  className="pomodoro-timeline-note"
-                                  title="Nota do bloco de foco"
-                                >
-                                  {s.note}
+                      {!isCollapsed && (
+                        <div className="p-3 space-y-4">
+                          {monthGroup.days.map(([day, daySessions]) => {
+                            const dayTotalMin = daySessions.reduce(
+                              (acc, s) => acc + Number(s.duration_minutes || 0),
+                              0,
+                            )
+                            return (
+                              <div key={day} className="space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-['Space_Mono'] text-[#A1A1AA] pb-1 border-b border-white/5">
+                                  <span className="uppercase tracking-wider font-bold text-[#F4F4F6]">
+                                    {formatDayHeader(day)}
+                                  </span>
+                                  <span>
+                                    {formatTotalTime(dayTotalMin)} · {daySessions.length}{' '}
+                                    {daySessions.length === 1 ? 'bloco' : 'blocos'}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
+                                <div className="space-y-2">
+                                  {daySessions.map((s) => renderSessionCard(s))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
+              </div>
+            ) : (
+              /* MODO NORMAL (Hoje, 7 dias, 30 dias): Agrupado por dia */
+              <div className="pomodoro-timeline-days">
+                {sessionsByDay.map(([day, daySessions]) => {
+                  const dayTotalMin = daySessions.reduce(
+                    (acc, s) => acc + Number(s.duration_minutes || 0),
+                    0,
+                  )
+                  return (
+                    <div key={day} className="pomodoro-timeline-day-group">
+                      <div className="flex items-center justify-between text-[11px] font-['Space_Mono'] text-[#A1A1AA] pb-1 border-b border-white/5">
+                        <span className="uppercase tracking-wider font-bold text-[#F4F4F6]">
+                          {formatDayHeader(day)}
+                        </span>
+                        <span>
+                          {formatTotalTime(dayTotalMin)} · {daySessions.length}{' '}
+                          {daySessions.length === 1 ? 'bloco' : 'blocos'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 pt-1">
+                        {daySessions.map((s) => renderSessionCard(s))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -595,7 +921,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
       {/* BARRA INFERIOR FIXA DO TIMER (ESTILO TICKTICK / DESIGN SYSTEM BARBOSA) */}
       <footer className="pomodoro-bottom-bar">
         <div className="pomodoro-bottom-bar-inner">
-          <div className="pomodoro-bottom-left">
+          <div className="pomodoro-bottom-left flex-wrap md:flex-nowrap">
             {/* Ícone de status sutil */}
             <div
               className={`pomodoro-bottom-avatar ${isRunning ? 'running' : ''}`}
@@ -606,7 +932,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
             <div className="pomodoro-bottom-meta">
               <span className="pomodoro-bottom-eyebrow">{phaseLabel}</span>
-              <div className="pomodoro-bottom-time-row">
+
+              <div className="pomodoro-bottom-time-row flex-wrap gap-2">
                 <span className={`pomodoro-bottom-digits ${isOvertime ? 'is-overtime' : ''}`}>
                   {formattedTimer}
                 </span>
@@ -655,15 +982,48 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+
+              {/* ÂNCORA ANTI-DRIFT VISÍVEL DURANTE O FOCO */}
+              {isRunning && (state?.objective || currentObjective) && (
+                <div
+                  className="pomodoro-anti-drift-bar mt-1"
+                  title="Objetivo ativo deste bloco (âncora anti-drift)"
+                >
+                  <span className="pomodoro-anti-drift-tag">OBJETIVO</span>
+                  <span className="truncate font-medium">
+                    {state?.objective || currentObjective}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="pomodoro-bottom-controls">
+          <div className="pomodoro-bottom-controls flex-wrap justify-end gap-2">
             {/* Aviso discreto de trava de abas */}
             {isReadOnlyTab && (
               <span className="pomodoro-readonly-badge">
                 Timer ativo em outra aba (somente leitura)
               </span>
+            )}
+
+            {/* CAMPO DE OBJETIVO ANTES DE INICIAR O FOCO (quando parado) */}
+            {!hasActiveSession && !isReadOnlyTab && (
+              <div className="flex items-center gap-1.5 bg-[#12141C] border border-[#C5A880]/25 rounded-lg px-2.5 py-1.5 max-w-[280px]">
+                <Target size={13} className="text-[#C5A880] shrink-0" />
+                <input
+                  type="text"
+                  maxLength={300}
+                  value={currentObjective}
+                  onChange={(e) => setCurrentObjective(e.target.value)}
+                  placeholder={
+                    selectedTask
+                      ? `Objetivo: ${selectedTask.title}`
+                      : 'Objetivo deste bloco (opcional)'
+                  }
+                  title="Objetivo do bloco: refine a meta antes de iniciar o foco"
+                  className="bg-transparent border-0 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none w-full"
+                />
+              </div>
             )}
 
             {/* Botão de transição manual exigido pelo usuário */}
@@ -697,56 +1057,169 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
               </>
             )}
 
-            {/* Prompt discreto de nota pós-foco */}
+            {/* PAINEL DE NOTA / VEREDITO PÓS-FOCO EXPANDIDO (VEREDITO DE 1 TOQUE + 2 PERGUNTAS) */}
             {pendingNote && (
-              <form
-                className="pomodoro-bottom-note-prompt"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  submitPendingNote(bottomNoteInput)
-                  setBottomNoteInput('')
-                  if (refreshSessions) refreshSessions()
-                }}
-              >
-                <span className="pomodoro-bottom-note-label">
-                  <MessageSquare size={12} />
-                  Bloco {pendingNote.blockNumber}:
-                </span>
-                <input
-                  type="text"
-                  autoFocus
-                  maxLength={500}
-                  placeholder="O que foi feito? (opcional)"
-                  value={bottomNoteInput}
-                  onChange={(e) => setBottomNoteInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      e.preventDefault()
+              <div className="bg-[#12141C] border border-[#C5A880]/40 rounded-xl p-3 shadow-2xl max-w-md w-full animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-[#C5A880] font-bold">
+                      Bloco {pendingNote.blockNumber} finalizado · {pendingNote.durationMinutes} min
+                    </span>
+                    {pendingNote.taskTitle && (
+                      <span
+                        className="text-xs text-[#A1A1AA] truncate max-w-[160px]"
+                        title={pendingNote.taskTitle}
+                      >
+                        ({pendingNote.taskTitle})
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
                       dismissPendingNote()
-                      setBottomNoteInput('')
-                    }
+                      setDoneInput('')
+                      setNextInput('')
+                      setPendingVerdict(null)
+                    }}
+                    className="text-[#A1A1AA] hover:text-[#F4F4F6] p-1"
+                    title="Fechar sem salvar notas adicionais (Esc)"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                </div>
+
+                {/* Veredito de 1 toque: se o bloco tinha objetivo */}
+                {pendingNote.objective && (
+                  <div className="mb-2.5">
+                    <div className="text-[11px] text-[#A1A1AA] mb-1 flex items-center gap-1">
+                      <Target size={11} className="text-[#C5A880]" />
+                      <span>Objetivo:</span>
+                      <strong className="text-[#F4F4F6] font-medium truncate">
+                        "{pendingNote.objective}"
+                      </strong>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPendingVerdict('batido')}
+                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                          pendingVerdict === 'batido'
+                            ? 'bg-[#C5A880] text-[#090A0E] border-[#C5A880] font-bold'
+                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#C5A880]/40'
+                        }`}
+                      >
+                        <Check size={12} />
+                        Batido
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingVerdict('parcial')}
+                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                          pendingVerdict === 'parcial'
+                            ? 'bg-[#F59E0B] text-[#090A0E] border-[#F59E0B] font-bold'
+                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#F59E0B]/40'
+                        }`}
+                      >
+                        <span>~</span>
+                        Parcial
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingVerdict('nao_foi')}
+                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                          pendingVerdict === 'nao_foi'
+                            ? 'bg-[#71717A] text-[#F4F4F6] border-[#71717A] font-bold'
+                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#71717A]/40'
+                        }`}
+                      >
+                        <XIcon size={12} />
+                        Não foi
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Duas perguntas de texto: 'O que foi feito?' e 'O que fica para o próximo bloco?' */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    submitPendingNote({
+                      doneText: doneInput,
+                      nextText: nextInput,
+                      outcomeStatus: pendingVerdict || undefined,
+                      objective: pendingNote.objective,
+                    })
+                    setDoneInput('')
+                    setNextInput('')
+                    setPendingVerdict(null)
+                    if (refreshSessions) refreshSessions()
                   }}
-                  className="pomodoro-bottom-note-input"
-                />
-                <button
-                  type="submit"
-                  className="pomodoro-bottom-note-confirm-btn"
-                  title="Confirmar nota (Enter)"
+                  className="space-y-2"
                 >
-                  <Check size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    dismissPendingNote()
-                    setBottomNoteInput('')
-                  }}
-                  className="pomodoro-bottom-note-skip-btn"
-                  title="Pular nota (Esc)"
-                >
-                  <XIcon size={14} />
-                </button>
-              </form>
+                  <div>
+                    <input
+                      type="text"
+                      autoFocus={!pendingNote.objective}
+                      maxLength={250}
+                      placeholder="O que foi feito neste bloco? (opcional)"
+                      value={doneInput}
+                      onChange={(e) => setDoneInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.preventDefault()
+                          dismissPendingNote()
+                        }
+                      }}
+                      className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      type="text"
+                      maxLength={250}
+                      placeholder="O que fica para o próximo bloco? (opcional)"
+                      value={nextInput}
+                      onChange={(e) => setNextInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.preventDefault()
+                          dismissPendingNote()
+                        }
+                      }}
+                      className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] font-['Space_Mono'] text-[#71717A]">
+                      Enter salva · Esc pula
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          dismissPendingNote()
+                          setDoneInput('')
+                          setNextInput('')
+                          setPendingVerdict(null)
+                        }}
+                        className="px-2 py-1 text-[11px] font-['Space_Mono'] text-[#A1A1AA] hover:text-[#F4F4F6]"
+                      >
+                        Pular
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-[#C5A880] hover:bg-[#d6bc96] text-[#090A0E] font-bold text-xs font-['Space_Mono'] uppercase tracking-wider rounded-md"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
             )}
 
             {!isReadOnlyTab && (
@@ -755,7 +1228,13 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 <button
                   type="button"
                   className="pomodoro-bottom-action-btn primary"
-                  onClick={toggle}
+                  onClick={() => {
+                    if (!isRunning) {
+                      start(state?.task ?? selectedTask, activePreset, currentObjective)
+                    } else {
+                      toggle()
+                    }
+                  }}
                   title={isRunning ? 'Pausar foco' : 'Iniciar foco'}
                 >
                   {isRunning ? (
@@ -795,6 +1274,131 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
         </div>
       </footer>
+
+      {/* MODAL DE EDIÇÃO DE SESSÃO / NOTA / OBJETIVO / VEREDITO */}
+      <Dialog open={!!editingSession} onOpenChange={(open) => !open && setEditingSession(null)}>
+        <DialogContent className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-['Clash_Display'] font-semibold text-lg text-[#F4F4F6]">
+              Editar Registro de Sessão
+            </DialogTitle>
+          </DialogHeader>
+
+          {editingSession && (
+            <form onSubmit={handleSaveEditedSession} className="space-y-4 py-2">
+              <div className="flex items-center justify-between text-xs font-['Space_Mono'] bg-[#090A0E] p-2.5 rounded-lg border border-white/5">
+                <span className="text-[#A1A1AA]">
+                  {editingSession.expand?.task?.title || 'Foco livre'}
+                </span>
+                <span className="font-bold text-[#C5A880]">
+                  {formatTotalTime(Number(editingSession.duration_minutes || 0))} ·{' '}
+                  {editingSession.status}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] mb-1">
+                  Objetivo do Bloco
+                </label>
+                <input
+                  type="text"
+                  maxLength={300}
+                  placeholder="Ex.: Redigir a introdução do relatório"
+                  value={editSessionObjective}
+                  onChange={(e) => setEditSessionObjective(e.target.value)}
+                  className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] mb-1.5">
+                  Veredito do Objetivo
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionOutcome('')}
+                    className={`py-1.5 text-xs font-['Space_Mono'] rounded-md border transition-all ${
+                      editSessionOutcome === ''
+                        ? 'bg-white/20 text-[#F4F4F6] border-white/40 font-bold'
+                        : 'bg-white/5 text-[#A1A1AA] border-white/10 hover:text-[#F4F4F6]'
+                    }`}
+                  >
+                    Nenhum
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionOutcome('batido')}
+                    className={`py-1.5 text-xs font-['Space_Mono'] rounded-md border transition-all flex items-center justify-center gap-1 ${
+                      editSessionOutcome === 'batido'
+                        ? 'bg-[#C5A880] text-[#090A0E] border-[#C5A880] font-bold'
+                        : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#C5A880]/40'
+                    }`}
+                  >
+                    <Check size={12} />
+                    Batido
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionOutcome('parcial')}
+                    className={`py-1.5 text-xs font-['Space_Mono'] rounded-md border transition-all flex items-center justify-center gap-1 ${
+                      editSessionOutcome === 'parcial'
+                        ? 'bg-[#F59E0B] text-[#090A0E] border-[#F59E0B] font-bold'
+                        : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#F59E0B]/40'
+                    }`}
+                  >
+                    <span>~</span>
+                    Parcial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionOutcome('nao_foi')}
+                    className={`py-1.5 text-xs font-['Space_Mono'] rounded-md border transition-all flex items-center justify-center gap-1 ${
+                      editSessionOutcome === 'nao_foi'
+                        ? 'bg-[#71717A] text-[#F4F4F6] border-[#71717A] font-bold'
+                        : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#71717A]/40'
+                    }`}
+                  >
+                    <XIcon size={12} />
+                    Não foi
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] mb-1">
+                  Anotações da Sessão
+                </label>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  placeholder="O que foi feito e o que ficou pendente..."
+                  value={editSessionNote}
+                  onChange={(e) => setEditSessionNote(e.target.value)}
+                  className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm text-[#F4F4F6] focus:outline-none focus:border-[#C5A880] resize-none"
+                />
+              </div>
+
+              <DialogFooter className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSession(null)}
+                  className="px-4 py-2 text-xs font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] hover:text-[#F4F4F6] transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditSession}
+                  className="px-4 py-2 bg-[#C5A880] hover:bg-[#d6bc96] text-[#090A0E] font-medium text-xs font-['Space_Mono'] uppercase tracking-wider rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {savingEditSession ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PRESET */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

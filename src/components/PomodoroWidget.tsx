@@ -1,17 +1,21 @@
 import { useState } from 'react'
-import { Pause, Play, Square, X, Check, MessageSquare } from 'lucide-react'
+import { Pause, Play, Square, X, Check, MessageSquare, Target } from 'lucide-react'
 import { usePomodoro } from '@/contexts/PomodoroContext'
+import type { SessionRecord } from '@/types'
 
 export function PomodoroWidget() {
   const {
     state,
     selectedTask,
+    currentObjective,
+    setCurrentObjective,
     seconds,
     overtimeSeconds,
     isOvertime,
     toggle,
     finish,
     discard,
+    start,
     startBreakFromOvertime,
     startNextBlockFromBreak,
     pendingNote,
@@ -19,7 +23,11 @@ export function PomodoroWidget() {
     dismissPendingNote,
     isReadOnlyTab,
   } = usePomodoro()
-  const [noteInput, setNoteInput] = useState('')
+  const [doneInput, setDoneInput] = useState('')
+  const [nextInput, setNextInput] = useState('')
+  const [selectedVerdict, setSelectedVerdict] = useState<SessionRecord['outcome_status'] | null>(
+    null,
+  )
 
   if (!state && !pendingNote) return null
 
@@ -45,13 +53,22 @@ export function PomodoroWidget() {
 
   const handleConfirmNote = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    submitPendingNote(noteInput)
-    setNoteInput('')
+    submitPendingNote({
+      doneText: doneInput,
+      nextText: nextInput,
+      outcomeStatus: selectedVerdict || undefined,
+      objective: pendingNote?.objective,
+    })
+    setDoneInput('')
+    setNextInput('')
+    setSelectedVerdict(null)
   }
 
   const handleDismissNote = () => {
     dismissPendingNote()
-    setNoteInput('')
+    setDoneInput('')
+    setNextInput('')
+    setSelectedVerdict(null)
   }
 
   return (
@@ -83,7 +100,8 @@ export function PomodoroWidget() {
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <MessageSquare size={11} /> Bloco {pendingNote.blockNumber} concluído
+              <MessageSquare size={11} /> Bloco {pendingNote.blockNumber} (
+              {pendingNote.durationMinutes}m)
             </span>
             <button
               type="button"
@@ -100,14 +118,92 @@ export function PomodoroWidget() {
               <X size={12} />
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+
+          {/* Veredito de 1 toque se havia objetivo */}
+          {pendingNote.objective && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: '#A1A1AA',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Objetivo: <strong style={{ color: '#F4F4F6' }}>{pendingNote.objective}</strong>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedVerdict('batido')}
+                  style={{
+                    padding: '3px 4px',
+                    fontSize: '10px',
+                    fontFamily: "'Space Mono', monospace",
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor: selectedVerdict === 'batido' ? '#C5A880' : 'rgba(255,255,255,0.1)',
+                    background: selectedVerdict === 'batido' ? '#C5A880' : 'rgba(255,255,255,0.05)',
+                    color: selectedVerdict === 'batido' ? '#090A0E' : '#F4F4F6',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  ✓ Batido
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedVerdict('parcial')}
+                  style={{
+                    padding: '3px 4px',
+                    fontSize: '10px',
+                    fontFamily: "'Space Mono', monospace",
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor:
+                      selectedVerdict === 'parcial' ? '#F59E0B' : 'rgba(255,255,255,0.1)',
+                    background:
+                      selectedVerdict === 'parcial' ? '#F59E0B' : 'rgba(255,255,255,0.05)',
+                    color: selectedVerdict === 'parcial' ? '#090A0E' : '#F4F4F6',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  ~ Parcial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedVerdict('nao_foi')}
+                  style={{
+                    padding: '3px 4px',
+                    fontSize: '10px',
+                    fontFamily: "'Space Mono', monospace",
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    borderColor:
+                      selectedVerdict === 'nao_foi' ? '#71717A' : 'rgba(255,255,255,0.1)',
+                    background:
+                      selectedVerdict === 'nao_foi' ? '#71717A' : 'rgba(255,255,255,0.05)',
+                    color: '#F4F4F6',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  ✗ Não foi
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <input
               type="text"
-              autoFocus
-              maxLength={500}
+              autoFocus={!pendingNote.objective}
+              maxLength={250}
               placeholder="O que foi feito? (opcional)"
-              value={noteInput}
-              onChange={(e) => setNoteInput(e.target.value)}
+              value={doneInput}
+              onChange={(e) => setDoneInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
                   e.preventDefault()
@@ -115,17 +211,57 @@ export function PomodoroWidget() {
                 }
               }}
               style={{
-                flex: 1,
                 background: '#090A0E',
                 border: '1px solid rgba(197, 168, 128, 0.2)',
                 borderRadius: '4px',
                 padding: '4px 8px',
-                fontSize: '12px',
+                fontSize: '11px',
                 color: '#F4F4F6',
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
                 outline: 'none',
               }}
             />
+            <input
+              type="text"
+              maxLength={250}
+              placeholder="O que fica para o próximo bloco? (opcional)"
+              value={nextInput}
+              onChange={(e) => setNextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault()
+                  handleDismissNote()
+                }
+              }}
+              style={{
+                background: '#090A0E',
+                border: '1px solid rgba(197, 168, 128, 0.2)',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '11px',
+                color: '#F4F4F6',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={handleDismissNote}
+              style={{
+                background: 'transparent',
+                border: 0,
+                color: '#A1A1AA',
+                fontSize: '10px',
+                fontFamily: "'Space Mono', monospace",
+                cursor: 'pointer',
+                padding: '2px 6px',
+              }}
+            >
+              Pular
+            </button>
             <button
               type="submit"
               style={{
@@ -133,14 +269,14 @@ export function PomodoroWidget() {
                 border: 0,
                 borderRadius: '4px',
                 color: '#090A0E',
-                padding: '4px 8px',
+                padding: '3px 8px',
+                fontSize: '10px',
+                fontFamily: "'Space Mono', monospace",
+                fontWeight: 600,
                 cursor: 'pointer',
-                display: 'grid',
-                placeItems: 'center',
               }}
-              title="Confirmar nota (Enter)"
             >
-              <Check size={13} />
+              Salvar
             </button>
           </div>
         </form>
@@ -153,6 +289,33 @@ export function PomodoroWidget() {
             <span style={{ opacity: 0.7 }}>{state.preset.name}</span>
           </div>
           <strong>{state.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
+
+          {/* Âncora anti-drift no widget flutuante */}
+          {state.objective && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '11px',
+                color: '#C5A880',
+                background: 'rgba(197, 168, 128, 0.08)',
+                border: '1px solid rgba(197, 168, 128, 0.2)',
+                borderRadius: '4px',
+                padding: '2px 6px',
+                margin: '2px 0 4px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={`Objetivo: ${state.objective}`}
+            >
+              <Target size={10} style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {state.objective}
+              </span>
+            </div>
+          )}
           {isReadOnlyTab && (
             <div
               style={{

@@ -744,5 +744,91 @@ export function runDateParserTests() {
     assertEquals(selectedTask, null, 'Desvinculação limpou selectedTask')
   }
 
+  // 10. Testes de Regressão: Pomodoro Objetivo do Bloco e Veredito (v0.0.40)
+  {
+    // 10.1 Cálculo de métrica semanal de % de objetivos batidos
+    // Regra: blocos com objetivo batido ÷ blocos com objetivo (blocos sem objetivo não entram no denominador)
+    const mockSessions: any[] = [
+      {
+        id: 's1',
+        started_at: '2026-04-13T10:00:00.000Z',
+        ended_at: '2026-04-13T10:25:00.000Z',
+        duration_minutes: 25,
+        session_date: '2026-04-13T00:00:00.000Z',
+        status: 'completa',
+        objective: 'Terminar intro',
+        outcome_status: 'batido',
+      },
+      {
+        id: 's2',
+        started_at: '2026-04-13T11:00:00.000Z',
+        ended_at: '2026-04-13T11:25:00.000Z',
+        duration_minutes: 25,
+        session_date: '2026-04-13T00:00:00.000Z',
+        status: 'completa',
+        objective: 'Revisar seções',
+        outcome_status: 'parcial',
+      },
+      {
+        id: 's3',
+        started_at: '2026-04-13T14:00:00.000Z',
+        ended_at: '2026-04-13T14:25:00.000Z',
+        duration_minutes: 25,
+        session_date: '2026-04-13T00:00:00.000Z',
+        status: 'completa',
+        // Sessão SEM objetivo não pode entrar no denominador nem contar como fracasso
+      },
+      {
+        id: 's4',
+        started_at: '2026-04-13T16:00:00.000Z',
+        ended_at: '2026-04-13T16:25:00.000Z',
+        duration_minutes: 25,
+        session_date: '2026-04-13T00:00:00.000Z',
+        status: 'completa',
+        objective: 'Enviar minuta',
+        outcome_status: 'nao_foi',
+      },
+    ]
+
+    const report = computeWeeklyReport({
+      sessions: mockSessions,
+      referenceDate: new Date('2026-04-15T12:00:00.000Z'),
+      weekOffset: 0,
+    })
+
+    assertEquals(
+      report.sessionsWithObjectiveCount,
+      3,
+      'Sessões com objetivo declarado devem ser exatamente 3',
+    )
+    assertEquals(report.objectivesMetCount, 1, '1 objetivo batido')
+    assertEquals(report.objectivesPartialCount, 1, '1 objetivo parcial')
+    assertEquals(report.objectivesMissedCount, 1, '1 objetivo não foi')
+    // 1 de 3 = 33% (arredondado)
+    assertEquals(report.objectiveSuccessRate, 33, '% de objetivos batidos = 33% (1 de 3)')
+
+    // Caso onde nenhuma sessão tem objetivo: resultado deve ser null (sem julgamento de falha)
+    const emptyObjectiveReport = computeWeeklyReport({
+      sessions: [
+        {
+          id: 's_no_obj',
+          started_at: '2026-04-13T10:00:00.000Z',
+          ended_at: '2026-04-13T10:25:00.000Z',
+          duration_minutes: 25,
+          session_date: '2026-04-13T00:00:00.000Z',
+          status: 'completa',
+        } as any,
+      ],
+      referenceDate: new Date('2026-04-15T12:00:00.000Z'),
+      weekOffset: 0,
+    })
+    assertEquals(emptyObjectiveReport.sessionsWithObjectiveCount, 0, 'Sem objetivos declarados')
+    assertEquals(
+      emptyObjectiveReport.objectiveSuccessRate,
+      null,
+      'Taxa deve ser null quando não há objetivos',
+    )
+  }
+
   return true
 }

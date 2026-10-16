@@ -479,11 +479,13 @@ export function UserGuide() {
                 <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
                   <Target className="w-5 h-5 text-[#C5A880] mb-2" />
                   <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
-                    Notas não-bloqueantes
+                    Objetivo do Bloco & Veredito
                   </strong>
                   <p className="text-xs text-[#A1A1AA] leading-relaxed">
-                    Durante a pausa ou no widget inferior, responda ao prompt &quot;O que foi
-                    feito?&quot;. A anotação é salva no histórico da tarefa e da sessão.
+                    Defina um objetivo antes de iniciar (âncora anti-drift visível). No encerramento
+                    (natural ou antecipado), avalie em 1 toque: <strong>Batido</strong>,{' '}
+                    <strong>Parcial</strong> ou <strong>Não foi</strong>, e anote o que foi feito e
+                    o que fica pendente.
                   </p>
                 </div>
 

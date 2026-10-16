@@ -682,6 +682,8 @@ export async function recordSession(
   minutes: number,
   status: SessionRecord['status'],
   note?: string,
+  objective?: string,
+  outcomeStatus?: SessionRecord['outcome_status'],
 ) {
   const user = pb.authStore.record!.id
   const midnight = new Date(endedAt.getFullYear(), endedAt.getMonth(), endedAt.getDate())
@@ -699,6 +701,12 @@ export async function recordSession(
   if (note && note.trim()) {
     payload.note = note.trim().slice(0, 500)
   }
+  if (objective && objective.trim()) {
+    payload.objective = objective.trim().slice(0, 300)
+  }
+  if (outcomeStatus) {
+    payload.outcome_status = outcomeStatus
+  }
   const session = await pb.collection<SessionRecord>('sessions').create(payload)
   if (task) {
     const current = await pb.collection<TaskRecord>('tasks').getOne(task.id)
@@ -713,6 +721,27 @@ export async function updateSessionNote(sessionId: string, note: string) {
   return pb.collection<SessionRecord>('sessions').update(sessionId, {
     note: note.trim().slice(0, 500),
   })
+}
+
+export async function updateSessionDetails(
+  sessionId: string,
+  data: {
+    note?: string
+    objective?: string
+    outcome_status?: SessionRecord['outcome_status'] | null
+  },
+) {
+  const payload: Record<string, unknown> = {}
+  if (data.note !== undefined) {
+    payload.note = data.note ? data.note.trim().slice(0, 500) : ''
+  }
+  if (data.objective !== undefined) {
+    payload.objective = data.objective ? data.objective.trim().slice(0, 300) : ''
+  }
+  if (data.outcome_status !== undefined) {
+    payload.outcome_status = data.outcome_status || ''
+  }
+  return pb.collection<SessionRecord>('sessions').update(sessionId, payload)
 }
 
 /**

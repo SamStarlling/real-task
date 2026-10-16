@@ -241,6 +241,35 @@ export function WeeklyReport({ sessions }: { sessions: SessionRecord[] }) {
             )}
           </div>
         </div>
+
+        {/* CARTÃO 5: % DE OBJETIVOS BATIDOS (Diferencial vs TickTick) */}
+        <div className="weekly-metric-card">
+          <div className="weekly-metric-tag">
+            <Target size={11} />
+            <span>OBJETIVOS BATIDOS</span>
+          </div>
+          <div className="weekly-metric-value-wrap">
+            <strong className="weekly-metric-main">
+              {report.objectiveSuccessRate !== null ? `${report.objectiveSuccessRate}%` : '—'}
+            </strong>
+            <span className="weekly-metric-goal-sub">
+              {report.sessionsWithObjectiveCount > 0
+                ? `${report.objectivesMetCount} de ${report.sessionsWithObjectiveCount} declarados`
+                : 'Nenhum objetivo no período'}
+            </span>
+          </div>
+          <div className="weekly-metric-footer">
+            {report.sessionsWithObjectiveCount > 0 ? (
+              <span className="weekly-goal-days-badge">
+                {report.objectivesPartialCount > 0
+                  ? `${report.objectivesPartialCount} parcial · ${report.objectivesMissedCount} não foi`
+                  : `${report.objectivesMetCount} batido(s)`}
+              </span>
+            ) : (
+              <span className="weekly-subtle-hint">DADO PURAMENTE ESTRUTURADO</span>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* BLOCO PRINCIPAL: CRUZAMENTO SESSÕES × METAS POR DIA DA SEMANA */}

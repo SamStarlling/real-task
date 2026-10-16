@@ -51,6 +51,13 @@ export interface WeeklyReportData {
   interruptedSessionsCount: number
   completionRate: number // % de sessões completas
 
+  // Objetivos de bloco batidos (diferencial vs TickTick)
+  sessionsWithObjectiveCount: number
+  objectivesMetCount: number
+  objectivesPartialCount: number
+  objectivesMissedCount: number
+  objectiveSuccessRate: number | null // % batidos ÷ blocos com objetivo (null se nenhum bloco teve objetivo)
+
   // Detalhe diário (7 dias: seg -> dom)
   days: WeeklyReportDayItem[]
 
@@ -203,6 +210,30 @@ export function computeWeeklyReport({
   let completedSessionsCount = 0
   let interruptedSessionsCount = 0
 
+  // Métricas de objetivos de bloco
+  let sessionsWithObjectiveCount = 0
+  let objectivesMetCount = 0
+  let objectivesPartialCount = 0
+  let objectivesMissedCount = 0
+
+  for (const s of weekSessions) {
+    if (s.objective && s.objective.trim()) {
+      sessionsWithObjectiveCount++
+      if (s.outcome_status === 'batido') {
+        objectivesMetCount++
+      } else if (s.outcome_status === 'parcial') {
+        objectivesPartialCount++
+      } else if (s.outcome_status === 'nao_foi') {
+        objectivesMissedCount++
+      }
+    }
+  }
+
+  const objectiveSuccessRate =
+    sessionsWithObjectiveCount > 0
+      ? Math.round((objectivesMetCount / sessionsWithObjectiveCount) * 100)
+      : null
+
   let bestDayItem: { dateStr: string; weekdayLong: string; minutes: number } | null = null
 
   const days: WeeklyReportDayItem[] = dayDates.map((date, idx) => {
@@ -316,6 +347,11 @@ export function computeWeeklyReport({
     completedSessionsCount,
     interruptedSessionsCount,
     completionRate,
+    sessionsWithObjectiveCount,
+    objectivesMetCount,
+    objectivesPartialCount,
+    objectivesMissedCount,
+    objectiveSuccessRate,
     days,
     bestDay: bestDayItem,
     previousWeekTotalMinutes,

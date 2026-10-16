@@ -66,6 +66,8 @@ export interface TaskRecord extends RecordModel {
     tags?: TagRecord[]
   }
 }
+export type OutcomeStatus = 'batido' | 'parcial' | 'nao_foi'
+
 export interface SessionRecord extends RecordModel {
   task?: string
   user: string
@@ -75,6 +77,8 @@ export interface SessionRecord extends RecordModel {
   session_date: string
   status: 'completa' | 'interrompida'
   note?: string
+  objective?: string
+  outcome_status?: OutcomeStatus
   expand?: { task?: TaskRecord }
 }
 

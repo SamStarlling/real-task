@@ -596,7 +596,8 @@ export function DevDocs() {
                         <td className="p-3 font-mono text-[#C5A880] font-bold">sessions</td>
                         <td className="p-3 text-[#A1A1AA]">base</td>
                         <td className="p-3 font-mono text-[#A1A1AA]">
-                          task (opcional), duration_minutes, session_date, note, status
+                          task (opcional), duration_minutes, session_date, note, status, objective,
+                          outcome_status
                         </td>
                         <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
                           user.id = @request.auth.id

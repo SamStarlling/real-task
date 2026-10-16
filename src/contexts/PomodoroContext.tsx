@@ -12,9 +12,11 @@ import type { FocusPresetRecord, SessionRecord, TaskRecord } from '@/types'
 import {
   recordSession,
   updateSessionNote,
+  updateSessionDetails,
   getFocusPresets,
   resolveNotificationPreferences,
 } from '@/services/data'
+import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
 import {
@@ -50,10 +52,14 @@ export interface PendingSessionNote {
   durationMinutes: number
   blockNumber: number
   totalBlocks: number
+  objective?: string
+  outcomeStatus?: SessionRecord['outcome_status']
+  isEarlyInterrupted?: boolean
 }
 
 export interface PomodoroState {
   task: TaskRecord | null
+  objective?: string
   status: 'rodando' | 'pausado'
   phase: PomodoroPhase
   currentBlock: number // 1-based (ex: 1, 2, 3, 4)
@@ -75,6 +81,7 @@ interface PomodoroSyncMessage {
   tabId: string
   state: {
     task: TaskRecord | null
+    objective?: string
     status: 'rodando' | 'pausado'
     phase: PomodoroPhase
     currentBlock: number
@@ -102,6 +109,8 @@ const CHANNEL_NAME = 'barbosa_pomodoro_sync_v1'
 export interface PomodoroContextValue {
   state: PomodoroState | null
   selectedTask: TaskRecord | null
+  currentObjective: string
+  setCurrentObjective: (objective: string) => void
   seconds: number
   overtimeSeconds: number
   isOvertime: boolean
@@ -110,16 +119,28 @@ export interface PomodoroContextValue {
   start: (
     task?: TaskRecord | null,
     customPreset?: ActivePreset | FocusPresetRecord,
+    initialObjective?: string,
   ) => Promise<void>
   toggle: () => void
   finish: (note?: string) => Promise<SessionRecord | null>
   discard: () => void
   selectTask: (task: TaskRecord | null) => void
+  setObjectiveForRunningBlock: (objective: string) => void
   skipToNextPhase: () => Promise<void>
   startBreakFromOvertime: () => Promise<void>
   startNextBlockFromBreak: () => Promise<void>
   pendingNote: PendingSessionNote | null
-  submitPendingNote: (note: string) => Promise<void>
+  submitPendingNote: (
+    params:
+      | {
+          doneText?: string
+          nextText?: string
+          note?: string
+          outcomeStatus?: SessionRecord['outcome_status']
+          objective?: string
+        }
+      | string,
+  ) => Promise<void>
   dismissPendingNote: () => void
   isReadOnlyTab: boolean
   activeTabOwner: boolean
@@ -132,6 +153,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const [activePreset, setActivePresetState] = useState<ActivePreset>(DEFAULT_PRESET)
   const [state, setState] = useState<PomodoroState | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
+  const [currentObjective, setCurrentObjective] = useState<string>('')
   const [now, setNow] = useState(Date.now())
   const [pendingNote, setPendingNote] = useState<PendingSessionNote | null>(null)
   const pendingNoteRef = useRef(pendingNote)
@@ -146,6 +168,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const selectedTaskRef = useRef(selectedTask)
   selectedTaskRef.current = selectedTask
+
+  const currentObjectiveRef = useRef(currentObjective)
+  currentObjectiveRef.current = currentObjective
 
   const activePresetRef = useRef(activePreset)
   activePresetRef.current = activePreset
@@ -198,6 +223,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             tabId: TAB_ID,
             state: {
               task: s.task,
+              objective: s.objective,
               status: s.status,
               phase: s.phase,
               currentBlock: s.currentBlock,
@@ -223,6 +249,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
           setControllingTabId(msg.tabId)
           setState({
             task: msg.state.task,
+            objective: msg.state.objective,
             status: msg.state.status,
             phase: msg.state.phase,
             currentBlock: msg.state.currentBlock,
@@ -273,6 +300,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
           tabId: TAB_ID,
           state: {
             task: s.task,
+            objective: s.objective,
             status: s.status,
             phase: s.phase,
             currentBlock: s.currentBlock,
@@ -326,9 +354,15 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const selectTask = useCallback(
     (task: TaskRecord | null) => {
       setSelectedTask(task)
+      // Se não havia objetivo digitado ou se o timer está parado, pré-preenche com o título da tarefa
+      if (!stateRef.current) {
+        setCurrentObjective(task?.title || '')
+      }
       setState((curr) => {
         if (!curr) return null
-        const updated = { ...curr, task }
+        // Se a sessão em andamento não tinha objetivo ou tinha o título da tarefa anterior, atualiza
+        const updatedObjective = curr.objective ? curr.objective : task?.title || ''
+        const updated = { ...curr, task, objective: updatedObjective }
         broadcastState(updated)
         return updated
       })
@@ -344,6 +378,19 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
           description: 'Pomodoro em modo foco livre.',
         })
       }
+    },
+    [broadcastState],
+  )
+
+  const setObjectiveForRunningBlock = useCallback(
+    (newObjective: string) => {
+      setCurrentObjective(newObjective)
+      setState((curr) => {
+        if (!curr) return null
+        const updated = { ...curr, objective: newObjective.trim() }
+        broadcastState(updated)
+        return updated
+      })
     },
     [broadcastState],
   )
@@ -511,8 +558,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       // SÓ blocos de foco registram sessão na coleção `sessions`
       if (current.phase === 'foco' && totalElapsedSec > 0) {
         const minutes = totalElapsedSec / 60
-        // Se já passou do tempo previsto ou está em excesso: "completa"; antes do tempo: "interrompida"
         const isComplete = current.isOvertime || totalElapsedSec >= current.totalDurationSeconds - 1
+        const activeObjective = current.objective || currentObjectiveRef.current || ''
+
         try {
           savedSession = await recordSession(
             current.task,
@@ -521,17 +569,41 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             minutes,
             isComplete ? 'completa' : 'interrompida',
             note,
+            activeObjective,
           )
         } catch (err) {
           console.error('Erro ao registrar sessão no finish:', err)
         }
+
         const taskLabel = current.task?.title ? ` em '${current.task.title}'` : ''
+        const roundedMins = Math.max(1, Math.round(minutes))
+
+        // Toast de confirmação mostrando a duração e indicando que a nota pode ser adicionada
         toast({
-          title: `Sessão registrada — ${Math.max(1, Math.round(minutes))} min${taskLabel}`,
+          title: isComplete
+            ? `Sessão concluída — ${roundedMins} min${taskLabel}`
+            : `Sessão encerrada antes do tempo — ${roundedMins} min${taskLabel}`,
+          description: 'Você pode registrar o veredito e anotações agora.',
         })
+
+        // DISPARO DE NOTA PÓS-FOCO EM finish():
+        // Não-bloqueante; bloco abortado quase imediatamente (menos de 60s) marcado para sem pré-julgamento
+        if (savedSession) {
+          setPendingNote({
+            sessionId: savedSession.id,
+            taskTitle: current.task?.title,
+            durationMinutes: roundedMins,
+            blockNumber: current.currentBlock,
+            totalBlocks: current.totalBlocks,
+            objective: activeObjective,
+            isEarlyInterrupted: !isComplete && totalElapsedSec < 60,
+          })
+        }
       }
+
       setState(null)
       setSelectedTask(null)
+      setCurrentObjective('')
       setControllingTabId(null)
       broadcastState(null)
       resetDynamicFavicon()
@@ -558,6 +630,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
     // 2. Grava a sessão com status "completa"
     let createdSession: SessionRecord | null = null
+    const activeObjective = current.objective || currentObjectiveRef.current || ''
     try {
       createdSession = await recordSession(
         current.task,
@@ -565,6 +638,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         new Date(),
         minutes,
         'completa',
+        undefined,
+        activeObjective,
       )
     } catch (err) {
       console.error('Erro ao gravar sessão no início da pausa:', err)
@@ -573,7 +648,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     const taskLabel = current.task?.title ? ` em '${current.task.title}'` : ''
     toast({
       title: `Bloco ${current.currentBlock}/${current.totalBlocks} concluído!${taskLabel}`,
-      description: 'Hora do descanso. O que foi feito nesse bloco?',
+      description: 'Hora do descanso. Registre o veredito e anotações do bloco.',
     })
 
     // 3. Prompt discreto não-bloqueante de nota durante a pausa
@@ -584,6 +659,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         durationMinutes: Math.round(minutes),
         blockNumber: current.currentBlock,
         totalBlocks: current.totalBlocks,
+        objective: activeObjective,
+        isEarlyInterrupted: false,
       })
     }
 
@@ -648,9 +725,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     })
   }, [broadcastState])
 
-  // Iniciar timer com um preset opcional e tarefa opcional
+  // Iniciar timer com um preset opcional, tarefa opcional e objetivo opcional
   const start = useCallback(
-    async (task?: TaskRecord | null, customPreset?: ActivePreset | FocusPresetRecord) => {
+    async (
+      task?: TaskRecord | null,
+      customPreset?: ActivePreset | FocusPresetRecord,
+      initialObjective?: string,
+    ) => {
       unlockAudioContext()
       playFocusStartSound() // Som de início
 
@@ -662,6 +743,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       const effectiveTask = task !== undefined ? task : (selectedTaskRef.current ?? null)
       setSelectedTask(effectiveTask)
+
+      const effectiveObjective =
+        initialObjective !== undefined
+          ? initialObjective.trim()
+          : (currentObjectiveRef.current || effectiveTask?.title || '').trim()
+
+      setCurrentObjective(effectiveObjective)
 
       let chosenPreset = activePresetRef.current
       if (customPreset) {
@@ -689,6 +777,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       setNow(Date.now())
       const newState: PomodoroState = {
         task: effectiveTask,
+        objective: effectiveObjective,
         status: 'rodando',
         phase: 'foco',
         currentBlock: 1,
@@ -717,9 +806,11 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         // Se estava inativo, inicia com o preset atual e tarefa pendente selecionada
         playFocusStartSound()
         const initialTask = selectedTaskRef.current ?? null
+        const initialObj = (currentObjectiveRef.current || initialTask?.title || '').trim()
         const totalSec = activePresetRef.current.workMinutes * 60
         const fresh: PomodoroState = {
           task: initialTask,
+          objective: initialObj,
           status: 'rodando',
           phase: 'foco',
           currentBlock: 1,
@@ -770,32 +861,84 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     unlockAudioContext()
     setState(null)
     setSelectedTask(null)
+    setCurrentObjective('')
     setControllingTabId(null)
     broadcastState(null)
     resetDynamicFavicon()
   }, [broadcastState])
 
-  // Envio e descarte da nota pós-foco
+  // Envio e descarte da nota pós-foco (suporta formato simples de string ou objeto completo com 2 perguntas + veredito)
   const submitPendingNote = useCallback(
-    async (noteText: string) => {
+    async (
+      payload:
+        | {
+            doneText?: string
+            nextText?: string
+            note?: string
+            outcomeStatus?: SessionRecord['outcome_status']
+            objective?: string
+          }
+        | string,
+    ) => {
       const currentPending = pendingNoteRef.current || pendingNote
       if (!currentPending) return
-      const trimmed = noteText.trim()
-      if (trimmed) {
-        try {
-          await updateSessionNote(currentPending.sessionId, trimmed)
+
+      let finalNote = ''
+      let finalOutcome: SessionRecord['outcome_status'] | undefined
+      let finalObjective: string | undefined
+
+      if (typeof payload === 'string') {
+        finalNote = payload.trim()
+      } else {
+        const parts: string[] = []
+        if (payload.doneText && payload.doneText.trim()) {
+          parts.push(`Feito: ${payload.doneText.trim()}`)
+        }
+        if (payload.nextText && payload.nextText.trim()) {
+          parts.push(`Próximo bloco: ${payload.nextText.trim()}`)
+        }
+        if (parts.length > 0) {
+          finalNote = parts.join(' \n')
+        } else if (payload.note && payload.note.trim()) {
+          finalNote = payload.note.trim()
+        }
+        finalOutcome = payload.outcomeStatus
+        finalObjective = payload.objective
+      }
+
+      try {
+        const updateData: Record<string, unknown> = {}
+        if (finalNote) {
+          updateData.note = finalNote.slice(0, 500)
+        }
+        if (finalOutcome) {
+          updateData.outcome_status = finalOutcome
+        }
+        if (finalObjective !== undefined && finalObjective.trim()) {
+          updateData.objective = finalObjective.trim().slice(0, 300)
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await pb
+            .collection<SessionRecord>('sessions')
+            .update(currentPending.sessionId, updateData)
           toast({
-            title: 'Nota de foco registrada',
-            description: trimmed.length > 50 ? `${trimmed.slice(0, 50)}...` : trimmed,
-          })
-        } catch (err) {
-          console.error('Erro ao atualizar nota da sessão:', err)
-          toast({
-            title: 'Erro ao salvar nota da sessão',
-            variant: 'destructive',
+            title: 'Registro de foco atualizado',
+            description: finalNote
+              ? finalNote.length > 50
+                ? `${finalNote.slice(0, 50)}...`
+                : finalNote
+              : 'Veredito gravado com sucesso.',
           })
         }
+      } catch (err) {
+        console.error('Erro ao atualizar nota/veredito da sessão:', err)
+        toast({
+          title: 'Erro ao salvar nota da sessão',
+          variant: 'destructive',
+        })
       }
+
       setPendingNote(null)
     },
     [pendingNote],
@@ -826,17 +969,36 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       }
       const isComplete = current.isOvertime || elapsed >= current.totalDurationSeconds - 1
 
+      let savedSession: SessionRecord | null = null
+      const activeObjective = current.objective || currentObjectiveRef.current || ''
+
       if (elapsed > 0) {
         try {
-          await recordSession(
+          savedSession = await recordSession(
             current.task,
             current.startedAt,
             new Date(),
             elapsed / 60,
             isComplete ? 'completa' : 'interrompida',
+            undefined,
+            activeObjective,
           )
         } catch (err) {
           console.error('Erro ao registrar sessão no skip:', err)
+        }
+
+        // DISPARO DE NOTA PÓS-FOCO EM skipToNextPhase():
+        if (savedSession) {
+          const roundedMins = Math.max(1, Math.round(elapsed / 60))
+          setPendingNote({
+            sessionId: savedSession.id,
+            taskTitle: current.task?.title,
+            durationMinutes: roundedMins,
+            blockNumber: current.currentBlock,
+            totalBlocks: current.totalBlocks,
+            objective: activeObjective,
+            isEarlyInterrupted: !isComplete && elapsed < 60,
+          })
         }
       }
 
@@ -928,6 +1090,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       selectedTask,
+      currentObjective,
+      setCurrentObjective,
       seconds,
       overtimeSeconds,
       isOvertime,
@@ -938,6 +1102,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       finish,
       discard,
       selectTask,
+      setObjectiveForRunningBlock,
       skipToNextPhase,
       startBreakFromOvertime,
       startNextBlockFromBreak,
@@ -950,6 +1115,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     [
       state,
       selectedTask,
+      currentObjective,
       seconds,
       overtimeSeconds,
       isOvertime,
@@ -960,6 +1126,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       finish,
       discard,
       selectTask,
+      setObjectiveForRunningBlock,
       skipToNextPhase,
       startBreakFromOvertime,
       startNextBlockFromBreak,
