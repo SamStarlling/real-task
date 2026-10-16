@@ -1114,16 +1114,16 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   </button>
                 </div>
 
-                {/* Veredito de 1 toque: se o bloco tinha objetivo */}
+                {/* Veredito de 1 toque: selo visual padronizado do objetivo pós-foco */}
                 {pendingNote.objective && (
-                  <div className="mb-2.5 bg-[#090A0E] border border-[#C5A880]/30 rounded-lg p-2">
+                  <div className="mb-2.5 bg-[#090A0E] border border-[rgba(197,168,128,0.3)] rounded-lg p-2.5">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Target size={12} className="text-[#C5A880] shrink-0" />
                       <span className="font-['Space_Mono'] text-[10px] font-bold uppercase tracking-wider text-[#C5A880]">
                         OBJETIVO DO BLOCO
                       </span>
                     </div>
-                    <div className="text-xs text-[#F4F4F6] font-medium mb-2 pl-4 border-l-2 border-[#C5A880]/40 break-words">
+                    <div className="text-xs text-[#F4F4F6] font-medium mb-2.5 pl-3 border-l-2 border-[#C5A880] break-words leading-relaxed font-['Plus_Jakarta_Sans']">
                       "{pendingNote.objective}"
                     </div>
 

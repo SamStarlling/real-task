@@ -9,9 +9,11 @@ export function PomodoroWidget() {
     selectedTask,
     currentObjective,
     setCurrentObjective,
+    setObjectiveForRunningBlock,
     seconds,
     overtimeSeconds,
     isOvertime,
+    activePreset,
     toggle,
     finish,
     discard,
@@ -29,7 +31,7 @@ export function PomodoroWidget() {
     null,
   )
 
-  if (!state && !pendingNote) return null
+  if (!state && !pendingNote && !selectedTask) return null
 
   const minutes = Math.floor(seconds / 60)
   const remainingSec = seconds % 60
@@ -49,7 +51,7 @@ export function PomodoroWidget() {
       : state.phase === 'descanso_longo'
         ? `DESCANSO LONGO${isOvertime ? ' (EXCESSO)' : ''}`
         : `DESCANSO CURTO${isOvertime ? ' (EXCESSO)' : ''}`
-    : ''
+    : 'PRONTO PARA INICIAR'
 
   const handleConfirmNote = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -119,33 +121,33 @@ export function PomodoroWidget() {
             </button>
           </div>
 
-          {/* Veredito de 1 toque se havia objetivo (selo consistente com página) */}
+          {/* Veredito de 1 toque: selo visual padronizado do objetivo pós-foco */}
           {pendingNote.objective && (
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '5px',
+                gap: '6px',
                 background: '#090A0E',
-                border: '1px solid rgba(197, 168, 128, 0.25)',
-                borderRadius: '6px',
-                padding: '6px 8px',
+                border: '1px solid rgba(197, 168, 128, 0.3)',
+                borderRadius: '8px',
+                padding: '8px 10px',
               }}
             >
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
+                  gap: '5px',
                   fontFamily: "'Space Mono', monospace",
-                  fontSize: '9.5px',
+                  fontSize: '10px',
                   fontWeight: 700,
                   color: '#C5A880',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                 }}
               >
-                <Target size={10} style={{ color: '#C5A880', flexShrink: 0 }} />
+                <Target size={11} style={{ color: '#C5A880', flexShrink: 0 }} />
                 <span>OBJETIVO DO BLOCO</span>
               </div>
               <div
@@ -153,11 +155,11 @@ export function PomodoroWidget() {
                   fontSize: '11px',
                   color: '#F4F4F6',
                   fontWeight: 500,
-                  borderLeft: '2px solid rgba(197, 168, 128, 0.4)',
-                  paddingLeft: '6px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  borderLeft: '2px solid #C5A880',
+                  paddingLeft: '8px',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.4',
                 }}
                 title={pendingNote.objective}
               >
@@ -175,7 +177,7 @@ export function PomodoroWidget() {
                   type="button"
                   onClick={() => setSelectedVerdict('batido')}
                   style={{
-                    padding: '3px 4px',
+                    padding: '4px 6px',
                     fontSize: '10px',
                     fontFamily: "'Space Mono', monospace",
                     borderRadius: '4px',
@@ -185,15 +187,19 @@ export function PomodoroWidget() {
                     color: selectedVerdict === 'batido' ? '#090A0E' : '#F4F4F6',
                     cursor: 'pointer',
                     fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
                   }}
                 >
-                  ✓ Batido
+                  <Check size={11} /> Batido
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedVerdict('parcial')}
                   style={{
-                    padding: '3px 4px',
+                    padding: '4px 6px',
                     fontSize: '10px',
                     fontFamily: "'Space Mono', monospace",
                     borderRadius: '4px',
@@ -205,15 +211,19 @@ export function PomodoroWidget() {
                     color: selectedVerdict === 'parcial' ? '#090A0E' : '#F4F4F6',
                     cursor: 'pointer',
                     fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
                   }}
                 >
-                  ~ Parcial
+                  <span>~</span> Parcial
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedVerdict('nao_foi')}
                   style={{
-                    padding: '3px 4px',
+                    padding: '4px 6px',
                     fontSize: '10px',
                     fontFamily: "'Space Mono', monospace",
                     borderRadius: '4px',
@@ -225,9 +235,13 @@ export function PomodoroWidget() {
                     color: '#F4F4F6',
                     cursor: 'pointer',
                     fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px',
                   }}
                 >
-                  ✗ Não foi
+                  <X size={11} /> Não foi
                 </button>
               </div>
             </div>
@@ -319,16 +333,17 @@ export function PomodoroWidget() {
         </form>
       )}
 
-      {state && (
+      {/* Widget Ativo ou Pré-início com tarefa selecionada */}
+      {(state || selectedTask) && (
         <>
           <div className="eyebrow" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>{phaseLabel}</span>
-            <span style={{ opacity: 0.7 }}>{state.preset.name}</span>
+            <span style={{ opacity: 0.7 }}>{state?.preset?.name || activePreset.name}</span>
           </div>
-          <strong>{state.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
+          <strong>{state?.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
 
-          {/* Âncora anti-drift no widget flutuante (pill refinada com borda champagne) */}
-          {state.objective && (
+          {/* Âncora anti-drift no widget flutuante (pill refinada com borda champagne e tooltip) */}
+          {state?.objective ? (
             <div
               style={{
                 display: 'inline-flex',
@@ -347,7 +362,12 @@ export function PomodoroWidget() {
               }}
               title={`Objetivo do Bloco: ${state.objective}`}
             >
-              <Target size={10} style={{ color: '#C5A880', flexShrink: 0 }} />
+              <span
+                style={{ display: 'inline-flex', cursor: 'help' }}
+                title={`Objetivo do Bloco: ${state.objective}`}
+              >
+                <Target size={10} style={{ color: '#C5A880', flexShrink: 0 }} />
+              </span>
               <span
                 style={{
                   overflow: 'hidden',
@@ -359,7 +379,74 @@ export function PomodoroWidget() {
                 {state.objective}
               </span>
             </div>
+          ) : (
+            /* Campo de definição do objetivo do bloco: rótulo OBJETIVO DO BLOCO em Space Mono maiúsculo, champagne #C5A880, valor editável */
+            <div style={{ marginTop: '4px', marginBottom: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  marginBottom: '4px',
+                }}
+              >
+                <span
+                  style={{ display: 'inline-flex', cursor: 'help' }}
+                  title={`Objetivo do Bloco: ${currentObjective || selectedTask?.title || 'Definir objetivo'}`}
+                >
+                  <Target size={11} style={{ color: '#C5A880', flexShrink: 0 }} />
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#C5A880',
+                  }}
+                >
+                  OBJETIVO DO BLOCO
+                </span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#090A0E',
+                  border: '1px solid rgba(197, 168, 128, 0.25)',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                }}
+              >
+                <input
+                  type="text"
+                  maxLength={300}
+                  value={currentObjective}
+                  onChange={(e) => {
+                    setCurrentObjective(e.target.value)
+                    if (state) {
+                      setObjectiveForRunningBlock(e.target.value)
+                    }
+                  }}
+                  placeholder={
+                    selectedTask?.title || 'O que deve existir ao fim do bloco? (opcional)'
+                  }
+                  title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 0,
+                    outline: 'none',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontSize: '11px',
+                    color: '#F4F4F6',
+                  }}
+                />
+              </div>
+            </div>
           )}
+
           {isReadOnlyTab && (
             <div
               style={{
@@ -379,7 +466,7 @@ export function PomodoroWidget() {
           )}
 
           {/* Botão de transição manual em modo de excesso */}
-          {isOvertime && !isReadOnlyTab && (
+          {state && isOvertime && !isReadOnlyTab && (
             <div style={{ margin: '6px 0' }}>
               {state.phase === 'foco' ? (
                 <button
@@ -443,17 +530,35 @@ export function PomodoroWidget() {
               <>
                 <button
                   className="primary icon"
-                  onClick={toggle}
-                  title={state.status === 'rodando' ? 'Pausar' : 'Retomar'}
+                  onClick={() => {
+                    if (!state) {
+                      const objToSave = currentObjective.trim() || selectedTask?.title || ''
+                      start(selectedTask, undefined, objToSave)
+                    } else {
+                      toggle()
+                    }
+                  }}
+                  title={
+                    !state ? 'Iniciar foco' : state.status === 'rodando' ? 'Pausar' : 'Retomar'
+                  }
                 >
-                  {state.status === 'rodando' ? <Pause /> : <Play />}
+                  {state && state.status === 'rodando' ? <Pause /> : <Play />}
                 </button>
-                <button className="icon" onClick={() => finish()} title="Encerrar e registrar">
-                  <Square />
-                </button>
-                <button className="icon" onClick={discard} title="Descartar">
-                  <X />
-                </button>
+                {state && (
+                  <>
+                    <button className="icon" onClick={() => finish()} title="Encerrar e registrar">
+                      <Square />
+                    </button>
+                    <button className="icon" onClick={discard} title="Descartar">
+                      <X />
+                    </button>
+                  </>
+                )}
+                {!state && selectedTask && (
+                  <button className="icon" onClick={discard} title="Descartar seleção">
+                    <X />
+                  </button>
+                )}
               </>
             )}
           </div>
