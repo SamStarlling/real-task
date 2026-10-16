@@ -31,6 +31,7 @@ const TOC_ITEMS: TocItem[] = [
   { id: 'focar', num: '05', title: 'Focar com Pomodoro' },
   { id: 'revisar', num: '06', title: 'Revisar semana e métricas' },
   { id: 'dicas-mobile', num: '07', title: 'Uso no celular' },
+  { id: 'mcp-planejamento', num: '08', title: 'Planejamento via IA (MCP)' },
 ]
 
 export function UserGuide() {
@@ -1012,6 +1013,82 @@ export function UserGuide() {
                     Favoritos, Projetos e Etiquetas.
                   </p>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* TAREFA 08: PLANEJAMENTO MASSIVO VIA MCP (LLM) */}
+          <section id="mcp-planejamento" className="scroll-mt-6">
+            <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
+              <span className="font-mono text-xl font-bold text-[#C5A880]">08</span>
+              <div>
+                <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
+                  Planejamento Massivo via IA (Servidor MCP com Claude & Gemini)
+                </h2>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                  Conecte seu modelo de linguagem favorito para gerenciar projetos, seções,
+                  descrições ricas e filtros salvos
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p>
+                No Barbosa System, o planejamento de rotinas, projetos e blocos não precisa ser
+                feito manualmente clique a clique na tela. Com a{' '}
+                <strong>Etapa 3 do Servidor MCP</strong>, você conecta modelos como{' '}
+                <strong>Claude Desktop</strong> ou <strong>Gemini</strong> diretamente ao seu
+                backend para orquestrar tarefas com profundidade executiva:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <strong className="block text-xs font-semibold text-[#F4F4F6] mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#C5A880]" />
+                    Projetos & Seções em Lote
+                  </strong>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Peça ao LLM para criar um Ciclo de 12 Semanas com meta mensurável e frentes de
+                    trabalho estruturadas em seções (ex.: <em>Saúde</em>, <em>Sistemas</em>,{' '}
+                    <em>Prospecção</em>). O MCP cria o projeto e distribui tarefas nas seções
+                    automaticamente.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <strong className="block text-xs font-semibold text-[#F4F4F6] mb-2 flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-[#C5A880]" />
+                    Filtros Salvos & Visões Dinâmicas
+                  </strong>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    O LLM pode criar e fixar filtros salvos na sua barra lateral nos 5 eixos guiados
+                    (ex.: <em>Atrasadas & P1</em>, <em>Revisão Semanal</em>) e rodar auditorias
+                    pontuais para identificar gargalos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#090A0E] border border-[#27272A] space-y-2">
+                <strong className="text-xs font-mono uppercase tracking-wider text-[#C5A880] block">
+                  Capacidades da Etapa 3 MCP para o seu Copiloto de Produtividade:
+                </strong>
+                <ul className="list-disc list-inside space-y-1.5 text-xs text-[#D4D4D8]">
+                  <li>
+                    <strong>Descrição com Contexto Rico:</strong> o LLM anota notas técnicas,
+                    checklists e links para seus vaults no Obsidian (<code>obsidian://</code>) no
+                    campo de descrição das tarefas (até 5000 caracteres).
+                  </li>
+                  <li>
+                    <strong>Veredito do Bloco Pomodoro:</strong> registre sessões de foco pelo chat
+                    do LLM avaliando se o objetivo do bloco foi <em>batido</em>, <em>parcial</em> ou{' '}
+                    <em>não foi</em>, com quebra de tempo por tarefa no gráfico Donut.
+                  </li>
+                  <li>
+                    <strong>Mesclagem de Etiquetas:</strong> solicite a unificação de etiquetas
+                    duplicadas pelo chat (ex.: mesclar <code>@dev</code> em <code>@sistemas</code>)
+                    preservando tarefas intactas.
+                  </li>
+                </ul>
               </div>
             </div>
           </section>

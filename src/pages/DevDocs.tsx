@@ -284,25 +284,25 @@ export function DevDocs() {
             </div>
           </section>
 
-          {/* SEÇÃO 02: AS 10 FERRAMENTAS MCP */}
+          {/* SEÇÃO 02: AS 12 FERRAMENTAS MCP */}
           <section id="mcp-ferramentas" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
               <span className="font-mono text-xl font-bold text-[#C5A880]">02</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Referência das 10 Ferramentas MCP Nativas
+                  Referência das Ferramentas MCP Nativas (Etapa 3 MCP)
                 </h2>
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
-                  Operações idempotentes, auditáveis e executadas no SQLite sob Row-Level Security
+                  12 ferramentas para planejamento executivo completo via LLMs (Claude & Gemini)
                 </p>
               </div>
             </div>
 
-            {/* TABELA COMPARATIVA RESUMIDA DAS 10 FERRAMENTAS */}
+            {/* TABELA COMPARATIVA RESUMIDA DAS FERRAMENTAS */}
             <div className="rounded-xl border border-[#27272A] overflow-hidden bg-[#12141C] mb-8">
               <div className="p-3.5 bg-[#0E1015] border-b border-[#1F2028]">
                 <span className="font-mono text-xs uppercase tracking-wider text-[#F4F4F6] font-semibold">
-                  Tabela Resumo: As 10 Ferramentas do Servidor MCP
+                  Tabela Resumo: Servidor MCP do Barbosa System (12 Ferramentas)
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -317,6 +317,28 @@ export function DevDocs() {
                   </thead>
                   <tbody className="divide-y divide-[#1F2028]">
                     <tr>
+                      <td className="p-3 font-mono text-[#C5A880] font-bold">manage_projects</td>
+                      <td className="p-3 text-[#E4E4E7]">Gestão total de projetos & seções</td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        action (list, create, archive, delete, create_section...)
+                      </td>
+                      <td className="p-3 text-[#A1A1AA]">
+                        Projetos, seções e tarefas devolvidas à Inbox na exclusão
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-mono text-[#C5A880] font-bold">
+                        manage_saved_filters
+                      </td>
+                      <td className="p-3 text-[#E4E4E7]">Filtros salvos guiados nos 5 eixos</td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        action (list, create, update, pin, execute), criteria
+                      </td>
+                      <td className="p-3 text-[#A1A1AA]">
+                        Filtros salvos e tarefas que batem com os critérios
+                      </td>
+                    </tr>
+                    <tr>
                       <td className="p-3 font-mono text-[#C5A880] font-bold">capture_task</td>
                       <td className="p-3 text-[#E4E4E7]">Parser NL completo no servidor</td>
                       <td className="p-3 font-mono text-[#A1A1AA]">text (string)</td>
@@ -330,39 +352,47 @@ export function DevDocs() {
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880] font-bold">manage_tags</td>
-                      <td className="p-3 text-[#E4E4E7]">Gestão completa de tags & 80/20</td>
+                      <td className="p-3 text-[#E4E4E7]">Gestão de tags, 80/20 & mesclagem</td>
                       <td className="p-3 font-mono text-[#A1A1AA]">
-                        action (list, pin, create, etc)
+                        action (list, pin, create, merge...), target_tag_id
                       </td>
-                      <td className="p-3 text-[#A1A1AA]">Tags com contagem e status pinned</td>
+                      <td className="p-3 text-[#A1A1AA]">
+                        Tags com contagem e resultado de mesclagem
+                      </td>
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">create_task</td>
-                      <td className="p-3 text-[#E4E4E7]">Criação estruturada direta</td>
+                      <td className="p-3 text-[#E4E4E7]">Criação com descrição, projeto e seção</td>
                       <td className="p-3 font-mono text-[#A1A1AA]">
-                        title, due_date, priority, tags...
+                        title, description, list, section, due_date, priority...
                       </td>
                       <td className="p-3 text-[#A1A1AA]">Objeto TaskRecord criado</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">list_tasks</td>
-                      <td className="p-3 text-[#E4E4E7]">Consulta com filtros</td>
-                      <td className="p-3 font-mono text-[#A1A1AA]">view, date, tag, list, done</td>
+                      <td className="p-3 text-[#E4E4E7]">
+                        Consulta com filtros (overdue, P1-P4, seção)
+                      </td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        view, overdue, priority, list, section, tag
+                      </td>
                       <td className="p-3 text-[#A1A1AA]">Lista de tarefas filtradas</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">complete_task</td>
                       <td className="p-3 text-[#E4E4E7]">Conclusão + avanço de recorrência</td>
-                      <td className="p-3 font-mono text-[#A1A1AA]">task_id</td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">id</td>
                       <td className="p-3 text-[#A1A1AA]">
                         Tarefa fechada + nova instância (se recorrente)
                       </td>
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">update_task</td>
-                      <td className="p-3 text-[#E4E4E7]">Atualização parcial de campos</td>
+                      <td className="p-3 text-[#E4E4E7]">
+                        Atualização incluindo descrição e seção
+                      </td>
                       <td className="p-3 font-mono text-[#A1A1AA]">
-                        id, title, due_time, priority...
+                        id, title, description, section, list...
                       </td>
                       <td className="p-3 text-[#A1A1AA]">Tarefa atualizada</td>
                     </tr>
@@ -375,16 +405,34 @@ export function DevDocs() {
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">get_focus_summary</td>
                       <td className="p-3 text-[#E4E4E7]">Métricas de foco & Melhor Dia</td>
-                      <td className="p-3 font-mono text-[#A1A1AA]">period (hoje, semana, todos)</td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        period (hoje, semana, 30dias, todos), include_breakdown
+                      </td>
                       <td className="p-3 text-[#A1A1AA]">Minutos, sessões e recorde histórico</td>
                     </tr>
                     <tr>
-                      <td className="p-3 font-mono text-[#C5A880]">log_focus_session</td>
-                      <td className="p-3 text-[#E4E4E7]">Registro de sessão Pomodoro</td>
-                      <td className="p-3 font-mono text-[#A1A1AA]">
-                        duration_minutes, task_id?, note?
+                      <td className="p-3 font-mono text-[#C5A880]">get_focus_stats</td>
+                      <td className="p-3 text-[#E4E4E7]">
+                        Estatísticas com quebra para gráfico Donut
                       </td>
-                      <td className="p-3 text-[#A1A1AA]">Sessão criada e tempo somado na tarefa</td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        period (hoje, semana, 30dias, todos)
+                      </td>
+                      <td className="p-3 text-[#A1A1AA]">
+                        Top tarefas por tempo, % objetivos batidos e conclusão
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 font-mono text-[#C5A880]">log_focus_session</td>
+                      <td className="p-3 text-[#E4E4E7]">
+                        Registro Pomodoro com objetivo & veredito
+                      </td>
+                      <td className="p-3 font-mono text-[#A1A1AA]">
+                        duration_minutes, task_id?, note?, objective?, outcome_status?
+                      </td>
+                      <td className="p-3 text-[#A1A1AA]">
+                        Sessão criada com veredito (batido/parcial/nao_foi)
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -393,6 +441,71 @@ export function DevDocs() {
 
             {/* DETALHAMENTO DE CADA FERRAMENTA */}
             <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/40">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <code className="text-[#C5A880] font-bold text-sm">manage_projects</code>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
+                    Novo na Etapa 3 MCP
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
+                  Gerenciamento integral de projetos (coleção <code>lists</code>) e seções (
+                  <code>project_sections</code>). Permite listar com contagens de tarefas
+                  abertas/concluídas, criar com cor hex, objetivo/meta (<code>goal</code>),
+                  descrição rica com links Obsidian, favoritos, sub-projetos hierárquicos e exclusão
+                  segura (devolve tarefas à Inbox com <code>list=null</code>). Permite criar
+                  frentes/áreas em seções (ex.: Saúde, Sistemas, Diário).
+                </p>
+                <CopyableBlock
+                  title="Exemplo: Criar projeto com meta e seções via MCP"
+                  code={`{
+  "name": "manage_projects",
+  "arguments": {
+    "action": "create",
+    "name": "Ciclo 12 Semanas",
+    "color": "#C5A880",
+    "goal": "Lançar MVP e faturar R$10.000",
+    "description": "Notas centrais em obsidian://open?vault=Vault&file=Ciclo-12-Semanas",
+    "favorite": true
+  }
+}`}
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/40">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <code className="text-[#C5A880] font-bold text-sm">manage_saved_filters</code>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
+                    Novo na Etapa 3 MCP
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
+                  Gerencia e executa filtros salvos (coleção <code>saved_filters</code>) nos 5 eixos
+                  guiados do Barbosa System: período (<code>today</code>, <code>tomorrow</code>,{' '}
+                  <code>this_week</code>, <code>overdue</code>, <code>no_date</code>), prioridade
+                  (0..4 ou <code>any</code>), etiqueta, projeto e status (<code>open</code>/
+                  <code>done</code>/<code>any</code>). Permite fixar na sidebar (<code>pinned</code>
+                  ) e rodar o filtro no servidor via <code>action: "execute"</code>.
+                </p>
+                <CopyableBlock
+                  title="Exemplo: Criar e fixar filtro de tarefas atrasadas e urgentes"
+                  code={`{
+  "name": "manage_saved_filters",
+  "arguments": {
+    "action": "create",
+    "name": "Críticas Atrasadas",
+    "color": "#E57373",
+    "pinned": true,
+    "criteria": {
+      "period": "overdue",
+      "priority": 1,
+      "status": "open"
+    }
+  }
+}`}
+                />
+              </div>
+
               <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/40">
                 <div className="flex items-center gap-2 mb-1.5">
                   <code className="text-[#C5A880] font-bold text-sm">capture_task</code>
@@ -497,20 +610,40 @@ export function DevDocs() {
 
             <div className="space-y-3">
               <CopyableBlock
+                title="Prompt: Criar projeto completo com meta, seções e notas Obsidian"
+                code="Crie o projeto 'Lançamento Q3' com a meta 'Faturar R$50k', descrição com link para obsidian://open?vault=Principal&file=Q3-Roadmap, e monte 3 seções: 'Engenharia', 'Marketing' e 'Vendas'."
+              />
+              <CopyableBlock
+                title="Prompt: Planejamento executivo de tarefas com descrição e seção"
+                code="Crie uma tarefa 'Arquitetar servidor de notificações' dentro do projeto 'Lançamento Q3', seção 'Engenharia', prioridade P1, estimada em 45m, com descrição detalhada contendo requisitos técnicos e link de doc."
+              />
+              <CopyableBlock
+                title="Prompt: Visão combinada de tarefas atrasadas e urgentes"
+                code="Liste todas as tarefas pendentes que estão atrasadas com prioridade P1 (Urgente)."
+              />
+              <CopyableBlock
+                title="Prompt: Criar filtro salvo e fixar na barra lateral"
+                code="Crie um filtro salvo chamado 'Foco Imediato' com prioridade P1, período 'today', e fixe na minha sidebar."
+              />
+              <CopyableBlock
+                title="Prompt: Registrar sessão de foco com âncora e veredito"
+                code="Registre um bloco de foco de 50 minutos na tarefa 'Arquitetar servidor de notificações', com objetivo 'Finalizar spec de schemas' e veredito 'batido'."
+              />
+              <CopyableBlock
+                title="Prompt: Estatísticas de foco do período e donut"
+                code="Me mostre as estatísticas detalhadas de foco dos últimos 7 dias, taxa de objetivos batidos e a divisão de tempo por tarefa."
+              />
+              <CopyableBlock
+                title="Prompt: Mesclagem de etiquetas duplicadas"
+                code="Mescle a etiqueta 'backend-dev' para a etiqueta 'sistemas' e remova a etiqueta antiga."
+              />
+              <CopyableBlock
                 title="Prompt: Captura com linguagem natural e metadados"
                 code="Capture uma nova tarefa: 'Revisar contrato da parceria amanhã às 14h p1 @trabalho #juridico 45m'"
               />
               <CopyableBlock
                 title="Prompt: Desdobrar tarefa existente em checklist"
                 code="Na tarefa de 'Revisar contrato', adicione 3 sub-tarefas: 1. Checar cláusula de rescisão, 2. Alinhar honorários, 3. Disparar e-mail de fechamento."
-              />
-              <CopyableBlock
-                title="Prompt: Consultar prioridades do dia"
-                code="Quais são as minhas tarefas de Hoje e qual é a lista do meu Big3 prioritário?"
-              />
-              <CopyableBlock
-                title="Prompt: Consultar recorde e foco acumulado"
-                code="Quanto tempo de foco eu acumulei esta semana e qual é meu melhor dia histórico registrado?"
               />
               <CopyableBlock
                 title="Prompt: Concluir tarefa recorrente"
@@ -1004,7 +1137,7 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas (v0.0.40–v0.0.53)
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.54)
                 </h2>{' '}
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
                   Histórico de arquitetura, engenharia reversa Todoist/TickTick e refinamentos

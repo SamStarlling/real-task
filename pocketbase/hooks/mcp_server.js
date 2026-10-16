@@ -787,19 +787,19 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'manage_tags',
         description:
-          'Gerencia etiquetas/tags do usuário: listar com contagem de tarefas ("list"), criar nova etiqueta ("create"), renomear ("rename"), alterar cor ("set_color"), excluir desassociando de tarefas ("delete") e alternar selo de foco prioritário 80/20 ("pin" ou "unpin").',
+          'Gerencia etiquetas/tags do usuário: listar com contagem de abertas e cor ("list"), criar nova etiqueta ("create"), renomear ("rename"), alterar cor ("set_color"), excluir desassociando de tarefas ("delete"), alternar selo de foco prioritário 80/20 ("pin" ou "unpin") e mesclar etiquetas ("merge").',
         inputSchema: {
           type: 'object',
           properties: {
             action: {
               type: 'string',
-              enum: ['list', 'create', 'rename', 'set_color', 'delete', 'pin', 'unpin'],
+              enum: ['list', 'create', 'rename', 'set_color', 'delete', 'pin', 'unpin', 'merge'],
               description: 'Operação a ser executada sobre as etiquetas do usuário.',
             },
             id: {
               type: 'string',
               description:
-                'ID da etiqueta (obrigatório para rename, set_color, delete, pin, unpin).',
+                'ID da etiqueta (obrigatório para rename, set_color, delete, pin, unpin, merge como origem).',
             },
             name: {
               type: 'string',
@@ -811,6 +811,158 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
               description:
                 'Cor hexadecimal da etiqueta (ex: "#C5A880"). Opcional para "create", obrigatório para "set_color".',
             },
+            target_tag_id: {
+              type: 'string',
+              description:
+                'ID ou nome da etiqueta destino para action "merge" (as tarefas da etiqueta de origem serão migradas para esta).',
+            },
+            delete_source: {
+              type: 'boolean',
+              description:
+                'Se true (padrão), exclui a etiqueta de origem após a mesclagem. Se false, mantém a etiqueta de origem vazia.',
+            },
+          },
+          required: ['action'],
+        },
+      },
+      {
+        name: 'manage_projects',
+        description:
+          'Gerenciamento completo de projetos Todoist (coleção lists) e seções (project_sections) para o usuário autenticado. Ações: listar projetos com contagens ("list"), criar projeto ("create"), atualizar ("update"), arquivar/desarquivar ("archive", "unarchive"), alternar favorito ("toggle_favorite"), excluir com segurança devolvendo tarefas à Inbox ("delete"), listar seções ("list_sections"), criar seção ("create_section"), atualizar seção ("update_section") e excluir seção ("delete_section").',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            action: {
+              type: 'string',
+              enum: [
+                'list',
+                'create',
+                'update',
+                'archive',
+                'unarchive',
+                'toggle_favorite',
+                'delete',
+                'list_sections',
+                'create_section',
+                'update_section',
+                'delete_section',
+              ],
+              description: 'Ação de gerenciamento de projetos ou seções a executar.',
+            },
+            id: {
+              type: 'string',
+              description:
+                'ID do projeto (para update, archive, unarchive, toggle_favorite, delete, list_sections) ou ID da seção (para update_section, delete_section).',
+            },
+            name: {
+              type: 'string',
+              description: 'Nome do projeto ou seção (obrigatório para create e create_section).',
+            },
+            color: {
+              type: 'string',
+              description: 'Cor hexadecimal do projeto (ex: "#C5A880"). Opcional.',
+            },
+            goal: {
+              type: 'string',
+              description:
+                'Objetivo mensurável do ciclo (ex: "Faturar R$10k em 12 semanas"). Opcional.',
+            },
+            description: {
+              type: 'string',
+              description:
+                'Descrição do projeto. Pode conter links web ou links obsidian://. Opcional.',
+            },
+            favorite: {
+              type: 'boolean',
+              description: 'Se o projeto está marcado como favorito. Opcional.',
+            },
+            parent: {
+              type: 'string',
+              description:
+                'ID ou nome de outro projeto para criar sub-projeto aninhado (ou "" para desvincular).',
+            },
+            project_id: {
+              type: 'string',
+              description:
+                'ID ou nome do projeto ao qual a seção pertence (para create_section ou list_sections).',
+            },
+            order: {
+              type: 'integer',
+              description: 'Ordem de exibição do projeto ou seção. Opcional.',
+            },
+            include_archived: {
+              type: 'boolean',
+              description:
+                'Se true, inclui projetos arquivados na listagem "list" (padrão false: apenas ativos).',
+            },
+          },
+          required: ['action'],
+        },
+      },
+      {
+        name: 'manage_saved_filters',
+        description:
+          'Gerencia e executa filtros salvos guiados (coleção saved_filters). Ações: "list" (listar filtros do usuário), "create" (criar filtro com criteria nos 5 eixos), "update" (atualizar nome, cor, criteria, ordem), "pin" / "unpin" (fixar na seção Favoritos da sidebar), "delete" (remover filtro) e "execute" (retorna tarefas que batem com o critério do filtro salvo ou de um criteria inline).',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            action: {
+              type: 'string',
+              enum: ['list', 'create', 'update', 'pin', 'unpin', 'delete', 'execute'],
+              description: 'Operação a executar sobre os filtros salvos.',
+            },
+            id: {
+              type: 'string',
+              description:
+                'ID do filtro salvo (obrigatório para update, pin, unpin, delete; opcional para execute se passar criteria direto).',
+            },
+            name: {
+              type: 'string',
+              description: 'Nome do filtro salvo (obrigatório para action "create").',
+            },
+            color: {
+              type: 'string',
+              description: 'Cor hexadecimal do filtro (ex: "#C5A880"). Opcional.',
+            },
+            pinned: {
+              type: 'boolean',
+              description: 'Se o filtro deve ficar fixado na barra lateral.',
+            },
+            criteria: {
+              type: 'object',
+              properties: {
+                period: {
+                  type: 'string',
+                  enum: ['any', 'today', 'tomorrow', 'this_week', 'overdue', 'no_date'],
+                  description: 'Período temporal de vencimento.',
+                },
+                priority: {
+                  anyOf: [
+                    { type: 'string', enum: ['any'] },
+                    { type: 'integer', enum: [0, 1, 2, 3, 4] },
+                  ],
+                  description:
+                    'Prioridade da tarefa: 1=P1 urgente, 2=P2 alta, 3=P3 média, 4=P4 baixa, 0=sem prioridade, ou "any".',
+                },
+                tag: {
+                  type: 'string',
+                  description:
+                    'Nome ou ID da etiqueta, "any" (qualquer) ou "none" (tarefas sem etiqueta).',
+                },
+                project: {
+                  type: 'string',
+                  description:
+                    'Nome ou ID do projeto/lista, "any" (qualquer) ou "none" (tarefas sem projeto/Inbox).',
+                },
+                status: {
+                  type: 'string',
+                  enum: ['open', 'done', 'any'],
+                  description:
+                    'Status das tarefas: "open" (pendentes, padrão), "done" (concluídas) ou "any" (ambas).',
+                },
+              },
+              description: 'Objeto de critérios nos 5 eixos guiados do Barbosa System.',
+            },
           },
           required: ['action'],
         },
@@ -818,13 +970,19 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'create_task',
         description:
-          'Cria uma nova tarefa no Barbosa System para o usuário autenticado. Permite definir título, data de vencimento (YYYY-MM-DD), horário (HH:MM), prioridade (1=P1 urgente, 2=P2 alta, 3=P3 média, 4=P4 baixa), estimativa de minutos, lista (nome) e tags (nomes).',
+          'Cria uma nova tarefa no Barbosa System para o usuário autenticado. Permite definir título, descrição (até 5000 caracteres, com links web e obsidian://), data de vencimento (YYYY-MM-DD), horário (HH:MM), prioridade (1=P1 urgente, 2=P2 alta, 3=P3 média, 4=P4 baixa), estimativa de minutos, projeto/lista (nome ou id, criando se não existir), seção do projeto (nome ou id, criando se não existir dentro do projeto) e tags (nomes).',
         inputSchema: {
           type: 'object',
           properties: {
             title: {
               type: 'string',
               description: 'Título da tarefa (obrigatório).',
+            },
+            description: {
+              type: 'string',
+              maxLength: 5000,
+              description:
+                'Descrição detalhada da tarefa (até 5000 caracteres). Suporta links web e obsidian://. Opcional.',
             },
             due_date: {
               type: 'string',
@@ -851,7 +1009,12 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             list: {
               type: 'string',
               description:
-                'Nome da lista/projeto onde a tarefa será alocada (ex: "Trabalho", "Pessoal"). Se a lista não existir, será criada automaticamente. Opcional.',
+                'Nome ou ID do projeto onde a tarefa será alocada (ex: "Trabalho", "Ciclo 12 Semanas"). Se não existir, será criado automaticamente. Opcional.',
+            },
+            section: {
+              type: 'string',
+              description:
+                'Nome ou ID da seção dentro do projeto (ex: "Saúde", "Sistemas", "Diário"). Se não existir no projeto, será criada automaticamente. Opcional.',
             },
             tags: {
               type: 'array',
@@ -866,7 +1029,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'list_tasks',
         description:
-          'Lista tarefas do Barbosa System com múltiplos filtros opcionais: por data específica, visão temporal ("hoje", "amanhã", "inbox", "semana"), status concluído, nome da lista, nome da tag ou limite.',
+          'Lista tarefas do Barbosa System com múltiplos filtros opcionais: visão temporal ("hoje", "amanhã", "inbox", "semana"), data específica, atrasadas (overdue=true), prioridade específica (1..4), status concluído, nome ou id de lista/projeto, seção do projeto, nome de tag ou limite.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -880,13 +1043,27 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
               type: 'string',
               description: 'Data específica de vencimento no formato YYYY-MM-DD.',
             },
+            overdue: {
+              type: 'boolean',
+              description:
+                'Se true, retorna apenas tarefas atrasadas (due_date anterior a hoje e pendentes).',
+            },
+            priority: {
+              type: 'integer',
+              enum: [1, 2, 3, 4],
+              description: 'Filtrar por prioridade específica: 1=P1, 2=P2, 3=P3, 4=P4.',
+            },
             tag: {
               type: 'string',
               description: 'Filtrar por nome de etiqueta/tag.',
             },
             list: {
               type: 'string',
-              description: 'Filtrar por nome de lista/projeto.',
+              description: 'Filtrar por nome ou ID de lista/projeto.',
+            },
+            section: {
+              type: 'string',
+              description: 'Filtrar por nome ou ID de seção do projeto.',
             },
             done: {
               type: 'boolean',
@@ -920,7 +1097,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'update_task',
         description:
-          'Atualiza campos de uma tarefa existente: título, data, horário, prioridade, estimativa, lista ou tags.',
+          'Atualiza campos de uma tarefa existente: título, descrição (até 5000 chars), data, horário, prioridade, estimativa, lista/projeto, seção ou tags.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -931,6 +1108,12 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             title: {
               type: 'string',
               description: 'Novo título da tarefa.',
+            },
+            description: {
+              type: 'string',
+              maxLength: 5000,
+              description:
+                'Nova descrição detalhada da tarefa (até 5000 caracteres, com links web ou obsidian://).',
             },
             due_date: {
               type: 'string',
@@ -955,7 +1138,12 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             list: {
               type: 'string',
               description:
-                'Nome da nova lista (resolvida ou criada automaticamente) ou "" para desvincular.',
+                'Nome ou ID do novo projeto (resolvido ou criado) ou "" para desvincular (mover para Inbox).',
+            },
+            section: {
+              type: 'string',
+              description:
+                'Nome ou ID da nova seção dentro do projeto ou "" para desvincular da seção.',
             },
             tags: {
               type: 'array',
@@ -983,15 +1171,36 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'get_focus_summary',
         description:
-          'Retorna o resumo métrico de foco do usuário: total de minutos focados, número de sessões concluídas e — no período "todos" — o recorde absoluto de foco (melhor dia histórico) alinhado ao módulo best-day.',
+          'Retorna o resumo métrico de foco do usuário: total de minutos focados, número de sessões concluídas e — no período "todos" — o recorde absoluto de foco (melhor dia histórico) alinhado ao módulo best-day. Permite incluir quebra estatística detalhada (donut, taxa de completude, taxa de objetivos batidos e top tarefas por tempo).',
         inputSchema: {
           type: 'object',
           properties: {
             period: {
               type: 'string',
-              enum: ['hoje', 'semana', 'todos'],
+              enum: ['hoje', 'semana', '30dias', 'todos'],
               description:
-                'Período de agregação do foco: "hoje" (padrão), "semana" (últimos 7 dias) ou "todos" (histórico integral com melhor dia e recorde absoluto).',
+                'Período de agregação do foco: "hoje" (padrão), "semana" (últimos 7 dias), "30dias" (últimos 30 dias) ou "todos" (histórico integral).',
+            },
+            include_breakdown: {
+              type: 'boolean',
+              description:
+                'Se true, inclui estatísticas completas: quebra por tarefa (dados do donut), % de sessões completas, % de objetivos batidos e média por sessão.',
+            },
+          },
+        },
+      },
+      {
+        name: 'get_focus_stats',
+        description:
+          'Retorna estatísticas detalhadas de foco Pomodoro para um período (hoje, semana, 30dias, todos) com quebra por tarefa (dados do donut), tempo total focado, contagem de blocos, taxa de conclusão e taxa de objetivos batidos (veredito).',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            period: {
+              type: 'string',
+              enum: ['hoje', 'semana', '30dias', 'todos'],
+              description:
+                'Período de análise: "hoje", "semana" (últimos 7 dias), "30dias" ou "todos" (histórico completo). Padrão: "semana".',
             },
           },
         },
@@ -999,7 +1208,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       {
         name: 'log_focus_session',
         description:
-          'Registra manualmente uma sessão de foco concluída para o usuário. Permite associar a uma tarefa existente (atualizando seu tempo real) ou criar foco livre, com duração em minutos e nota opcional.',
+          'Registra manualmente uma sessão de foco concluída para o usuário. Permite associar a uma tarefa existente (atualizando seu tempo real) ou criar foco livre, com duração em minutos, nota opcional, objetivo do bloco e veredito do bloco ("batido", "parcial" ou "nao_foi").',
         inputSchema: {
           type: 'object',
           properties: {
@@ -1018,6 +1227,18 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
               maxLength: 500,
               description:
                 'Nota descritiva do que foi executado durante a sessão (máx. 500 caracteres). Opcional.',
+            },
+            objective: {
+              type: 'string',
+              maxLength: 300,
+              description:
+                'Objetivo formulado para o bloco de foco (âncora anti-drift, máx. 300 caracteres). Opcional.',
+            },
+            outcome_status: {
+              type: 'string',
+              enum: ['batido', 'parcial', 'nao_foi'],
+              description:
+                'Veredito do bloco: "batido" (atingiu o objetivo), "parcial" (parcialmente atingido) ou "nao_foi" (não atingido). Opcional.',
             },
           },
           required: ['duration_minutes'],
@@ -1633,34 +1854,1189 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         )
       }
 
+      // 3.7 MERGE: mesclar etiqueta origem na destino
+      if (action === 'merge') {
+        const targetIdOrName = String(args.target_tag_id || '').trim()
+        if (!targetIdOrName) {
+          return toolFail('O parâmetro "target_tag_id" é obrigatório para merge.')
+        }
+
+        let targetRecord = null
+        try {
+          targetRecord = $app.findFirstRecordByData('tags', 'id', targetIdOrName)
+        } catch (_) {}
+
+        if (!targetRecord) {
+          const cleanTargetName = targetIdOrName.replace(/^@/, '').trim().toLowerCase()
+          const candidateTags = $app.findRecordsByFilter(
+            'tags',
+            "user = '" + userId + "'",
+            '',
+            200,
+            0,
+          )
+          for (let i = 0; i < candidateTags.length; i++) {
+            if (candidateTags[i].getString('name').trim().toLowerCase() === cleanTargetName) {
+              targetRecord = candidateTags[i]
+              break
+            }
+          }
+        }
+
+        if (!targetRecord) {
+          return toolFail('Etiqueta destino não encontrada: ' + targetIdOrName)
+        }
+
+        if (targetRecord.getString('user') !== userId) {
+          return toolFail('Acesso negado: a etiqueta destino pertence a outro usuário.')
+        }
+
+        if (targetRecord.id === tagRecord.id) {
+          return toolFail('As etiquetas de origem e destino não podem ser as mesmas.')
+        }
+
+        const deleteSource = args.delete_source !== false
+        const sourceName = tagRecord.getString('name')
+        const targetName = targetRecord.getString('name')
+
+        // Buscar tarefas que possuem a tag de origem
+        const tasksWithSource = $app.findRecordsByFilter(
+          'tasks',
+          "user = '" + userId + "' && tags ~ '" + tagRecord.id + "'",
+          '',
+          1000,
+          0,
+        )
+
+        let tasksMigrated = 0
+        for (let i = 0; i < tasksWithSource.length; i++) {
+          const t = tasksWithSource[i]
+          const currentTags = t.getStringSlice('tags') || []
+          let updatedTags = currentTags.filter(function (tid) {
+            return tid !== tagRecord.id
+          })
+          if (updatedTags.indexOf(targetRecord.id) === -1) {
+            updatedTags.push(targetRecord.id)
+          }
+          t.set('tags', updatedTags)
+          $app.save(t)
+          tasksMigrated++
+        }
+
+        if (deleteSource) {
+          $app.delete(tagRecord)
+        }
+
+        return toolOk(
+          {
+            merged: true,
+            source_tag_id: tagRecord.id,
+            source_tag_name: sourceName,
+            target_tag_id: targetRecord.id,
+            target_tag_name: targetName,
+            tasks_migrated: tasksMigrated,
+            source_deleted: deleteSource,
+          },
+          'Mesclagem concluída: ' +
+            tasksMigrated +
+            ' tarefa(s) migradas de "@' +
+            sourceName +
+            '" para "@' +
+            targetName +
+            '".' +
+            (deleteSource ? ' Etiqueta de origem excluída.' : ''),
+        )
+      }
+
       return toolFail('Ação desconhecida para manage_tags: "' + action + '".')
     }
 
-    // FERRAMENTA EXISTENTE 1: create_task
+    // FERRAMENTA NOVA: manage_projects (Gerenciamento completo de projetos Todoist e seções)
+    if (toolName === 'manage_projects') {
+      const action = String(args.action || '')
+        .toLowerCase()
+        .trim()
+      if (!action) return toolFail('O parâmetro "action" é obrigatório.')
+
+      // 1. LIST: listar projetos com contagem de tarefas abertas/concluídas
+      if (action === 'list') {
+        const includeArchived = args.include_archived === true
+        let listFilter = "user = '" + userId + "'"
+        if (!includeArchived) {
+          listFilter += ' && archived = false'
+        }
+
+        const projectRecords = $app.findRecordsByFilter(
+          'lists',
+          listFilter,
+          '-pinned,-favorite,order,name',
+          200,
+          0,
+        )
+
+        // Contagem de tarefas abertas e concluídas por projeto
+        const userTasks = $app.findRecordsByFilter('tasks', "user = '" + userId + "'", '', 1000, 0)
+        const openCounts = {}
+        const doneCounts = {}
+        for (let i = 0; i < userTasks.length; i++) {
+          const pId = userTasks[i].getString('list')
+          if (!pId) continue
+          const isDone = userTasks[i].getBool('done')
+          if (isDone) {
+            doneCounts[pId] = (doneCounts[pId] || 0) + 1
+          } else {
+            openCounts[pId] = (openCounts[pId] || 0) + 1
+          }
+        }
+
+        const projectsResult = []
+        for (let j = 0; j < projectRecords.length; j++) {
+          const pr = projectRecords[j]
+          projectsResult.push({
+            id: pr.id,
+            name: pr.getString('name'),
+            color: pr.getString('color') || '#C5A880',
+            goal: pr.getString('goal') || null,
+            description: pr.getString('description') || null,
+            favorite: pr.getBool('favorite'),
+            archived: pr.getBool('archived'),
+            parent: pr.getString('parent') || null,
+            order: pr.getInt('order') || 10,
+            pinned: pr.getBool('pinned'),
+            open_tasks_count: openCounts[pr.id] || 0,
+            done_tasks_count: doneCounts[pr.id] || 0,
+          })
+        }
+
+        return toolOk(
+          { total: projectsResult.length, projects: projectsResult },
+          'Total de projetos: ' +
+            projectsResult.length +
+            (projectsResult.length > 0
+              ? '\n' +
+                projectsResult
+                  .map(function (p) {
+                    return (
+                      '- ' +
+                      p.name +
+                      ' (' +
+                      p.color +
+                      ')' +
+                      (p.favorite ? ' [★ Favorito]' : '') +
+                      (p.archived ? ' [Arquivado]' : '') +
+                      ' — ' +
+                      p.open_tasks_count +
+                      ' abertas, ' +
+                      p.done_tasks_count +
+                      ' concluídas' +
+                      (p.goal ? ' | Meta: "' + p.goal + '"' : '') +
+                      ' [ID: ' +
+                      p.id +
+                      ']'
+                    )
+                  })
+                  .join('\n')
+              : ''),
+        )
+      }
+
+      // 2. CREATE: criar novo projeto
+      if (action === 'create') {
+        const pName = String(args.name || '').trim()
+        if (!pName) return toolFail('O parâmetro "name" do projeto é obrigatório.')
+
+        // Verificar se já existe com o mesmo nome para este usuário
+        const existing = $app.findRecordsByFilter(
+          'lists',
+          "user = '" + userId + "' && name = '" + pName.replace(/'/g, "\\'") + "'",
+          '',
+          1,
+          0,
+        )
+        if (existing.length > 0) {
+          return toolOk(
+            {
+              id: existing[0].id,
+              name: existing[0].getString('name'),
+              color: existing[0].getString('color'),
+              goal: existing[0].getString('goal'),
+              description: existing[0].getString('description'),
+              favorite: existing[0].getBool('favorite'),
+              archived: existing[0].getBool('archived'),
+              parent: existing[0].getString('parent') || null,
+              already_existed: true,
+            },
+            'O projeto "' + pName + '" já existia (ID: ' + existing[0].id + ').',
+          )
+        }
+
+        // Resolver parent se fornecido por id ou nome
+        let resolvedParentId = ''
+        if (args.parent && String(args.parent).trim()) {
+          const parentArg = String(args.parent).trim()
+          try {
+            const pRec = $app.findFirstRecordByData('lists', 'id', parentArg)
+            if (pRec && pRec.getString('user') === userId) {
+              resolvedParentId = pRec.id
+            }
+          } catch (_) {
+            const pByName = $app.findRecordsByFilter(
+              'lists',
+              "user = '" + userId + "' && name = '" + parentArg.replace(/'/g, "\\'") + "'",
+              '',
+              1,
+              0,
+            )
+            if (pByName.length > 0) resolvedParentId = pByName[0].id
+          }
+        }
+
+        const listsCol = $app.findCollectionByNameOrId('lists')
+        const newProj = new Record(listsCol)
+        newProj.set('name', pName)
+        newProj.set('user', userId)
+        newProj.set('color', args.color ? String(args.color).trim() : '#C5A880')
+        if (args.goal !== undefined) newProj.set('goal', String(args.goal).trim())
+        if (args.description !== undefined) {
+          newProj.set('description', String(args.description).slice(0, 5000))
+        }
+        newProj.set('favorite', args.favorite === true)
+        newProj.set('archived', false)
+        if (resolvedParentId) newProj.set('parent', resolvedParentId)
+        newProj.set('order', args.order !== undefined ? Number(args.order) : 10)
+        newProj.set('pinned', false)
+
+        $app.save(newProj)
+
+        return toolOk(
+          {
+            id: newProj.id,
+            name: newProj.getString('name'),
+            color: newProj.getString('color'),
+            goal: newProj.getString('goal'),
+            description: newProj.getString('description'),
+            favorite: newProj.getBool('favorite'),
+            archived: false,
+            parent: resolvedParentId || null,
+            order: newProj.getInt('order'),
+          },
+          'Projeto "' + pName + '" criado com sucesso (ID: ' + newProj.id + ').',
+        )
+      }
+
+      // 3. CREATE_SECTION: criar seção em um projeto
+      if (action === 'create_section') {
+        const secName = String(args.name || '').trim()
+        if (!secName) return toolFail('O parâmetro "name" da seção é obrigatório.')
+
+        const projIdOrName = String(args.project_id || args.id || '').trim()
+        if (!projIdOrName) {
+          return toolFail(
+            'O parâmetro "project_id" (ou "id" do projeto) é obrigatório para criar seção.',
+          )
+        }
+
+        let projRecord = null
+        try {
+          projRecord = $app.findFirstRecordByData('lists', 'id', projIdOrName)
+        } catch (_) {
+          const byName = $app.findRecordsByFilter(
+            'lists',
+            "user = '" + userId + "' && name = '" + projIdOrName.replace(/'/g, "\\'") + "'",
+            '',
+            1,
+            0,
+          )
+          if (byName.length > 0) projRecord = byName[0]
+        }
+
+        if (!projRecord) {
+          return toolFail('Projeto não encontrado para vincular a seção: ' + projIdOrName)
+        }
+        if (projRecord.getString('user') !== userId) {
+          return toolFail('Acesso negado: o projeto pertence a outro usuário.')
+        }
+
+        // Verificar se seção já existe no projeto
+        const existingSections = $app.findRecordsByFilter(
+          'project_sections',
+          "project = '" + projRecord.id + "'",
+          'order',
+          100,
+          0,
+        )
+        for (let i = 0; i < existingSections.length; i++) {
+          if (
+            existingSections[i].getString('name').trim().toLowerCase() === secName.toLowerCase()
+          ) {
+            return toolOk(
+              {
+                id: existingSections[i].id,
+                name: existingSections[i].getString('name'),
+                project_id: projRecord.id,
+                project_name: projRecord.getString('name'),
+                order: existingSections[i].getInt('order'),
+                already_existed: true,
+              },
+              'A seção "' +
+                secName +
+                '" já existia no projeto "' +
+                projRecord.getString('name') +
+                '" (ID: ' +
+                existingSections[i].id +
+                ').',
+            )
+          }
+        }
+
+        const secCount = existingSections.length
+        const nextSecOrder = args.order !== undefined ? Number(args.order) : (secCount + 1) * 10
+
+        const sectionsCol = $app.findCollectionByNameOrId('project_sections')
+        const newSec = new Record(sectionsCol)
+        newSec.set('name', secName)
+        newSec.set('project', projRecord.id)
+        newSec.set('user', userId)
+        newSec.set('order', nextSecOrder)
+        $app.save(newSec)
+
+        return toolOk(
+          {
+            id: newSec.id,
+            name: newSec.getString('name'),
+            project_id: projRecord.id,
+            project_name: projRecord.getString('name'),
+            order: newSec.getInt('order'),
+          },
+          'Seção "' +
+            secName +
+            '" criada no projeto "' +
+            projRecord.getString('name') +
+            '" (ID: ' +
+            newSec.id +
+            ').',
+        )
+      }
+
+      // 4. LIST_SECTIONS: listar seções de um projeto (ou todas do usuário)
+      if (action === 'list_sections') {
+        const projIdOrName = String(args.project_id || args.id || '').trim()
+        let filter = "user = '" + userId + "'"
+        let projNameResolved = null
+
+        if (projIdOrName) {
+          let pRec = null
+          try {
+            pRec = $app.findFirstRecordByData('lists', 'id', projIdOrName)
+          } catch (_) {
+            const byName = $app.findRecordsByFilter(
+              'lists',
+              "user = '" + userId + "' && name = '" + projIdOrName.replace(/'/g, "\\'") + "'",
+              '',
+              1,
+              0,
+            )
+            if (byName.length > 0) pRec = byName[0]
+          }
+          if (pRec) {
+            filter += " && project = '" + pRec.id + "'"
+            projNameResolved = pRec.getString('name')
+          }
+        }
+
+        const sections = $app.findRecordsByFilter('project_sections', filter, 'order,name', 200, 0)
+        const resultSecs = []
+        for (let i = 0; i < sections.length; i++) {
+          resultSecs.push({
+            id: sections[i].id,
+            name: sections[i].getString('name'),
+            project_id: sections[i].getString('project'),
+            order: sections[i].getInt('order'),
+          })
+        }
+
+        return toolOk(
+          { total: resultSecs.length, sections: resultSecs },
+          'Total de seções: ' +
+            resultSecs.length +
+            (projNameResolved ? ' no projeto "' + projNameResolved + '"' : '') +
+            (resultSecs.length > 0
+              ? '\n' +
+                resultSecs
+                  .map(function (s) {
+                    return '- ' + s.name + ' [ID: ' + s.id + ' | Ordem: ' + s.order + ']'
+                  })
+                  .join('\n')
+              : ''),
+        )
+      }
+
+      // 5. UPDATE_SECTION: atualizar nome ou ordem de uma seção
+      if (action === 'update_section') {
+        const secId = String(args.id || '').trim()
+        if (!secId) return toolFail('O parâmetro "id" da seção é obrigatório para update_section.')
+
+        let secRecord = null
+        try {
+          secRecord = $app.findFirstRecordByData('project_sections', 'id', secId)
+        } catch (_) {
+          return toolFail('Seção não encontrada com ID: ' + secId)
+        }
+        if (secRecord.getString('user') !== userId) {
+          return toolFail('Acesso negado: a seção pertence a outro usuário.')
+        }
+
+        if (args.name !== undefined && String(args.name).trim()) {
+          secRecord.set('name', String(args.name).trim())
+        }
+        if (args.order !== undefined) {
+          secRecord.set('order', Number(args.order))
+        }
+        $app.save(secRecord)
+
+        return toolOk(
+          {
+            id: secRecord.id,
+            name: secRecord.getString('name'),
+            project_id: secRecord.getString('project'),
+            order: secRecord.getInt('order'),
+          },
+          'Seção atualizada com sucesso (ID: ' + secRecord.id + ').',
+        )
+      }
+
+      // 6. DELETE_SECTION: excluir seção e desvincular tarefas da seção
+      if (action === 'delete_section') {
+        const secId = String(args.id || '').trim()
+        if (!secId) return toolFail('O parâmetro "id" da seção é obrigatório para delete_section.')
+
+        let secRecord = null
+        try {
+          secRecord = $app.findFirstRecordByData('project_sections', 'id', secId)
+        } catch (_) {
+          return toolFail('Seção não encontrada com ID: ' + secId)
+        }
+        if (secRecord.getString('user') !== userId) {
+          return toolFail('Acesso negado: a seção pertence a outro usuário.')
+        }
+
+        const secName = secRecord.getString('name')
+        // Desvincular tarefas com esta seção (set section = '')
+        const tasksInSection = $app.findRecordsByFilter(
+          'tasks',
+          "user = '" + userId + "' && section = '" + secId + "'",
+          '',
+          500,
+          0,
+        )
+        for (let i = 0; i < tasksInSection.length; i++) {
+          tasksInSection[i].set('section', '')
+          $app.save(tasksInSection[i])
+        }
+
+        $app.delete(secRecord)
+
+        return toolOk(
+          {
+            deleted: true,
+            id: secId,
+            name: secName,
+            tasks_unlinked: tasksInSection.length,
+          },
+          'Seção "' +
+            secName +
+            '" excluída com sucesso (' +
+            tasksInSection.length +
+            ' tarefa(s) desvinculadas da seção).',
+        )
+      }
+
+      // Ações sobre o projeto: id obrigatório
+      const projId = String(args.id || '').trim()
+      if (!projId) {
+        return toolFail('O parâmetro "id" do projeto é obrigatório para a ação "' + action + '".')
+      }
+
+      let projRecord = null
+      try {
+        projRecord = $app.findFirstRecordByData('lists', 'id', projId)
+      } catch (_) {
+        // Tenta resolver por nome se não achou por ID direto
+        const byName = $app.findRecordsByFilter(
+          'lists',
+          "user = '" + userId + "' && name = '" + projId.replace(/'/g, "\\'") + "'",
+          '',
+          1,
+          0,
+        )
+        if (byName.length > 0) projRecord = byName[0]
+      }
+
+      if (!projRecord) {
+        return toolFail('Projeto não encontrado com identificador: ' + projId)
+      }
+      if (projRecord.getString('user') !== userId) {
+        return toolFail('Acesso negado: o projeto pertence a outro usuário.')
+      }
+
+      // 7. UPDATE: atualizar campos do projeto
+      if (action === 'update') {
+        if (args.name !== undefined && String(args.name).trim()) {
+          projRecord.set('name', String(args.name).trim())
+        }
+        if (args.color !== undefined && String(args.color).trim()) {
+          projRecord.set('color', String(args.color).trim())
+        }
+        if (args.goal !== undefined) {
+          projRecord.set('goal', String(args.goal).trim())
+        }
+        if (args.description !== undefined) {
+          projRecord.set('description', String(args.description).slice(0, 5000))
+        }
+        if (args.favorite !== undefined) {
+          projRecord.set('favorite', args.favorite === true)
+        }
+        if (args.archived !== undefined) {
+          projRecord.set('archived', args.archived === true)
+        }
+        if (args.parent !== undefined) {
+          const parentArg = String(args.parent).trim()
+          if (!parentArg) {
+            projRecord.set('parent', '')
+          } else {
+            let pid = ''
+            try {
+              const p = $app.findFirstRecordByData('lists', 'id', parentArg)
+              if (p && p.getString('user') === userId && p.id !== projRecord.id) pid = p.id
+            } catch (_) {
+              const pList = $app.findRecordsByFilter(
+                'lists',
+                "user = '" + userId + "' && name = '" + parentArg.replace(/'/g, "\\'") + "'",
+                '',
+                1,
+                0,
+              )
+              if (pList.length > 0 && pList[0].id !== projRecord.id) pid = pList[0].id
+            }
+            projRecord.set('parent', pid)
+          }
+        }
+        if (args.order !== undefined) {
+          projRecord.set('order', Number(args.order))
+        }
+
+        $app.save(projRecord)
+
+        return toolOk(
+          {
+            id: projRecord.id,
+            name: projRecord.getString('name'),
+            color: projRecord.getString('color'),
+            goal: projRecord.getString('goal'),
+            description: projRecord.getString('description'),
+            favorite: projRecord.getBool('favorite'),
+            archived: projRecord.getBool('archived'),
+            parent: projRecord.getString('parent') || null,
+            order: projRecord.getInt('order'),
+          },
+          'Projeto "' + projRecord.getString('name') + '" atualizado com sucesso.',
+        )
+      }
+
+      // 8. ARCHIVE / UNARCHIVE
+      if (action === 'archive' || action === 'unarchive') {
+        const isArchive = action === 'archive'
+        projRecord.set('archived', isArchive)
+        $app.save(projRecord)
+        return toolOk(
+          {
+            id: projRecord.id,
+            name: projRecord.getString('name'),
+            archived: isArchive,
+          },
+          'Projeto "' +
+            projRecord.getString('name') +
+            '" ' +
+            (isArchive ? 'arquivado com sucesso.' : 'desarquivado com sucesso.'),
+        )
+      }
+
+      // 9. TOGGLE_FAVORITE
+      if (action === 'toggle_favorite') {
+        const currentFav = projRecord.getBool('favorite')
+        const nextFav = args.favorite !== undefined ? args.favorite === true : !currentFav
+        projRecord.set('favorite', nextFav)
+        $app.save(projRecord)
+        return toolOk(
+          {
+            id: projRecord.id,
+            name: projRecord.getString('name'),
+            favorite: nextFav,
+          },
+          'Projeto "' +
+            projRecord.getString('name') +
+            '" ' +
+            (nextFav ? 'marcado como favorito.' : 'removido dos favoritos.'),
+        )
+      }
+
+      // 10. DELETE: desvincular tarefas (mover para Inbox) e excluir seções e o projeto
+      if (action === 'delete') {
+        const pName = projRecord.getString('name')
+
+        // 10.1 Desvincular todas as tarefas vinculadas a este projeto (list = null / '')
+        const linkedTasks = $app.findRecordsByFilter(
+          'tasks',
+          "user = '" + userId + "' && list = '" + projRecord.id + "'",
+          '',
+          1000,
+          0,
+        )
+        for (let i = 0; i < linkedTasks.length; i++) {
+          linkedTasks[i].set('list', '')
+          linkedTasks[i].set('section', '')
+          $app.save(linkedTasks[i])
+        }
+
+        // 10.2 Excluir seções associadas a este projeto
+        const linkedSections = $app.findRecordsByFilter(
+          'project_sections',
+          "project = '" + projRecord.id + "'",
+          '',
+          100,
+          0,
+        )
+        for (let j = 0; j < linkedSections.length; j++) {
+          $app.delete(linkedSections[j])
+        }
+
+        // 10.3 Desvincular sub-projetos filhos (parent = null)
+        const childProjects = $app.findRecordsByFilter(
+          'lists',
+          "user = '" + userId + "' && parent = '" + projRecord.id + "'",
+          '',
+          100,
+          0,
+        )
+        for (let k = 0; k < childProjects.length; k++) {
+          childProjects[k].set('parent', '')
+          $app.save(childProjects[k])
+        }
+
+        $app.delete(projRecord)
+
+        return toolOk(
+          {
+            deleted: true,
+            id: projId,
+            name: pName,
+            tasks_returned_to_inbox: linkedTasks.length,
+            sections_deleted: linkedSections.length,
+            children_unlinked: childProjects.length,
+          },
+          'Projeto "' +
+            pName +
+            '" excluído com sucesso. ' +
+            linkedTasks.length +
+            ' tarefa(s) devolvidas à Inbox.',
+        )
+      }
+
+      return toolFail('Ação desconhecida para manage_projects: "' + action + '".')
+    }
+
+    // FERRAMENTA NOVA: manage_saved_filters (Filtros salvos guiados e execução)
+    if (toolName === 'manage_saved_filters') {
+      const action = String(args.action || '')
+        .toLowerCase()
+        .trim()
+      if (!action) return toolFail('O parâmetro "action" é obrigatório.')
+
+      // Função auxiliar para testar se uma tarefa bate com criteria nos 5 eixos
+      const taskMatchesCriteria = function (taskRec, criteria, tagMap, listMap) {
+        if (!criteria || typeof criteria !== 'object') return true
+
+        // 1. Status (open | done | any)
+        const statusReq = criteria.status || 'open'
+        const isDone = taskRec.getBool('done')
+        if (statusReq === 'open' && isDone) return false
+        if (statusReq === 'done' && !isDone) return false
+
+        // 2. Prioridade (any | 0..4)
+        if (criteria.priority !== undefined && criteria.priority !== 'any') {
+          const reqPrio = Number(criteria.priority)
+          const taskPrio = taskRec.getInt('priority') || 0
+          if (taskPrio !== reqPrio) return false
+        }
+
+        // 3. Período
+        if (criteria.period && criteria.period !== 'any') {
+          const rawDue = taskRec.getString('due_date')
+          const now = new Date()
+          const todayIso = formatIsoDate(now)
+
+          if (criteria.period === 'no_date') {
+            if (rawDue && rawDue.trim() !== '') return false
+          } else {
+            if (!rawDue || rawDue.trim() === '') return false
+            const taskDateIso = rawDue.slice(0, 10)
+
+            if (criteria.period === 'today') {
+              if (taskDateIso !== todayIso) return false
+            } else if (criteria.period === 'tomorrow') {
+              const tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+              const tomIso = formatIsoDate(tom)
+              if (taskDateIso !== tomIso) return false
+            } else if (criteria.period === 'overdue') {
+              if (taskDateIso >= todayIso) return false
+            } else if (criteria.period === 'this_week') {
+              const dayOfWeek = now.getDay()
+              const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+              const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon)
+              const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6)
+              const monIso = formatIsoDate(mon)
+              const sunIso = formatIsoDate(sun)
+              if (taskDateIso < monIso || taskDateIso > sunIso) return false
+            }
+          }
+        }
+
+        // 4. Etiqueta (any | none | id/nome)
+        if (criteria.tag && criteria.tag !== 'any') {
+          const taskTags = taskRec.getStringSlice('tags') || []
+          if (criteria.tag === 'none') {
+            if (taskTags.length > 0) return false
+          } else {
+            const reqTagStr = String(criteria.tag).toLowerCase().replace(/^@/, '').trim()
+            let matchedTag = false
+            for (let t = 0; t < taskTags.length; t++) {
+              const tid = taskTags[t]
+              if (tid === reqTagStr) {
+                matchedTag = true
+                break
+              }
+              if (tagMap[tid] && tagMap[tid].name.toLowerCase() === reqTagStr) {
+                matchedTag = true
+                break
+              }
+            }
+            if (!matchedTag) return false
+          }
+        }
+
+        // 5. Projeto (any | none | id/nome)
+        if (criteria.project && criteria.project !== 'any') {
+          const taskListId = taskRec.getString('list')
+          if (criteria.project === 'none') {
+            if (taskListId && taskListId.trim() !== '') return false
+          } else {
+            const reqProjStr = String(criteria.project).toLowerCase().trim()
+            if (taskListId === reqProjStr) {
+              // match direto por ID
+            } else if (listMap[taskListId] && listMap[taskListId].toLowerCase() === reqProjStr) {
+              // match por nome
+            } else {
+              return false
+            }
+          }
+        }
+
+        return true
+      }
+
+      // 1. LIST: listar filtros salvos
+      if (action === 'list') {
+        const savedRecords = $app.findRecordsByFilter(
+          'saved_filters',
+          "user = '" + userId + "'",
+          '-pinned,order,name',
+          100,
+          0,
+        )
+
+        const filtersResult = []
+        for (let i = 0; i < savedRecords.length; i++) {
+          const sf = savedRecords[i]
+          let parsedCriteria = {
+            period: 'any',
+            priority: 'any',
+            tag: 'any',
+            project: 'any',
+            status: 'open',
+          }
+          const rawCrit = sf.getString('criteria')
+          if (rawCrit) {
+            try {
+              parsedCriteria = JSON.parse(rawCrit)
+            } catch (_) {}
+          }
+          filtersResult.push({
+            id: sf.id,
+            name: sf.getString('name'),
+            color: sf.getString('color') || '#C5A880',
+            criteria: parsedCriteria,
+            pinned: sf.getBool('pinned'),
+            order: sf.getInt('order') || 10,
+          })
+        }
+
+        return toolOk(
+          { total: filtersResult.length, saved_filters: filtersResult },
+          'Total de filtros salvos: ' +
+            filtersResult.length +
+            (filtersResult.length > 0
+              ? '\n' +
+                filtersResult
+                  .map(function (f) {
+                    return (
+                      '- ' +
+                      f.name +
+                      (f.pinned ? ' [Pinned na Sidebar]' : '') +
+                      ' (' +
+                      f.color +
+                      ') [ID: ' +
+                      f.id +
+                      ']'
+                    )
+                  })
+                  .join('\n')
+              : ''),
+        )
+      }
+
+      // 2. CREATE: criar filtro salvo
+      if (action === 'create') {
+        const filterName = String(args.name || '').trim()
+        if (!filterName) return toolFail('O parâmetro "name" do filtro é obrigatório.')
+
+        const crit = args.criteria && typeof args.criteria === 'object' ? args.criteria : {}
+        const defaultCriteria = {
+          period: crit.period || 'any',
+          priority: crit.priority !== undefined ? crit.priority : 'any',
+          tag: crit.tag || 'any',
+          project: crit.project || 'any',
+          status: crit.status || 'open',
+        }
+
+        const count = $app.countRecords('saved_filters', "user = '" + userId + "'")
+        const nextOrder = (count + 1) * 10
+        const color = args.color ? String(args.color).trim() : '#C5A880'
+
+        const filtersCol = $app.findCollectionByNameOrId('saved_filters')
+        const newSf = new Record(filtersCol)
+        newSf.set('name', filterName)
+        newSf.set('user', userId)
+        newSf.set('color', color)
+        newSf.set('criteria', JSON.stringify(defaultCriteria))
+        newSf.set('pinned', args.pinned === true)
+        newSf.set('order', nextOrder)
+        $app.save(newSf)
+
+        return toolOk(
+          {
+            id: newSf.id,
+            name: newSf.getString('name'),
+            color: newSf.getString('color'),
+            criteria: defaultCriteria,
+            pinned: newSf.getBool('pinned'),
+            order: newSf.getInt('order'),
+          },
+          'Filtro salvo criado com sucesso: "' + filterName + '" (ID: ' + newSf.id + ').',
+        )
+      }
+
+      // 3. EXECUTE: executar filtro salvo por ID ou via criteria inline
+      if (action === 'execute') {
+        let activeCriteria = null
+        let filterDisplayName = 'Critério inline'
+
+        if (args.id && String(args.id).trim()) {
+          const sfId = String(args.id).trim()
+          let sfRecord = null
+          try {
+            sfRecord = $app.findFirstRecordByData('saved_filters', 'id', sfId)
+          } catch (_) {
+            const byName = $app.findRecordsByFilter(
+              'saved_filters',
+              "user = '" + userId + "' && name = '" + sfId.replace(/'/g, "\\'") + "'",
+              '',
+              1,
+              0,
+            )
+            if (byName.length > 0) sfRecord = byName[0]
+          }
+          if (sfRecord) {
+            if (sfRecord.getString('user') !== userId) {
+              return toolFail('Acesso negado: o filtro pertence a outro usuário.')
+            }
+            filterDisplayName = sfRecord.getString('name')
+            try {
+              activeCriteria = JSON.parse(sfRecord.getString('criteria'))
+            } catch (_) {}
+          }
+        }
+
+        if (!activeCriteria && args.criteria && typeof args.criteria === 'object') {
+          activeCriteria = args.criteria
+        }
+
+        if (!activeCriteria) {
+          activeCriteria = {
+            period: 'any',
+            priority: 'any',
+            tag: 'any',
+            project: 'any',
+            status: 'open',
+          }
+        }
+
+        // Carregar listas e tags do usuário
+        const userLists = $app.findRecordsByFilter('lists', "user = '" + userId + "'", '', 100, 0)
+        const listMap = {}
+        for (let i = 0; i < userLists.length; i++) {
+          listMap[userLists[i].id] = userLists[i].getString('name')
+        }
+
+        const userTags = $app.findRecordsByFilter('tags', "user = '" + userId + "'", '', 200, 0)
+        const tagMap = {}
+        for (let i = 0; i < userTags.length; i++) {
+          tagMap[userTags[i].id] = {
+            name: userTags[i].getString('name'),
+            color: userTags[i].getString('color'),
+          }
+        }
+
+        // Buscar tarefas do usuário e aplicar criteria nos 5 eixos
+        const userTasks = $app.findRecordsByFilter(
+          'tasks',
+          "user = '" + userId + "'",
+          'order,due_date,created',
+          1000,
+          0,
+        )
+
+        const matchingTasks = []
+        for (let i = 0; i < userTasks.length; i++) {
+          const t = userTasks[i]
+          if (taskMatchesCriteria(t, activeCriteria, tagMap, listMap)) {
+            const lId = t.getString('list')
+            const rawTagIds = t.getStringSlice('tags') || []
+            const tagNames = []
+            for (let j = 0; j < rawTagIds.length; j++) {
+              if (tagMap[rawTagIds[j]]) tagNames.push(tagMap[rawTagIds[j]].name)
+            }
+
+            matchingTasks.push({
+              id: t.id,
+              title: t.getString('title'),
+              due_date: t.getString('due_date'),
+              due_time: t.getString('due_time'),
+              priority: t.getInt('priority') || 0,
+              done: t.getBool('done'),
+              list: lId && listMap[lId] ? listMap[lId] : null,
+              section: t.getString('section') || null,
+              tags: tagNames,
+              order: t.getInt('order'),
+            })
+          }
+        }
+
+        return toolOk(
+          {
+            filter_name: filterDisplayName,
+            criteria: activeCriteria,
+            total: matchingTasks.length,
+            tasks: matchingTasks,
+          },
+          'Execução do filtro "' +
+            filterDisplayName +
+            '": ' +
+            matchingTasks.length +
+            ' tarefa(s) encontrada(s).' +
+            (matchingTasks.length > 0
+              ? '\n' +
+                matchingTasks
+                  .map(function (t) {
+                    return (
+                      '- [' +
+                      (t.done ? 'x' : ' ') +
+                      '] ' +
+                      t.title +
+                      (t.due_date ? ' (vence: ' + t.due_date.slice(0, 10) + ')' : '') +
+                      (t.priority ? ' P' + t.priority : '') +
+                      (t.list ? ' #' + t.list : '') +
+                      ' [ID: ' +
+                      t.id +
+                      ']'
+                    )
+                  })
+                  .join('\n')
+              : ''),
+        )
+      }
+
+      // Demais ações requerem id
+      const sfId = String(args.id || '').trim()
+      if (!sfId) {
+        return toolFail(
+          'O parâmetro "id" do filtro salvo é obrigatório para a ação "' + action + '".',
+        )
+      }
+
+      let sfRecord = null
+      try {
+        sfRecord = $app.findFirstRecordByData('saved_filters', 'id', sfId)
+      } catch (_) {
+        const byName = $app.findRecordsByFilter(
+          'saved_filters',
+          "user = '" + userId + "' && name = '" + sfId.replace(/'/g, "\\'") + "'",
+          '',
+          1,
+          0,
+        )
+        if (byName.length > 0) sfRecord = byName[0]
+      }
+
+      if (!sfRecord) {
+        return toolFail('Filtro salvo não encontrado com identificador: ' + sfId)
+      }
+      if (sfRecord.getString('user') !== userId) {
+        return toolFail('Acesso negado: o filtro salvo pertence a outro usuário.')
+      }
+
+      // 4. UPDATE
+      if (action === 'update') {
+        if (args.name !== undefined && String(args.name).trim()) {
+          sfRecord.set('name', String(args.name).trim())
+        }
+        if (args.color !== undefined && String(args.color).trim()) {
+          sfRecord.set('color', String(args.color).trim())
+        }
+        if (args.criteria !== undefined && typeof args.criteria === 'object') {
+          sfRecord.set('criteria', JSON.stringify(args.criteria))
+        }
+        if (args.pinned !== undefined) {
+          sfRecord.set('pinned', args.pinned === true)
+        }
+        $app.save(sfRecord)
+
+        return toolOk(
+          {
+            id: sfRecord.id,
+            name: sfRecord.getString('name'),
+            color: sfRecord.getString('color'),
+            pinned: sfRecord.getBool('pinned'),
+          },
+          'Filtro salvo "' + sfRecord.getString('name') + '" atualizado com sucesso.',
+        )
+      }
+
+      // 5. PIN / UNPIN
+      if (action === 'pin' || action === 'unpin') {
+        const nextPinned = action === 'pin'
+        sfRecord.set('pinned', nextPinned)
+        $app.save(sfRecord)
+        return toolOk(
+          { id: sfRecord.id, name: sfRecord.getString('name'), pinned: nextPinned },
+          'Filtro salvo "' +
+            sfRecord.getString('name') +
+            '" ' +
+            (nextPinned
+              ? 'fixado nos Favoritos da barra lateral.'
+              : 'desafixado da barra lateral.'),
+        )
+      }
+
+      // 6. DELETE
+      if (action === 'delete') {
+        const sfName = sfRecord.getString('name')
+        $app.delete(sfRecord)
+        return toolOk(
+          { deleted: true, id: sfId, name: sfName },
+          'Filtro salvo "' + sfName + '" excluído com sucesso.',
+        )
+      }
+
+      return toolFail('Ação desconhecida para manage_saved_filters: "' + action + '".')
+    }
+
+    // FERRAMENTA EXISTENTE 1: create_task (ampliada com description e section)
     if (toolName === 'create_task') {
       const title = String(args.title || '').trim()
       if (!title) {
         return toolFail('O parâmetro "title" é obrigatório.')
       }
 
-      // Resolver lista por nome se fornecido
+      const description =
+        args.description !== undefined ? String(args.description).slice(0, 5000) : ''
+
+      // Resolver lista por id ou nome se fornecido
       let listId = ''
+      let resolvedProjRec = null
       if (args.list && String(args.list).trim()) {
-        const listName = String(args.list).trim()
-        const filter = "user = '" + userId + "' && name = '" + listName.replace(/'/g, "\\'") + "'"
-        const foundLists = $app.findRecordsByFilter('lists', filter, '', 1, 0)
-        if (foundLists.length > 0) {
-          listId = foundLists[0].id
-        } else {
-          // Cria nova lista
-          const listsCol = $app.findCollectionByNameOrId('lists')
-          const newList = new Record(listsCol)
-          newList.set('name', listName)
-          newList.set('user', userId)
-          newList.set('order', 10)
-          newList.set('pinned', false)
-          $app.save(newList)
-          listId = newList.id
+        const listArg = String(args.list).trim()
+        try {
+          const byId = $app.findFirstRecordByData('lists', 'id', listArg)
+          if (byId && byId.getString('user') === userId) {
+            resolvedProjRec = byId
+            listId = byId.id
+          }
+        } catch (_) {}
+
+        if (!listId) {
+          const filter = "user = '" + userId + "' && name = '" + listArg.replace(/'/g, "\\'") + "'"
+          const foundLists = $app.findRecordsByFilter('lists', filter, '', 1, 0)
+          if (foundLists.length > 0) {
+            resolvedProjRec = foundLists[0]
+            listId = foundLists[0].id
+          } else {
+            // Cria novo projeto
+            const listsCol = $app.findCollectionByNameOrId('lists')
+            const newList = new Record(listsCol)
+            newList.set('name', listArg)
+            newList.set('user', userId)
+            newList.set('order', 10)
+            newList.set('pinned', false)
+            newList.set('color', '#C5A880')
+            $app.save(newList)
+            resolvedProjRec = newList
+            listId = newList.id
+          }
+        }
+      }
+
+      // Resolver section por id ou nome se fornecido
+      let sectionId = ''
+      if (args.section && String(args.section).trim() && listId) {
+        const secArg = String(args.section).trim()
+        try {
+          const sById = $app.findFirstRecordByData('project_sections', 'id', secArg)
+          if (
+            sById &&
+            sById.getString('user') === userId &&
+            sById.getString('project') === listId
+          ) {
+            sectionId = sById.id
+          }
+        } catch (_) {}
+
+        if (!sectionId) {
+          const sFilter =
+            "project = '" + listId + "' && name = '" + secArg.replace(/'/g, "\\'") + "'"
+          const foundSecs = $app.findRecordsByFilter('project_sections', sFilter, '', 1, 0)
+          if (foundSecs.length > 0) {
+            sectionId = foundSecs[0].id
+          } else {
+            // Cria nova seção no projeto
+            const sectionsCol = $app.findCollectionByNameOrId('project_sections')
+            const newSec = new Record(sectionsCol)
+            newSec.set('name', secArg)
+            newSec.set('project', listId)
+            newSec.set('user', userId)
+            newSec.set('order', 10)
+            $app.save(newSec)
+            sectionId = newSec.id
+          }
         }
       }
 
@@ -1697,7 +3073,9 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       const taskRecord = new Record(tasksCol)
       taskRecord.set('title', title)
       taskRecord.set('user', userId)
+      if (description) taskRecord.set('description', description)
       if (listId) taskRecord.set('list', listId)
+      if (sectionId) taskRecord.set('section', sectionId)
       if (tagIds.length > 0) taskRecord.set('tags', tagIds)
 
       if (args.due_date) {
@@ -1736,12 +3114,14 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       const resultPayload = {
         id: taskRecord.id,
         title: taskRecord.getString('title'),
+        description: taskRecord.getString('description') || null,
         due_date: taskRecord.getString('due_date'),
         due_time: taskRecord.getString('due_time'),
         priority: taskRecord.getInt('priority'),
         estimated_minutes: taskRecord.getInt('estimated_minutes'),
         done: false,
-        list_id: listId,
+        list_id: listId || null,
+        section_id: sectionId || null,
         tags: tagIds,
         created: taskRecord.getString('created'),
       }
@@ -1752,7 +3132,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       )
     }
 
-    // FERRAMENTA EXISTENTE 2: list_tasks
+    // FERRAMENTA EXISTENTE 2: list_tasks (ampliada com overdue, priority, section)
     if (toolName === 'list_tasks') {
       const limit = args.limit ? Math.min(100, Math.max(1, Number(args.limit))) : 50
       let filters = ["user = '" + userId + "'"]
@@ -1764,6 +3144,24 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         filters.push('done = false')
       }
 
+      const now = new Date()
+      const todayStr = formatIsoDate(now)
+
+      // Filtro por tarefas atrasadas
+      if (args.overdue === true) {
+        filters.push(
+          "(due_date != '' && due_date != null && due_date < '" + todayStr + " 00:00:00.000Z')",
+        )
+      }
+
+      // Filtro por prioridade específica (1..4)
+      if (args.priority !== undefined && args.priority !== null) {
+        const pNum = Number(args.priority)
+        if (pNum >= 1 && pNum <= 4) {
+          filters.push('priority = ' + pNum)
+        }
+      }
+
       // Filtro por data específica
       if (args.date) {
         const dStr = String(args.date).trim().slice(0, 10)
@@ -1773,8 +3171,6 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       // Filtro por visão temporal
       if (args.view) {
         const view = String(args.view).toLowerCase().trim()
-        const now = new Date()
-        const todayStr = formatIsoDate(now)
 
         if (view === 'inbox') {
           filters.push("(due_date = '' || due_date = null)")
@@ -1799,22 +3195,62 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         }
       }
 
-      // Filtro por nome de lista
+      // Filtro por projeto (nome ou id)
       if (args.list) {
-        const listName = String(args.list).trim()
-        const foundLists = $app.findRecordsByFilter(
-          'lists',
-          "user = '" + userId + "' && name = '" + listName.replace(/'/g, "\\'") + "'",
-          '',
-          1,
-          0,
-        )
-        if (foundLists.length > 0) {
-          filters.push("list = '" + foundLists[0].id + "'")
+        const listArg = String(args.list).trim()
+        let resolvedLId = ''
+        try {
+          const lRec = $app.findFirstRecordByData('lists', 'id', listArg)
+          if (lRec && lRec.getString('user') === userId) resolvedLId = lRec.id
+        } catch (_) {}
+
+        if (!resolvedLId) {
+          const foundLists = $app.findRecordsByFilter(
+            'lists',
+            "user = '" + userId + "' && name = '" + listArg.replace(/'/g, "\\'") + "'",
+            '',
+            1,
+            0,
+          )
+          if (foundLists.length > 0) resolvedLId = foundLists[0].id
+        }
+
+        if (resolvedLId) {
+          filters.push("list = '" + resolvedLId + "'")
         } else {
           return toolOk(
             { total: 0, tasks: [] },
-            'Nenhuma tarefa encontrada para a lista "' + listName + '".',
+            'Nenhuma tarefa encontrada para a lista/projeto "' + listArg + '".',
+          )
+        }
+      }
+
+      // Filtro por seção (nome ou id)
+      if (args.section) {
+        const secArg = String(args.section).trim()
+        let resolvedSId = ''
+        try {
+          const sRec = $app.findFirstRecordByData('project_sections', 'id', secArg)
+          if (sRec && sRec.getString('user') === userId) resolvedSId = sRec.id
+        } catch (_) {}
+
+        if (!resolvedSId) {
+          const foundSecs = $app.findRecordsByFilter(
+            'project_sections',
+            "user = '" + userId + "' && name = '" + secArg.replace(/'/g, "\\'") + "'",
+            '',
+            1,
+            0,
+          )
+          if (foundSecs.length > 0) resolvedSId = foundSecs[0].id
+        }
+
+        if (resolvedSId) {
+          filters.push("section = '" + resolvedSId + "'")
+        } else {
+          return toolOk(
+            { total: 0, tasks: [] },
+            'Nenhuma tarefa encontrada para a seção "' + secArg + '".',
           )
         }
       }
@@ -1855,6 +3291,18 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         listMap[userLists[i].id] = userLists[i].getString('name')
       }
 
+      const userSections = $app.findRecordsByFilter(
+        'project_sections',
+        "user = '" + userId + "'",
+        '',
+        200,
+        0,
+      )
+      const sectionMap = {}
+      for (let s = 0; s < userSections.length; s++) {
+        sectionMap[userSections[s].id] = userSections[s].getString('name')
+      }
+
       const userTags = $app.findRecordsByFilter('tags', "user = '" + userId + "'", '', 100, 0)
       const tagMap = {}
       for (let i = 0; i < userTags.length; i++) {
@@ -1868,6 +3316,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       for (let i = 0; i < taskRecords.length; i++) {
         const t = taskRecords[i]
         const lId = t.getString('list')
+        const secId = t.getString('section')
         const rawTagIds = t.getStringSlice('tags') || []
         const tagDetails = []
         for (let j = 0; j < rawTagIds.length; j++) {
@@ -1887,6 +3336,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         listResult.push({
           id: t.id,
           title: t.getString('title'),
+          description: t.getString('description') || null,
           due_date: t.getString('due_date'),
           due_time: t.getString('due_time'),
           priority: t.getInt('priority') || 0,
@@ -1894,6 +3344,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
           estimated_minutes: t.getInt('estimated_minutes'),
           actual_minutes: t.getInt('actual_minutes'),
           list: lId && listMap[lId] ? listMap[lId] : null,
+          section: secId && sectionMap[secId] ? sectionMap[secId] : null,
           tags: tagDetails,
           subtasks_count: subtaskList.length,
           order: t.getInt('order'),
@@ -1922,6 +3373,8 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
                         ')'
                       : '') +
                     (t.priority ? ' P' + t.priority : '') +
+                    (t.list ? ' #' + t.list : '') +
+                    (t.section ? ' / ' + t.section : '') +
                     ' (id: ' +
                     t.id +
                     ')'
@@ -2125,7 +3578,7 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       )
     }
 
-    // FERRAMENTA EXISTENTE 4: update_task
+    // FERRAMENTA EXISTENTE 4: update_task (ampliada com description e section)
     if (toolName === 'update_task') {
       const taskId = String(args.id || '').trim()
       if (!taskId) return toolFail('O parâmetro "id" da tarefa é obrigatório.')
@@ -2144,6 +3597,10 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       if (args.title !== undefined) {
         const trimmed = String(args.title).trim()
         if (trimmed) taskRecord.set('title', trimmed)
+      }
+
+      if (args.description !== undefined) {
+        taskRecord.set('description', String(args.description).slice(0, 5000))
       }
 
       if (args.due_date !== undefined) {
@@ -2169,26 +3626,84 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         taskRecord.set('estimated_minutes', estMin)
       }
 
-      // Lista
+      // Lista/Projeto
+      let currentOrNewListId = taskRecord.getString('list')
       if (args.list !== undefined) {
-        const listName = String(args.list).trim()
-        if (listName === '') {
+        const listArg = String(args.list).trim()
+        if (listArg === '') {
           taskRecord.set('list', '')
+          currentOrNewListId = ''
+          taskRecord.set('section', '')
         } else {
-          const filter = "user = '" + userId + "' && name = '" + listName.replace(/'/g, "\\'") + "'"
-          const foundLists = $app.findRecordsByFilter('lists', filter, '', 1, 0)
-          if (foundLists.length > 0) {
-            taskRecord.set('list', foundLists[0].id)
-          } else {
-            const listsCol = $app.findCollectionByNameOrId('lists')
-            const newList = new Record(listsCol)
-            newList.set('name', listName)
-            newList.set('user', userId)
-            newList.set('order', 10)
-            newList.set('pinned', false)
-            $app.save(newList)
-            taskRecord.set('list', newList.id)
+          let resolvedLId = ''
+          try {
+            const lRec = $app.findFirstRecordByData('lists', 'id', listArg)
+            if (lRec && lRec.getString('user') === userId) resolvedLId = lRec.id
+          } catch (_) {}
+
+          if (!resolvedLId) {
+            const filter =
+              "user = '" + userId + "' && name = '" + listArg.replace(/'/g, "\\'") + "'"
+            const foundLists = $app.findRecordsByFilter('lists', filter, '', 1, 0)
+            if (foundLists.length > 0) {
+              resolvedLId = foundLists[0].id
+            } else {
+              const listsCol = $app.findCollectionByNameOrId('lists')
+              const newList = new Record(listsCol)
+              newList.set('name', listArg)
+              newList.set('user', userId)
+              newList.set('order', 10)
+              newList.set('pinned', false)
+              newList.set('color', '#C5A880')
+              $app.save(newList)
+              resolvedLId = newList.id
+            }
           }
+          taskRecord.set('list', resolvedLId)
+          currentOrNewListId = resolvedLId
+        }
+      }
+
+      // Seção do projeto
+      if (args.section !== undefined) {
+        const secArg = String(args.section).trim()
+        if (secArg === '' || !currentOrNewListId) {
+          taskRecord.set('section', '')
+        } else {
+          let resolvedSId = ''
+          try {
+            const sRec = $app.findFirstRecordByData('project_sections', 'id', secArg)
+            if (
+              sRec &&
+              sRec.getString('user') === userId &&
+              sRec.getString('project') === currentOrNewListId
+            ) {
+              resolvedSId = sRec.id
+            }
+          } catch (_) {}
+
+          if (!resolvedSId) {
+            const sFilter =
+              "project = '" +
+              currentOrNewListId +
+              "' && name = '" +
+              secArg.replace(/'/g, "\\'") +
+              "'"
+            const foundSecs = $app.findRecordsByFilter('project_sections', sFilter, '', 1, 0)
+            if (foundSecs.length > 0) {
+              resolvedSId = foundSecs[0].id
+            } else {
+              const sectionsCol = $app.findCollectionByNameOrId('project_sections')
+              const newSec = new Record(sectionsCol)
+              newSec.set('name', secArg)
+              newSec.set('project', currentOrNewListId)
+              newSec.set('user', userId)
+              newSec.set('order', 10)
+              $app.save(newSec)
+              resolvedSId = newSec.id
+            }
+          }
+          taskRecord.set('section', resolvedSId)
         }
       }
 
@@ -2227,11 +3742,14 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         {
           id: taskRecord.id,
           title: taskRecord.getString('title'),
+          description: taskRecord.getString('description') || null,
           due_date: taskRecord.getString('due_date'),
           due_time: taskRecord.getString('due_time'),
           priority: taskRecord.getInt('priority'),
           estimated_minutes: taskRecord.getInt('estimated_minutes'),
           done: taskRecord.getBool('done'),
+          list_id: taskRecord.getString('list') || null,
+          section_id: taskRecord.getString('section') || null,
         },
         'Tarefa atualizada com sucesso (ID: ' + taskRecord.id + ')',
       )
@@ -2262,11 +3780,12 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       )
     }
 
-    // FERRAMENTA EXISTENTE 6: get_focus_summary
-    if (toolName === 'get_focus_summary') {
-      const period = String(args.period || 'hoje')
+    // FERRAMENTA EXISTENTE 6: get_focus_summary & get_focus_stats
+    if (toolName === 'get_focus_summary' || toolName === 'get_focus_stats') {
+      const period = String(args.period || (toolName === 'get_focus_stats' ? 'semana' : 'hoje'))
         .toLowerCase()
         .trim()
+      const includeBreakdown = toolName === 'get_focus_stats' || args.include_breakdown === true
       const now = new Date()
       const todayStr = formatIsoDate(now)
 
@@ -2275,12 +3794,23 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         'sessions',
         "user = '" + userId + "'",
         '-session_date',
-        500,
+        1000,
         0,
       )
 
+      // Carregar tarefas do usuário para cruzar títulos nos donuts
+      const userTasks = $app.findRecordsByFilter('tasks', "user = '" + userId + "'", '', 1000, 0)
+      const taskMap = {}
+      for (let t = 0; t < userTasks.length; t++) {
+        taskMap[userTasks[t].id] = userTasks[t].getString('title')
+      }
+
       let totalMinutes = 0
       let sessionsCount = 0
+      let completedCount = 0
+      let batidoCount = 0
+      let verdictCount = 0
+      const taskMinutesMap = {}
 
       // Agregação por dia para cálculo do recorde absoluto (best-day)
       const dayMap = {}
@@ -2312,35 +3842,84 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         }
       }
 
-      if (period === 'hoje') {
-        const todayData = dayMap[todayStr] || { totalMinutes: 0, count: 0 }
-        totalMinutes = todayData.totalMinutes
-        sessionsCount = todayData.count
-      } else if (period === 'semana') {
-        const last7DaysKeys = []
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i)
-          last7DaysKeys.push(formatIsoDate(d))
+      // Função para testar pertencimento ao período
+      const isSessionInPeriod = function (sessionDateStr) {
+        if (!sessionDateStr) return false
+        const dIso = sessionDateStr.slice(0, 10)
+        if (period === 'hoje') return dIso === todayStr
+        if (period === 'semana') {
+          const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
+          const minIso = formatIsoDate(sevenDaysAgo)
+          return dIso >= minIso && dIso <= todayStr
         }
-        for (let j = 0; j < last7DaysKeys.length; j++) {
-          const dKey = last7DaysKeys[j]
-          if (dayMap[dKey]) {
-            totalMinutes += dayMap[dKey].totalMinutes
-            sessionsCount += dayMap[dKey].count
+        if (period === '30dias') {
+          const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29)
+          const minIso = formatIsoDate(thirtyDaysAgo)
+          return dIso >= minIso && dIso <= todayStr
+        }
+        return true // 'todos'
+      }
+
+      for (let i = 0; i < sessions.length; i++) {
+        const s = sessions[i]
+        const dStr = (s.getString('session_date') || s.getString('started_at') || '').slice(0, 10)
+        if (!isSessionInPeriod(dStr)) continue
+
+        const dur = s.getInt('duration_minutes') || 0
+        const status = s.getString('status') || 'completa'
+        const outcome = s.getString('outcome_status')
+        const tId = s.getString('task') || 'free'
+        const tTitle = tId === 'free' ? 'Foco Livre' : taskMap[tId] || 'Tarefa #' + tId
+
+        totalMinutes += dur
+        sessionsCount++
+        if (status === 'completa') completedCount++
+
+        if (outcome) {
+          verdictCount++
+          if (outcome === 'batido') batidoCount++
+        }
+
+        if (!taskMinutesMap[tId]) {
+          taskMinutesMap[tId] = {
+            task_id: tId === 'free' ? null : tId,
+            task_title: tTitle,
+            total_minutes: 0,
+            sessions_count: 0,
           }
         }
-      } else {
-        // 'todos'
-        for (let i = 0; i < sessions.length; i++) {
-          totalMinutes += sessions[i].getInt('duration_minutes') || 0
-          sessionsCount++
-        }
+        taskMinutesMap[tId].totalMinutes += dur
+        taskMinutesMap[tId].sessions_count += 1
       }
+
+      // Ordena top tarefas por tempo
+      const taskSlices = Object.keys(taskMinutesMap)
+        .map(function (k) {
+          return taskMinutesMap[k]
+        })
+        .sort(function (a, b) {
+          return b.total_minutes - a.total_minutes
+        })
+
+      for (let m = 0; m < taskSlices.length; m++) {
+        const slice = taskSlices[m]
+        slice.percentage =
+          totalMinutes > 0 ? Math.round((slice.total_minutes / totalMinutes) * 1000) / 10 : 0
+      }
+
+      const completionRate =
+        sessionsCount > 0 ? Math.round((completedCount / sessionsCount) * 100) : 0
+      const verdictSuccessRate =
+        verdictCount > 0 ? Math.round((batidoCount / verdictCount) * 100) : null
 
       const summaryPayload = {
         period: period,
         total_minutes: totalMinutes,
         sessions_count: sessionsCount,
+        completed_sessions_count: completedCount,
+        completion_rate_percent: completionRate,
+        verdict_total_evaluated: verdictCount,
+        verdict_success_rate_percent: verdictSuccessRate,
         today_minutes: dayMap[todayStr] ? dayMap[todayStr].totalMinutes : 0,
         best_day: bestDay,
         is_today_record:
@@ -2348,6 +3927,11 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
           dayMap[todayStr] &&
           dayMap[todayStr].totalMinutes >= bestDay.total_minutes &&
           dayMap[todayStr].totalMinutes > 0,
+      }
+
+      if (includeBreakdown) {
+        summaryPayload.top_tasks = taskSlices.slice(0, 10)
+        summaryPayload.tasks_breakdown = taskSlices
       }
 
       let textOutput =
@@ -2362,9 +3946,23 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         (totalMinutes % 60) +
         'm)\n' +
         '- Sessões concluídas: ' +
-        sessionsCount
+        sessionsCount +
+        ' (taxa de conclusão: ' +
+        completionRate +
+        '%)'
 
-      if (bestDay) {
+      if (verdictCount > 0) {
+        textOutput +=
+          '\n- Objetivos batidos: ' +
+          batidoCount +
+          ' de ' +
+          verdictCount +
+          ' avaliados (' +
+          verdictSuccessRate +
+          '%)'
+      }
+
+      if (bestDay && period === 'todos') {
         textOutput +=
           '\n- Recorde absoluto (Melhor Dia): ' +
           bestDay.total_minutes +
@@ -2375,10 +3973,31 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
           ' sessões)'
       }
 
+      if (includeBreakdown && taskSlices.length > 0) {
+        textOutput +=
+          '\nTop tarefas por tempo focado:\n' +
+          taskSlices
+            .slice(0, 5)
+            .map(function (s) {
+              return (
+                '  * ' +
+                s.task_title +
+                ': ' +
+                s.total_minutes +
+                'm (' +
+                s.percentage +
+                '%, ' +
+                s.sessions_count +
+                ' sessões)'
+              )
+            })
+            .join('\n')
+      }
+
       return toolOk(summaryPayload, textOutput)
     }
 
-    // FERRAMENTA EXISTENTE 7: log_focus_session
+    // FERRAMENTA EXISTENTE 7: log_focus_session (ampliada com objective e outcome_status)
     if (toolName === 'log_focus_session') {
       const dur = Number(args.duration_minutes)
       if (!dur || dur <= 0) {
@@ -2386,6 +4005,19 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       }
 
       const note = args.note ? String(args.note).slice(0, 500) : ''
+      const objective = args.objective ? String(args.objective).slice(0, 300) : ''
+      let outcomeStatus = null
+      if (args.outcome_status) {
+        const os = String(args.outcome_status).toLowerCase().trim()
+        if (os === 'batido' || os === 'parcial' || os === 'nao_foi') {
+          outcomeStatus = os
+        } else {
+          return toolFail(
+            'outcome_status inválido. Valores aceitos: "batido", "parcial", "nao_foi".',
+          )
+        }
+      }
+
       const now = new Date()
       const endedAtIso = now.toISOString()
       const startedAtDate = new Date(now.getTime() - dur * 60 * 1000)
@@ -2423,6 +4055,8 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       sessRecord.set('session_date', sessionDateStr)
       sessRecord.set('status', 'completa')
       if (note) sessRecord.set('note', note)
+      if (objective) sessRecord.set('objective', objective)
+      if (outcomeStatus) sessRecord.set('outcome_status', outcomeStatus)
 
       $app.save(sessRecord)
 
@@ -2436,7 +4070,12 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         session_date: formatIsoDate(now),
         status: 'completa',
         note: note || null,
+        objective: objective || null,
+        outcome_status: outcomeStatus || null,
       }
+
+      const verText = outcomeStatus ? ' | Veredito: [' + outcomeStatus + ']' : ''
+      const objText = objective ? ' | Objetivo: "' + objective + '"' : ''
 
       return toolOk(
         resultSess,
@@ -2444,7 +4083,10 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
           dur +
           ' minutos em "' +
           taskTitle +
-          '"). ID: ' +
+          '")' +
+          objText +
+          verText +
+          '. ID: ' +
           sessRecord.id,
       )
     }

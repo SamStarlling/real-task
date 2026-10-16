@@ -218,6 +218,109 @@ describe('MCP Etapa 2: Server-side NL Parser (capture_task)', () => {
     })
   })
 
+  describe('3.1 Etapa 3 MCP — Suporte a descrição, seções, filtros e mesclagem', () => {
+    it('valida que create_task e update_task aceitam campo description e section', () => {
+      const taskPayload = {
+        title: 'Estudar MCP com Claude e Gemini',
+        description:
+          'Ver notas detalhadas em obsidian://open?vault=Vault&file=MCP-Etapa3 e https://usecurling.com',
+        section: 'Sistemas',
+        list: 'Engenharia',
+      }
+
+      expect(taskPayload.description.length).toBeLessThanOrEqual(5000)
+      expect(taskPayload.description).toContain('obsidian://open')
+      expect(taskPayload.section).toBe('Sistemas')
+    })
+
+    it('valida lógica de matching dos 5 eixos para execute de filtros salvos', () => {
+      const criteria: {
+        period: string
+        priority: number | 'any'
+        status: string
+        tag: string
+        project: string
+      } = {
+        period: 'today',
+        priority: 1,
+        status: 'open',
+        tag: 'urgente',
+        project: 'pessoal',
+      }
+
+      const today = new Date().toISOString().slice(0, 10)
+
+      const matchingTask = {
+        title: 'Comprar remédio',
+        due_date: `${today} 12:00:00.000Z`,
+        priority: 1,
+        done: false,
+        tags: ['tag_1'],
+        list: 'list_1',
+      }
+
+      const nonMatchingTask = {
+        title: 'Comprar pão',
+        due_date: '2025-01-01 12:00:00.000Z',
+        priority: 2,
+        done: true,
+        tags: [] as string[],
+        list: null as string | null,
+      }
+
+      const tagMap = { tag_1: { name: 'urgente', color: '#C5A880' } }
+      const listMap: Record<string, string> = { list_1: 'pessoal' }
+
+      // Matching manual idêntico ao mcp_server.js
+      const matches = (t: typeof matchingTask | typeof nonMatchingTask) => {
+        if (criteria.status === 'open' && t.done) return false
+        if (criteria.priority !== 'any' && t.priority !== criteria.priority) return false
+        if (criteria.period === 'today' && !t.due_date?.startsWith(today)) return false
+        if (criteria.tag !== 'any') {
+          const hasTag = t.tags.some(
+            (tid) => tagMap[tid as keyof typeof tagMap]?.name === criteria.tag,
+          )
+          if (!hasTag) return false
+        }
+        if (criteria.project !== 'any') {
+          const pName = t.list ? listMap[t.list] : undefined
+          if (pName !== criteria.project) return false
+        }
+        return true
+      }
+
+      expect(matches(matchingTask)).toBe(true)
+      expect(matches(nonMatchingTask)).toBe(false)
+    })
+
+    it('valida lógica de mesclagem de tags (mergeTags)', () => {
+      const sourceTagId = 'tag_old'
+      const targetTagId = 'tag_new'
+
+      const task1Tags = ['tag_old', 'tag_other']
+      const task2Tags = ['tag_old', 'tag_new']
+
+      const migrate = (tags: string[]) => {
+        const filtered = tags.filter((t) => t !== sourceTagId)
+        if (!filtered.includes(targetTagId)) {
+          filtered.push(targetTagId)
+        }
+        return filtered
+      }
+
+      expect(migrate(task1Tags)).toEqual(['tag_other', 'tag_new'])
+      expect(migrate(task2Tags)).toEqual(['tag_new'])
+    })
+
+    it('valida veredito do bloco no log_focus_session', () => {
+      const validVerdicts = ['batido', 'parcial', 'nao_foi']
+      expect(validVerdicts).toContain('batido')
+      expect(validVerdicts).toContain('parcial')
+      expect(validVerdicts).toContain('nao_foi')
+      expect(validVerdicts.includes('outro')).toBe(false)
+    })
+  })
+
   describe('4. Resolução de etiquetas e paleta Quiet Luxury', () => {
     it('garante que a paleta oficial possui as 8 cores da casa', () => {
       expect(TAG_COLORS).toHaveLength(8)

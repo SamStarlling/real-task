@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.53'
+export const APP_VERSION = '0.0.54'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,24 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.53).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.54).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.54',
+    title: 'Etapa 3 MCP: Planejamento Massivo por LLM com Projetos, Seções, Filtros & Veredito',
+    tag: 'Servidor MCP & Automação',
+    highlights: [
+      'Exposição completa do campo description (até 5000 chars com links web e obsidian://) nas ferramentas create_task e update_task do MCP.',
+      'Nova ferramenta manage_projects: gerenciamento integral de projetos (coleção lists) com meta/objetivo (goal), cor hex, descrição com link Obsidian, favoritos, arquivamento, sub-projetos hierárquicos e política segura de devolução de tarefas à Inbox na exclusão.',
+      'Suporte a seções de projeto (project_sections) no MCP: criar frentes/áreas (Saúde, Sistemas, Prospecção) e alocar tarefas dinamicamente por nome/id de projeto e seção.',
+      'Nova ferramenta manage_saved_filters: gerenciar e executar filtros salvos nos 5 eixos guiados (período, prioridade, etiqueta, projeto e status) com opção de fixar na sidebar (pinned) e matching dinâmico no servidor.',
+      'Ampliação de log_focus_session: suporte nativo aos campos objective (âncora anti-drift) e outcome_status (veredito: batido, parcial, nao_foi), além de nova ferramenta get_focus_stats com quebra por tarefa (dados para o gráfico donut), total focado e taxas de sucesso.',
+      'Mesclagem de etiquetas em manage_tags: ação "merge" para migrar todas as tarefas da etiqueta de origem para o destino com limpeza automática, além de listagem com contagem de abertas e cores.',
+      'Filtros aprimorados em list_tasks: suporte direto a overdue (tarefas atrasadas), prioridades específicas (P1–P4) e seção de projeto para visões de planejamento executivo montadas por LLMs (Claude/Gemini).',
+      'Documentação técnica (/dev) e Guia do Usuário (/guia) atualizados com especificações completas das 12 ferramentas MCP e exemplos de prompts em linguagem natural.',
+    ],
+  },
   {
     version: '0.0.53',
     title: 'Etapa 3 Todoist: Hub Etiquetas & Filtros Salvos Guiados',
