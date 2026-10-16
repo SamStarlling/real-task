@@ -354,15 +354,19 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const selectTask = useCallback(
     (task: TaskRecord | null) => {
       setSelectedTask(task)
-      // Se não havia objetivo digitado ou se o timer está parado, pré-preenche com o título da tarefa
+      // Pré-preenche o objetivo como valor editável com o título da tarefa (ou limpa se removeu)
       if (!stateRef.current) {
         setCurrentObjective(task?.title || '')
       }
       setState((curr) => {
         if (!curr) return null
-        // Se a sessão em andamento não tinha objetivo ou tinha o título da tarefa anterior, atualiza
-        const updatedObjective = curr.objective ? curr.objective : task?.title || ''
+        // Se o bloco já está rodando e a tarefa foi trocada, atualiza o objetivo se estava vazio ou associado à tarefa anterior
+        const updatedObjective =
+          curr.objective && curr.objective !== curr.task?.title ? curr.objective : task?.title || ''
         const updated = { ...curr, task, objective: updatedObjective }
+        if (updatedObjective) {
+          setCurrentObjective(updatedObjective)
+        }
         broadcastState(updated)
         return updated
       })
@@ -745,7 +749,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       setSelectedTask(effectiveTask)
 
       const effectiveObjective =
-        initialObjective !== undefined
+        initialObjective !== undefined && initialObjective !== ''
           ? initialObjective.trim()
           : (currentObjectiveRef.current || effectiveTask?.title || '').trim()
 

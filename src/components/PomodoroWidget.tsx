@@ -119,21 +119,58 @@ export function PomodoroWidget() {
             </button>
           </div>
 
-          {/* Veredito de 1 toque se havia objetivo */}
+          {/* Veredito de 1 toque se havia objetivo (selo consistente com página) */}
           {pendingNote.objective && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+                background: '#090A0E',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
+                borderRadius: '6px',
+                padding: '6px 8px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: '9.5px',
+                  fontWeight: 700,
+                  color: '#C5A880',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <Target size={10} style={{ color: '#C5A880', flexShrink: 0 }} />
+                <span>OBJETIVO DO BLOCO</span>
+              </div>
               <div
                 style={{
                   fontSize: '11px',
-                  color: '#A1A1AA',
+                  color: '#F4F4F6',
+                  fontWeight: 500,
+                  borderLeft: '2px solid rgba(197, 168, 128, 0.4)',
+                  paddingLeft: '6px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
+                title={pendingNote.objective}
               >
-                Objetivo: <strong style={{ color: '#F4F4F6' }}>{pendingNote.objective}</strong>
+                "{pendingNote.objective}"
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '4px',
+                  marginTop: '2px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setSelectedVerdict('batido')}
@@ -290,28 +327,35 @@ export function PomodoroWidget() {
           </div>
           <strong>{state.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
 
-          {/* Âncora anti-drift no widget flutuante */}
+          {/* Âncora anti-drift no widget flutuante (pill refinada com borda champagne) */}
           {state.objective && (
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
                 fontSize: '11px',
-                color: '#C5A880',
-                background: 'rgba(197, 168, 128, 0.08)',
-                border: '1px solid rgba(197, 168, 128, 0.2)',
-                borderRadius: '4px',
-                padding: '2px 6px',
-                margin: '2px 0 4px',
+                color: '#F4F4F6',
+                background: 'rgba(197, 168, 128, 0.12)',
+                border: '1px solid #C5A880',
+                borderRadius: '9999px',
+                padding: '2px 8px',
+                margin: '3px 0 5px',
+                maxWidth: '100%',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                boxShadow: '0 0 8px rgba(197, 168, 128, 0.15)',
               }}
-              title={`Objetivo: ${state.objective}`}
+              title={`Objetivo do Bloco: ${state.objective}`}
             >
-              <Target size={10} style={{ flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Target size={10} style={{ color: '#C5A880', flexShrink: 0 }} />
+              <span
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 500,
+                }}
+              >
                 {state.objective}
               </span>
             </div>

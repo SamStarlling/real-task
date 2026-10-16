@@ -3609,34 +3609,131 @@ a {
   color: #c5a880;
 }
 
-/* Indicador Anti-Drift no Timer */
+/* Indicador Anti-Drift no Timer (Pill reforçada com borda champagne) */
 .pomodoro-anti-drift-bar {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
-  color: #e2c9a6;
-  background: rgba(197, 168, 128, 0.08);
-  border: 1px solid rgba(197, 168, 128, 0.2);
-  border-radius: 6px;
-  padding: 3px 8px;
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #f4f4f6;
+  background: rgba(197, 168, 128, 0.12);
+  border: 1px solid #c5a880;
+  border-radius: 9999px;
+  padding: 3px 12px;
+  max-width: 380px;
+  box-shadow: 0 0 10px rgba(197, 168, 128, 0.15);
+  transition: all 180ms ease;
 }
 
 .pomodoro-anti-drift-tag {
   font-family: 'Space Mono', monospace;
   font-size: 9px;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #090a0e;
+  background: #c5a880;
+  padding: 1.5px 6px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+/* Card Destacado de Objetivo do Bloco (Antes do Foco) */
+.pomodoro-objective-card {
+  position: fixed;
+  bottom: 84px;
+  left: 260px;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 39;
+  padding: 0 24px;
+}
+
+.pomodoro-objective-card-inner {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 580px;
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.35);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 16px rgba(197, 168, 128, 0.08);
+  transition: all 200ms ease;
+}
+
+.pomodoro-objective-card-inner.is-compact {
+  padding: 7px 12px;
+}
+
+.pomodoro-objective-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pomodoro-objective-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #c5a880;
-  background: rgba(197, 168, 128, 0.15);
-  padding: 1px 4px;
-  border-radius: 3px;
-  flex-shrink: 0;
+}
+
+.pomodoro-objective-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.pomodoro-objective-input-wrap:focus-within {
+  border-color: #c5a880;
+  box-shadow: 0 0 0 1px rgba(197, 168, 128, 0.35);
+}
+
+.pomodoro-objective-input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  color: #f4f4f6;
+}
+
+.pomodoro-objective-input::placeholder {
+  color: #71717a;
+}
+
+.pomodoro-objective-hint {
+  margin-top: 5px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: #a1a1aa;
+}
+
+@media (max-width: 900px) {
+  .pomodoro-objective-card {
+    left: 0;
+    bottom: 138px;
+    padding: 0 16px;
+  }
 }
 
 /* Badge de nota no Histórico e TaskDetail */

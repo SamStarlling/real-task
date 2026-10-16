@@ -918,6 +918,50 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
         </section>
       </div>
 
+      {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
+      {!hasActiveSession && !isReadOnlyTab && (
+        <div className="pomodoro-objective-card">
+          <div
+            className={`pomodoro-objective-card-inner ${
+              selectedTask && currentObjective === selectedTask.title ? 'is-compact' : ''
+            }`}
+          >
+            <div className="pomodoro-objective-header">
+              <label htmlFor="pomodoro-block-objective-input" className="pomodoro-objective-label">
+                <Target size={13} className="text-[#C5A880] shrink-0" />
+                <span>OBJETIVO DO BLOCO</span>
+              </label>
+              {selectedTask && (
+                <span className="text-[10px] font-['Space_Mono'] text-[#A1A1AA] truncate max-w-[220px]">
+                  Tarefa: {selectedTask.title}
+                </span>
+              )}
+            </div>
+
+            <div className="pomodoro-objective-input-wrap">
+              <input
+                id="pomodoro-block-objective-input"
+                type="text"
+                maxLength={300}
+                value={currentObjective}
+                onChange={(e) => setCurrentObjective(e.target.value)}
+                placeholder={
+                  selectedTask
+                    ? selectedTask.title
+                    : 'O que deve existir ao fim destes 25 min? (opcional)'
+                }
+                title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
+                className="pomodoro-objective-input"
+              />
+            </div>
+
+            <p className="pomodoro-objective-hint">
+              Será pedido o veredito ao fim do bloco — ✓ Batido · ~ Parcial · ✗ Não foi
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* BARRA INFERIOR FIXA DO TIMER (ESTILO TICKTICK / DESIGN SYSTEM BARBOSA) */}
       <footer className="pomodoro-bottom-bar">
         <div className="pomodoro-bottom-bar-inner">
@@ -983,14 +1027,15 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </DropdownMenu>
               </div>
 
-              {/* ÂNCORA ANTI-DRIFT VISÍVEL DURANTE O FOCO */}
+              {/* ÂNCORA ANTI-DRIFT VISÍVEL DURANTE O FOCO (Pill reforçada com borda champagne) */}
               {isRunning && (state?.objective || currentObjective) && (
                 <div
-                  className="pomodoro-anti-drift-bar mt-1"
+                  className="pomodoro-anti-drift-bar mt-1.5"
                   title="Objetivo ativo deste bloco (âncora anti-drift)"
                 >
+                  <Target size={12} className="text-[#090A0E] shrink-0" />
                   <span className="pomodoro-anti-drift-tag">OBJETIVO</span>
-                  <span className="truncate font-medium">
+                  <span className="truncate font-medium text-xs text-[#F4F4F6]">
                     {state?.objective || currentObjective}
                   </span>
                 </div>
@@ -1004,26 +1049,6 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
               <span className="pomodoro-readonly-badge">
                 Timer ativo em outra aba (somente leitura)
               </span>
-            )}
-
-            {/* CAMPO DE OBJETIVO ANTES DE INICIAR O FOCO (quando parado) */}
-            {!hasActiveSession && !isReadOnlyTab && (
-              <div className="flex items-center gap-1.5 bg-[#12141C] border border-[#C5A880]/25 rounded-lg px-2.5 py-1.5 max-w-[280px]">
-                <Target size={13} className="text-[#C5A880] shrink-0" />
-                <input
-                  type="text"
-                  maxLength={300}
-                  value={currentObjective}
-                  onChange={(e) => setCurrentObjective(e.target.value)}
-                  placeholder={
-                    selectedTask
-                      ? `Objetivo: ${selectedTask.title}`
-                      : 'Objetivo deste bloco (opcional)'
-                  }
-                  title="Objetivo do bloco: refine a meta antes de iniciar o foco"
-                  className="bg-transparent border-0 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none w-full"
-                />
-              </div>
             )}
 
             {/* Botão de transição manual exigido pelo usuário */}
@@ -1091,13 +1116,15 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
                 {/* Veredito de 1 toque: se o bloco tinha objetivo */}
                 {pendingNote.objective && (
-                  <div className="mb-2.5">
-                    <div className="text-[11px] text-[#A1A1AA] mb-1 flex items-center gap-1">
-                      <Target size={11} className="text-[#C5A880]" />
-                      <span>Objetivo:</span>
-                      <strong className="text-[#F4F4F6] font-medium truncate">
-                        "{pendingNote.objective}"
-                      </strong>
+                  <div className="mb-2.5 bg-[#090A0E] border border-[#C5A880]/30 rounded-lg p-2">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Target size={12} className="text-[#C5A880] shrink-0" />
+                      <span className="font-['Space_Mono'] text-[10px] font-bold uppercase tracking-wider text-[#C5A880]">
+                        OBJETIVO DO BLOCO
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#F4F4F6] font-medium mb-2 pl-4 border-l-2 border-[#C5A880]/40 break-words">
+                      "{pendingNote.objective}"
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5">
