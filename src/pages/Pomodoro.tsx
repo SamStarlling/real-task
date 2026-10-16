@@ -940,6 +940,53 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             </span>
           </div>
 
+          {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
+          {!hasActiveSession && !isReadOnlyTab && (
+            <div className="pomodoro-objective-card">
+              <div
+                className={`pomodoro-objective-card-inner ${
+                  selectedTask && currentObjective === selectedTask.title ? 'is-compact' : ''
+                }`}
+              >
+                <div className="pomodoro-objective-header">
+                  <label
+                    htmlFor="pomodoro-block-objective-input"
+                    className="pomodoro-objective-label"
+                  >
+                    <Target size={13} className="text-[#C5A880] shrink-0" />
+                    <span>OBJETIVO DO BLOCO</span>
+                  </label>
+                  {selectedTask && (
+                    <span className="text-[10px] font-['Space_Mono'] text-[#A1A1AA] truncate max-w-[220px]">
+                      Tarefa: {selectedTask.title}
+                    </span>
+                  )}
+                </div>
+
+                <div className="pomodoro-objective-input-wrap">
+                  <input
+                    id="pomodoro-block-objective-input"
+                    type="text"
+                    maxLength={300}
+                    value={currentObjective}
+                    onChange={(e) => setCurrentObjective(e.target.value)}
+                    placeholder={
+                      selectedTask
+                        ? selectedTask.title
+                        : 'O que deve existir ao fim deste bloco? (opcional)'
+                    }
+                    title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
+                    className="pomodoro-objective-input"
+                  />
+                </div>
+
+                <p className="pomodoro-objective-hint">
+                  Será pedido o veredito ao fim do bloco — ✓ Batido · ~ Parcial · ✗ Não foi
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* PAINEL DE NOTA / VEREDITO PÓS-FOCO NO HERO (QUANDO PENDENTE) */}
           {pendingNote && (
             <div className="mt-4 bg-[#12141C] border border-[#C5A880]/40 rounded-xl p-3.5 shadow-2xl max-w-lg w-full animate-in fade-in">
@@ -1108,50 +1155,6 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           )}
         </div>
       </section>
-
-      {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
-      {!hasActiveSession && !isReadOnlyTab && (
-        <div className="pomodoro-objective-card mb-6">
-          <div
-            className={`pomodoro-objective-card-inner ${
-              selectedTask && currentObjective === selectedTask.title ? 'is-compact' : ''
-            }`}
-          >
-            <div className="pomodoro-objective-header">
-              <label htmlFor="pomodoro-block-objective-input" className="pomodoro-objective-label">
-                <Target size={13} className="text-[#C5A880] shrink-0" />
-                <span>OBJETIVO DO BLOCO</span>
-              </label>
-              {selectedTask && (
-                <span className="text-[10px] font-['Space_Mono'] text-[#A1A1AA] truncate max-w-[220px]">
-                  Tarefa: {selectedTask.title}
-                </span>
-              )}
-            </div>
-
-            <div className="pomodoro-objective-input-wrap">
-              <input
-                id="pomodoro-block-objective-input"
-                type="text"
-                maxLength={300}
-                value={currentObjective}
-                onChange={(e) => setCurrentObjective(e.target.value)}
-                placeholder={
-                  selectedTask
-                    ? selectedTask.title
-                    : 'O que deve existir ao fim deste bloco? (opcional)'
-                }
-                title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
-                className="pomodoro-objective-input"
-              />
-            </div>
-
-            <p className="pomodoro-objective-hint">
-              Será pedido o veredito ao fim do bloco — ✓ Batido · ~ Parcial · ✗ Não foi
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* SEÇÃO PRINCIPAL EM COLUNAS: PRESETS (ESQ) & VISÃO GERAL + TIMELINE (DIR) */}
       <div className="pomodoro-columns-layout">
@@ -1694,50 +1697,6 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           }}
         />
       </section>
-
-      {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
-      {!hasActiveSession && !isReadOnlyTab && (
-        <div className="pomodoro-objective-card">
-          <div
-            className={`pomodoro-objective-card-inner ${
-              selectedTask && currentObjective === selectedTask.title ? 'is-compact' : ''
-            }`}
-          >
-            <div className="pomodoro-objective-header">
-              <label htmlFor="pomodoro-block-objective-input" className="pomodoro-objective-label">
-                <Target size={13} className="text-[#C5A880] shrink-0" />
-                <span>OBJETIVO DO BLOCO</span>
-              </label>
-              {selectedTask && (
-                <span className="text-[10px] font-['Space_Mono'] text-[#A1A1AA] truncate max-w-[220px]">
-                  Tarefa: {selectedTask.title}
-                </span>
-              )}
-            </div>
-
-            <div className="pomodoro-objective-input-wrap">
-              <input
-                id="pomodoro-block-objective-input"
-                type="text"
-                maxLength={300}
-                value={currentObjective}
-                onChange={(e) => setCurrentObjective(e.target.value)}
-                placeholder={
-                  selectedTask
-                    ? selectedTask.title
-                    : 'O que deve existir ao fim destes 25 min? (opcional)'
-                }
-                title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
-                className="pomodoro-objective-input"
-              />
-            </div>
-
-            <p className="pomodoro-objective-hint">
-              Será pedido o veredito ao fim do bloco — ✓ Batido · ~ Parcial · ✗ Não foi
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* =========================================================
           MODO FOCO EM TELA CHEIA (IMERSÃO TOTAL · BARBOSA SYSTEM)

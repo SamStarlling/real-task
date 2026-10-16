@@ -3641,22 +3641,19 @@ a {
 
 /* Card Destacado de Objetivo do Bloco (Antes do Foco) */
 .pomodoro-objective-card {
-  position: fixed;
-  bottom: 84px;
-  left: 260px;
-  right: 0;
+  position: static;
   display: flex;
   justify-content: center;
-  pointer-events: none;
-  z-index: 39;
-  padding: 0 24px;
+  width: 100%;
+  max-width: 580px;
+  margin-top: 16px;
+  padding: 0;
+  z-index: auto;
 }
 
 .pomodoro-objective-card-inner {
-  pointer-events: auto;
   width: 100%;
-  max-width: 580px;
-  background: #12141c;
+  background: #090a0e;
   border: 1px solid rgba(197, 168, 128, 0.35);
   border-radius: 12px;
   padding: 10px 14px;
@@ -3692,7 +3689,7 @@ a {
 .pomodoro-objective-input-wrap {
   display: flex;
   align-items: center;
-  background: #090a0e;
+  background: #12141c;
   border: 1px solid rgba(197, 168, 128, 0.25);
   border-radius: 8px;
   padding: 6px 10px;
@@ -3730,9 +3727,8 @@ a {
 
 @media (max-width: 900px) {
   .pomodoro-objective-card {
-    left: 0;
-    bottom: 138px;
-    padding: 0 16px;
+    padding: 0;
+    margin-top: 14px;
   }
 }
 
