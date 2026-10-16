@@ -7,12 +7,14 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  FolderKanban,
   GripVertical,
   Inbox,
   LogOut,
   Menu,
   Pin,
   Plus,
+  Star,
   Sun,
   Timer,
   X,
@@ -46,6 +48,7 @@ const desktopNavLinks = [
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
   ['/semana', 'Semana', CalendarDays],
+  ['/projetos', 'Projetos', FolderKanban],
   ['/pomodoro', 'Pomodoro', Timer],
   ['/historico', 'Histórico', Clock3],
 ] as const
@@ -54,6 +57,7 @@ const mobileBottomNavLinks = [
   ['/', 'Hoje', Sun],
   ['/?view=amanha', 'Amanhã', ArrowRight],
   ['/semana', 'Semana', CalendarDays],
+  ['/projetos', 'Projetos', FolderKanban],
   ['/pomodoro', 'Pomodoro', Timer],
   ['/historico', 'Histórico', Clock3],
 ] as const
@@ -385,7 +389,9 @@ export function Layout({
               ? !!t.due_date && pbDay(t.due_date) >= today && pbDay(t.due_date) <= day6
               : label === 'Inbox'
                 ? !t.due_date
-                : false),
+                : label === 'Projetos'
+                  ? !!t.list
+                  : false),
     ).length
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
@@ -580,130 +586,162 @@ export function Layout({
           )}
         </div>
 
-        {/* SEÇÃO LISTAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
+        {/* SEÇÃO PROJETOS (FAVORITOS NO TOPO + LISTA + COR + CONTAGENS) */}
         <div className="sidebar-custom-section">
-          <button
-            type="button"
-            className="sidebar-section-header"
-            onClick={toggleListsCollapse}
-            aria-expanded={!listsCollapsed}
-            title={listsCollapsed ? 'Expandir listas' : 'Recolher listas'}
-          >
-            <span className="sidebar-section-title">LISTAS</span>
-            <span className="sidebar-section-meta">
-              {optimisticLists.length > 0 && (
-                <span className="sidebar-section-count">{optimisticLists.length}</span>
-              )}
-              {listsCollapsed ? (
-                <ChevronRight className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
-              )}
-            </span>
-          </button>
+          <div className="flex items-center justify-between px-3 py-1">
+            <button
+              type="button"
+              className="sidebar-section-header flex-1 !p-0"
+              onClick={toggleListsCollapse}
+              aria-expanded={!listsCollapsed}
+              title={listsCollapsed ? 'Expandir projetos' : 'Recolher projetos'}
+            >
+              <span className="sidebar-section-title">PROJETOS</span>
+              <span className="sidebar-section-meta">
+                {optimisticLists.length > 0 && (
+                  <span className="sidebar-section-count">{optimisticLists.length}</span>
+                )}
+                {listsCollapsed ? (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/projetos')
+                onItemClick?.()
+              }}
+              className="text-[#71717A] hover:text-[#C5A880] p-1 transition-colors"
+              title="Gerenciar todos os projetos"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {!listsCollapsed && (
             <div className="sidebar-custom-list">
               {optimisticLists.length === 0 ? (
-                <div className="sidebar-empty-hint">Nenhuma lista criada</div>
+                <div className="sidebar-empty-hint">Nenhum projeto criado</div>
               ) : (
-                optimisticLists.map((list) => {
-                  const listCount = openCountByList.get(list.id) || 0
-                  const isPinned = !!list.pinned
-                  const isActive = activeUrlList === list.id
-                  const isDragging = draggingListId === list.id
-                  const dropPos = listDropTarget?.id === list.id ? listDropTarget.position : null
+                (() => {
+                  // Ordenação: Favoritos no topo da seção de projetos
+                  const activeNonArchived = optimisticLists.filter((l) => !l.archived)
+                  const favorites = activeNonArchived.filter((l) => l.favorite)
+                  const regulars = activeNonArchived.filter((l) => !l.favorite)
+                  const displayLists = [...favorites, ...regulars]
 
-                  return (
-                    <div
-                      key={list.id}
-                      data-list-id={list.id}
-                      draggable={true}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', list.id)
-                        e.dataTransfer.effectAllowed = 'move'
-                        setDraggingListId(list.id)
-                      }}
-                      onDragEnd={() => {
-                        setDraggingListId(null)
-                        setListDropTarget(null)
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.dataTransfer.dropEffect = 'move'
-                        if (!draggingListId || draggingListId === list.id) {
-                          setListDropTarget(null)
-                          return
-                        }
-                        const rect = e.currentTarget.getBoundingClientRect()
-                        const midY = rect.top + rect.height / 2
-                        const position = e.clientY < midY ? 'before' : 'after'
-                        setListDropTarget({ id: list.id, position })
-                      }}
-                      onDrop={async (e) => {
-                        e.preventDefault()
-                        const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
-                        const pos =
-                          listDropTarget?.id === list.id ? listDropTarget.position : 'before'
-                        setDraggingListId(null)
-                        setListDropTarget(null)
-                        if (sourceId && sourceId !== list.id) {
-                          await commitListReorder(sourceId, list.id, pos)
-                        }
-                      }}
-                      className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
-                        isActive ? 'active' : ''
-                      } ${isDragging ? 'is-dragging' : ''} ${
-                        dropPos ? `drop-indicator-${dropPos}` : ''
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className="sidebar-drag-handle"
-                        title="Arrastar para reordenar"
-                        onTouchStart={(e) => {
-                          const touch = e.touches[0]
-                          listTouchStateRef.current = {
-                            activeId: list.id,
-                            lastTouchY: touch.clientY,
-                          }
+                  return displayLists.map((list) => {
+                    const listCount = openCountByList.get(list.id) || 0
+                    const isPinned = !!list.pinned
+                    const isFav = !!list.favorite
+                    const isActive =
+                      location.pathname === `/projetos/${list.id}` || activeUrlList === list.id
+                    const isDragging = draggingListId === list.id
+                    const dropPos = listDropTarget?.id === list.id ? listDropTarget.position : null
+
+                    return (
+                      <div
+                        key={list.id}
+                        data-list-id={list.id}
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', list.id)
+                          e.dataTransfer.effectAllowed = 'move'
                           setDraggingListId(list.id)
                         }}
-                      >
-                        <GripVertical className="w-3 h-3 text-[#71717A]" />
-                      </button>
-
-                      <button
-                        type="button"
-                        className="sidebar-item-link"
-                        onClick={() => {
-                          navigate(`/?view=lista&list=${list.id}`)
-                          onItemClick?.()
+                        onDragEnd={() => {
+                          setDraggingListId(null)
+                          setListDropTarget(null)
                         }}
-                        title={`Filtrar por lista #${list.name}${isPinned ? ' (Prioritária)' : ''}`}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                          if (!draggingListId || draggingListId === list.id) {
+                            setListDropTarget(null)
+                            return
+                          }
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const midY = rect.top + rect.height / 2
+                          const position = e.clientY < midY ? 'before' : 'after'
+                          setListDropTarget({ id: list.id, position })
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
+                          const pos =
+                            listDropTarget?.id === list.id ? listDropTarget.position : 'before'
+                          setDraggingListId(null)
+                          setListDropTarget(null)
+                          if (sourceId && sourceId !== list.id) {
+                            await commitListReorder(sourceId, list.id, pos)
+                          }
+                        }}
+                        className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
+                          isActive ? 'active' : ''
+                        } ${isDragging ? 'is-dragging' : ''} ${
+                          dropPos ? `drop-indicator-${dropPos}` : ''
+                        }`}
                       >
-                        <span className="sidebar-item-hash">#</span>
-                        <span className="sidebar-item-name">{list.name}</span>
-                        <span className={`sidebar-item-count ${listCount === 0 ? 'zero' : ''}`}>
-                          {listCount}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className="sidebar-drag-handle"
+                          title="Arrastar para reordenar"
+                          onTouchStart={(e) => {
+                            const touch = e.touches[0]
+                            listTouchStateRef.current = {
+                              activeId: list.id,
+                              lastTouchY: touch.clientY,
+                            }
+                            setDraggingListId(list.id)
+                          }}
+                        >
+                          <GripVertical className="w-3 h-3 text-[#71717A]" />
+                        </button>
 
-                      <button
-                        type="button"
-                        className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
-                        onClick={(e) => handleToggleListPin(e, list)}
-                        title={
-                          isPinned
-                            ? 'Lista prioritária (80/20) · Clique para desmarcar'
-                            : 'Fixar como lista prioritária (80/20)'
-                        }
-                      >
-                        <Pin className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )
-                })
+                        <button
+                          type="button"
+                          className="sidebar-item-link"
+                          onClick={() => {
+                            navigate(`/projetos/${list.id}`)
+                            onItemClick?.()
+                          }}
+                          title={`Projeto ${list.name}${isFav ? ' (Favorito)' : ''}${isPinned ? ' (Prioritário 80/20)' : ''}`}
+                        >
+                          <span
+                            className="sidebar-item-dot"
+                            style={{ backgroundColor: list.color || '#C5A880' }}
+                          />
+                          <span className="sidebar-item-name flex items-center gap-1">
+                            <span>{list.name}</span>
+                            {isFav && (
+                              <Star className="w-2.5 h-2.5 text-[#C5A880] fill-[#C5A880]" />
+                            )}
+                          </span>
+                          <span className={`sidebar-item-count ${listCount === 0 ? 'zero' : ''}`}>
+                            {listCount}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
+                          onClick={(e) => handleToggleListPin(e, list)}
+                          title={
+                            isPinned
+                              ? 'Projeto prioritário (80/20) · Clique para desmarcar'
+                              : 'Fixar como projeto prioritário (80/20)'
+                          }
+                        >
+                          <Pin className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )
+                  })
+                })()
               )}
             </div>
           )}

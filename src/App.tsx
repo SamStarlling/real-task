@@ -13,6 +13,8 @@ import { WeekPage } from '@/pages/Week'
 import { Settings } from '@/pages/Settings'
 import { PomodoroPage } from '@/pages/Pomodoro'
 import { AuthPage } from '@/pages/AuthPages'
+import { ProjectsPage } from '@/pages/Projects'
+import { ProjectDetail } from '@/pages/ProjectDetail'
 import { getLists, getSessions, getTags, getTasks } from '@/services/data'
 import type { ListRecord, SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -36,6 +38,7 @@ function Protected() {
   useRealtime<SessionRecord>('sessions', refresh, !!user)
   useRealtime<TagRecord>('tags', refresh, !!user)
   useRealtime<ListRecord>('lists', refresh, !!user)
+  useRealtime('project_sections', refresh, !!user)
 
   // Alertas nativos e som Web Audio em background enquanto o app estiver aberto
   useTaskNotifications(tasks, user)
@@ -53,6 +56,14 @@ function Protected() {
         <Route
           path="/semana"
           element={<WeekPage tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
+        />
+        <Route
+          path="/projetos"
+          element={<ProjectsPage tasks={tasks} lists={lists} refresh={refresh} />}
+        />
+        <Route
+          path="/projetos/:id"
+          element={<ProjectDetail tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
         />
         <Route
           path="/pomodoro"

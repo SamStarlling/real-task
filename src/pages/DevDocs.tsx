@@ -588,9 +588,22 @@ export function DevDocs() {
                         </td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-mono text-[#C5A880] font-bold">lists</td>
+                        <td className="p-3 font-mono text-[#C5A880] font-bold">lists (Projetos)</td>
                         <td className="p-3 text-[#A1A1AA]">base</td>
-                        <td className="p-3 font-mono text-[#A1A1AA]">name, order, pinned</td>
+                        <td className="p-3 font-mono text-[#A1A1AA]">
+                          name, color, goal, description, favorite, archived, parent (auto-rel),
+                          order, pinned
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
+                          user.id = @request.auth.id
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="p-3 font-mono text-[#C5A880] font-bold">project_sections</td>
+                        <td className="p-3 text-[#A1A1AA]">base</td>
+                        <td className="p-3 font-mono text-[#A1A1AA]">
+                          name, project (relation → lists), order, user
+                        </td>
                         <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
                           user.id = @request.auth.id
                         </td>
@@ -653,7 +666,14 @@ export function DevDocs() {
                 <div>
                   <code>
                     lists: idx_lists_user_name (UNIQUE: user, name), idx_lists_user_pinned_order
-                    (user, pinned, order)
+                    (user, pinned, order), idx_lists_user_archived, idx_lists_user_favorite,
+                    idx_lists_parent
+                  </code>
+                </div>
+                <div>
+                  <code>
+                    project_sections: idx_sections_project_order (project, order), idx_sections_user
+                    (user)
                   </code>
                 </div>
                 <div>

@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.48'
+export const APP_VERSION = '0.0.49'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,21 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.48).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.49).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.49',
+    title: 'Etapa 1: Arquitetura de Projetos Todoist & Seções',
+    tag: 'Projetos Todoist',
+    highlights: [
+      'Evolução do schema PocketBase (migration 0021): coleção lists promovida a Projetos completos com cor personalizada, meta/objetivo mensurável do ciclo (goal), descrição com link Obsidian, favoritos, arquivamento e auto-relação para sub-projetos.',
+      'Nova coleção project_sections com relacionamento de tarefas (campo section em tasks) para frentes/áreas (Saúde, Desenvolvimento, Prospecção) e rotinas (Diário, Semanal, Mensal).',
+      'Página "Meus Projetos" (/projetos) com busca em tempo real, visual quiet luxury dark #090A0E + champagne #C5A880, barra de progresso de conclusão, agrupamento hierárquico pai-filho e gestão completa com política de segurança de tarefas órfãs.',
+      'Página de Projeto Individual (/projetos/:id) com destaque do objetivo mensurável, link Obsidian clicável com suporte a protocolo nativo, calibração de prazo (Estimado × Realizado), seções dinâmicas e drag-and-drop de tarefas.',
+      'Autocomplete de projetos via "#" na captura rápida contextual e integração na Sidebar com destaque no topo para favoritos.',
+    ],
+  },
   {
     version: '0.0.48',
     title: 'Atualização do Hub Técnico & Metadados',

@@ -23,6 +23,27 @@ export interface ListRecord extends RecordModel {
   user: string
   order?: number
   pinned?: boolean
+  color?: string
+  goal?: string
+  description?: string
+  favorite?: boolean
+  archived?: boolean
+  parent?: string
+  expand?: {
+    parent?: ListRecord
+  }
+}
+
+export type ProjectRecord = ListRecord
+
+export interface ProjectSectionRecord extends RecordModel {
+  name: string
+  user: string
+  project: string
+  order?: number
+  expand?: {
+    project?: ListRecord
+  }
 }
 
 export interface TagRecord extends RecordModel {
@@ -61,9 +82,11 @@ export interface TaskRecord extends RecordModel {
   due_time?: string // Formato "HH:MM"
   priority?: TaskPriority // 1-4 ou 0/undefined
   subtasks?: SubtaskItem[]
+  section?: string
   expand?: {
     list?: ListRecord
     tags?: TagRecord[]
+    section?: ProjectSectionRecord
   }
 }
 export type OutcomeStatus = 'batido' | 'parcial' | 'nao_foi'

@@ -3,6 +3,8 @@ import type {
   FocusPresetRecord,
   ListRecord,
   NotificationPreferences,
+  ProjectRecord,
+  ProjectSectionRecord,
   RecurrenceMode,
   RecurrenceType,
   SessionRecord,
@@ -16,6 +18,8 @@ import type {
 } from '@/types'
 export type {
   NotificationPreferences,
+  ProjectRecord,
+  ProjectSectionRecord,
   RecurrenceMode,
   RecurrenceType,
   SubtaskItem,
@@ -276,36 +280,176 @@ export function getGoalForDate(date: Date = new Date(), user?: Partial<UserRecor
   return goals[key] ?? 0
 }
 
-export const getLists = () =>
-  pb.collection<ListRecord>('lists').getFullList({ sort: '-pinned,order,name' })
+export const getLists = (includeArchived: boolean = true) =>
+  pb.collection<ListRecord>('lists').getFullList({
+    sort: '-favorite,-pinned,order,name',
+    expand: 'parent',
+    ...(includeArchived ? {} : { filter: 'archived != true' }),
+  })
+export const getProjects = getLists
+
+export const getProjectById = (id: string) =>
+  pb.collection<ListRecord>('lists').getOne(id, { expand: 'parent' })
+
 export const getTags = () =>
   pb.collection<TagRecord>('tags').getFullList({ sort: '-pinned,order,name' })
 export const getTasks = () =>
-  pb.collection<TaskRecord>('tasks').getFullList({ sort: 'order,-created', expand: 'list,tags' })
+  pb
+    .collection<TaskRecord>('tasks')
+    .getFullList({ sort: 'order,-created', expand: 'list,tags,section' })
 export const getSessions = () =>
   pb.collection<SessionRecord>('sessions').getFullList({ sort: '-started_at', expand: 'task' })
-export const createList = (name: string, user: string, order?: number) =>
-  pb.collection<ListRecord>('lists').create({ name, user, order: order ?? 10, pinned: false })
+
+export const createList = (
+  name: string,
+  user: string,
+  extraOrOrder?:
+    | number
+    | Partial<{
+        order?: number
+        color?: string
+        goal?: string
+        description?: string
+        favorite?: boolean
+        archived?: boolean
+        parent?: string
+        pinned?: boolean
+      }>,
+) => {
+  const extra = typeof extraOrOrder === 'number' ? { order: extraOrOrder } : extraOrOrder
+  return pb.collection<ListRecord>('lists').create({
+    name,
+    user,
+    order: extra?.order ?? 10,
+    pinned: extra?.pinned ?? false,
+    color: extra?.color || '#C5A880',
+    goal: extra?.goal || '',
+    description: extra?.description || '',
+    favorite: extra?.favorite ?? false,
+    archived: extra?.archived ?? false,
+    parent: extra?.parent || '',
+  })
+}
+
+export const createProject = createList
+
 export const updateList = (
   id: string,
-  data: Partial<{ name: string; order: number; pinned: boolean }>,
-) => pb.collection<ListRecord>('lists').update(id, data)
+  data: Partial<{
+    name: string
+    order: number
+    pinned: boolean
+    color: string
+    goal: string
+    description: string
+    favorite: boolean
+    archived: boolean
+    parent: string
+  }>,
+) => pb.collection<ListRecord>('lists').update(id, data, { expand: 'parent' })
+
+export const updateProject = updateList
+
 export const deleteList = async (id: string) => {
-  // Remove a referência de lista das tarefas antes de deletar
+  // Remove a referência de projeto e de seções das tarefas antes de deletar (tarefas voltam para Inbox)
   try {
     const tasksWithList = await pb.collection<TaskRecord>('tasks').getFullList({
       filter: pb.filter('list = {:listId}', { listId: id }),
     })
     for (const task of tasksWithList) {
-      await pb.collection('tasks').update(task.id, { list: '' })
+      await pb.collection('tasks').update(task.id, { list: '', section: '' })
     }
   } catch (err) {
     console.warn('Aviso ao desvincular lista de tarefas:', err)
   }
+
+  // Deleta as seções pertencentes ao projeto
+  try {
+    const sections = await pb.collection<ProjectSectionRecord>('project_sections').getFullList({
+      filter: pb.filter('project = {:projectId}', { projectId: id }),
+    })
+    for (const sec of sections) {
+      await pb.collection('project_sections').delete(sec.id)
+    }
+  } catch (err) {
+    console.warn('Aviso ao deletar seções do projeto:', err)
+  }
+
+  // Desvincula subprojetos filhos (parent = id)
+  try {
+    const childProjects = await pb.collection<ListRecord>('lists').getFullList({
+      filter: pb.filter('parent = {:parentId}', { parentId: id }),
+    })
+    for (const child of childProjects) {
+      await pb.collection('lists').update(child.id, { parent: '' })
+    }
+  } catch (err) {
+    console.warn('Aviso ao desvincular sub-projetos:', err)
+  }
+
   return pb.collection<ListRecord>('lists').delete(id)
 }
+export const deleteProject = deleteList
+
 export const toggleListPinned = (id: string, currentPinned: boolean) =>
   pb.collection<ListRecord>('lists').update(id, { pinned: !currentPinned })
+
+export const toggleProjectFavorite = (id: string, currentFavorite: boolean) =>
+  pb.collection<ListRecord>('lists').update(id, { favorite: !currentFavorite })
+
+export const toggleProjectArchived = (id: string, currentArchived: boolean) =>
+  pb.collection<ListRecord>('lists').update(id, { archived: !currentArchived })
+
+// --- SEÇÕES DE PROJETO ---
+export const getProjectSections = (projectId?: string) =>
+  pb.collection<ProjectSectionRecord>('project_sections').getFullList({
+    sort: 'order,created',
+    ...(projectId ? { filter: pb.filter('project = {:projectId}', { projectId }) } : {}),
+  })
+
+export const createProjectSection = (data: {
+  name: string
+  user: string
+  project: string
+  order?: number
+}) =>
+  pb.collection<ProjectSectionRecord>('project_sections').create({
+    order: 10,
+    ...data,
+  })
+
+export const updateProjectSection = (id: string, data: Partial<{ name: string; order: number }>) =>
+  pb.collection<ProjectSectionRecord>('project_sections').update(id, data)
+
+export const deleteProjectSection = async (id: string) => {
+  // Desvincula as tarefas da seção antes de deletar (voltam para "Sem seção")
+  try {
+    const tasksWithSection = await pb.collection<TaskRecord>('tasks').getFullList({
+      filter: pb.filter('section = {:secId}', { secId: id }),
+    })
+    for (const t of tasksWithSection) {
+      await pb.collection('tasks').update(t.id, { section: '' })
+    }
+  } catch (err) {
+    console.warn('Aviso ao desvincular tarefas da seção:', err)
+  }
+  return pb.collection<ProjectSectionRecord>('project_sections').delete(id)
+}
+
+export const reorderProjectSections = async (
+  orderedSections: ProjectSectionRecord[],
+): Promise<void> => {
+  const updates: Promise<unknown>[] = []
+  orderedSections.forEach((sec, idx) => {
+    const newOrder = (idx + 1) * 10
+    if (sec.order !== newOrder) {
+      updates.push(pb.collection('project_sections').update(sec.id, { order: newOrder }))
+    }
+  })
+  if (updates.length > 0) {
+    await Promise.all(updates)
+  }
+}
 export const createTag = (data: {
   name: string
   user: string
@@ -590,7 +734,7 @@ export async function reorderLists(orderedLists: ListRecord[]): Promise<void> {
 }
 export async function createTask(data: Record<string, unknown>): Promise<TaskRecord> {
   try {
-    return await pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags' })
+    return await pb.collection<TaskRecord>('tasks').create(data, { expand: 'list,tags,section' })
   } catch (err) {
     // 401 ou 400/regra falha = token expirado ou sessão inválida: avisa e redireciona ao /login
     if (isAuthSessionExpiredError(err)) {
@@ -600,7 +744,7 @@ export async function createTask(data: Record<string, unknown>): Promise<TaskRec
   }
 }
 export const updateTask = (id: string, data: Record<string, unknown>) =>
-  pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list,tags' })
+  pb.collection<TaskRecord>('tasks').update(id, data, { expand: 'list,tags,section' })
 
 /**
  * Move uma tarefa para outra lista (ou limpa a lista se targetListId for vazio/null)
@@ -608,10 +752,27 @@ export const updateTask = (id: string, data: Record<string, unknown>) =>
 export async function moveTaskToList(
   taskId: string,
   targetListId: string | null,
+  sectionId?: string | null,
+): Promise<TaskRecord> {
+  const payload: Record<string, unknown> = {
+    list: targetListId || '',
+  }
+  if (sectionId !== undefined) {
+    payload.section = sectionId || ''
+  }
+  return pb.collection<TaskRecord>('tasks').update(taskId, payload, { expand: 'list,tags,section' })
+}
+
+/**
+ * Move uma tarefa para outra seção dentro do projeto
+ */
+export async function moveTaskToSection(
+  taskId: string,
+  targetSectionId: string | null,
 ): Promise<TaskRecord> {
   return pb
     .collection<TaskRecord>('tasks')
-    .update(taskId, { list: targetListId || '' }, { expand: 'list,tags' })
+    .update(taskId, { section: targetSectionId || '' }, { expand: 'list,tags,section' })
 }
 
 /**

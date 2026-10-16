@@ -24,9 +24,10 @@ const TOC_ITEMS: TocItem[] = [
   { id: 'comece-aqui', num: '00', title: 'Comece por aqui' },
   { id: 'capturar', num: '01', title: 'Capturar pendências' },
   { id: 'organizar', num: '02', title: 'Organizar e priorizar' },
-  { id: 'focar', num: '03', title: 'Focar com Pomodoro' },
-  { id: 'revisar', num: '04', title: 'Revisar semana e métricas' },
-  { id: 'dicas-mobile', num: '05', title: 'Uso no celular' },
+  { id: 'projetos', num: '03', title: 'Projetos Todoist & Seções' },
+  { id: 'focar', num: '04', title: 'Focar com Pomodoro' },
+  { id: 'revisar', num: '05', title: 'Revisar semana e métricas' },
+  { id: 'dicas-mobile', num: '06', title: 'Uso no celular' },
 ]
 
 export function UserGuide() {
@@ -247,10 +248,10 @@ export function UserGuide() {
                         <td className="p-3 text-[#A1A1AA]">Cria na hora se ainda não existir</td>
                       </tr>
                       <tr>
-                        <td className="p-3 font-mono text-[#C5A880]">#projetos / #pessoal</td>
-                        <td className="p-3 text-[#E4E4E7]">Vincula à lista correspondente</td>
+                        <td className="p-3 font-mono text-[#C5A880]">#projetos / #ciclo12s</td>
+                        <td className="p-3 text-[#E4E4E7]">Vincula ao projeto correspondente</td>
                         <td className="p-3 text-[#A1A1AA]">
-                          Permite agrupar a visualização por lista
+                          Autocomplete de projetos com objetivos mensuráveis
                         </td>
                       </tr>
                       <tr>
@@ -444,10 +445,96 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 03: FOCAR COM POMODORO */}
-          <section id="focar" className="scroll-mt-6">
+          {/* TAREFA 03: PROJETOS TODOIST & SEÇÕES */}
+          <section id="projetos" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
               <span className="font-mono text-xl font-bold text-[#C5A880]">03</span>
+              <div>
+                <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
+                  Projetos Todoist: Ciclos de 12 Semanas, Recorrentes e Seções
+                </h2>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                  Organização por objetivos mensuráveis, áreas de trabalho e calibração de prazo
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p>
+                O modelo de projetos do Barbosa System une a flexibilidade hierárquica do Todoist
+                com a precisão de metas de longo prazo. Você pode estruturar seu trabalho em dois
+                pilares:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6] mb-2">
+                    1. Projetos &quot;Ciclo&quot; de 12 Semanas
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Projetos com <strong>Objetivo Mensurável</strong> definido previamente (ex.:{' '}
+                    <em>&quot;Faturar R$10k em 12 semanas&quot;</em>) e vínculo direto com sua pasta
+                    do Obsidian (<code>obsidian://</code>).
+                  </p>
+                  <p className="text-xs text-[#D4D4D8]">
+                    Dentro dele, utilize <strong>Seções</strong> para representar suas frentes e
+                    áreas de atuação: <em>Saúde</em>, <em>Desenvolvimento / Sistemas</em> e{' '}
+                    <em>Prospecção de Clientes</em>.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6] mb-2">
+                    2. Projetos &quot;Recorrentes&quot;
+                  </h3>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Projetos para hábitos e rotinas de frequência fixa (treinar seg/qua/sex,
+                    prospectar 10 contatos/dia, ler 30 min).
+                  </p>
+                  <p className="text-xs text-[#D4D4D8]">
+                    Organizados por seções de periodicidade: <em>Diário</em>, <em>Semanal</em> e{' '}
+                    <em>Mensal</em>.
+                  </p>
+                </div>
+              </div>
+
+              {/* RECURSOS DOS PROJETOS */}
+              <div className="p-4 rounded-xl bg-[#090A0E] border border-[#27272A] space-y-3">
+                <span className="font-mono text-xs uppercase tracking-wider text-[#C5A880] block font-bold">
+                  Recursos em /projetos e /projetos/:id:
+                </span>
+                <ul className="list-disc list-inside space-y-1.5 text-xs text-[#D4D4D8]">
+                  <li>
+                    <strong>Resumo Estimado × Real:</strong> calibração de prazo em tempo real
+                    somando os minutos previstos das tarefas vs. o tempo real registrado nas sessões
+                    Pomodoro.
+                  </li>
+                  <li>
+                    <strong>Links Obsidian & Web:</strong> descrições com links no formato{' '}
+                    <code>obsidian://open?vault=...</code> ou web abrem diretamente no seu
+                    aplicativo Obsidian ou navegador.
+                  </li>
+                  <li>
+                    <strong>Seções & Drag-and-Drop:</strong> crie seções personalizadas, reordene
+                    tarefas e mova pendências entre seções arrastando os cartões.
+                  </li>
+                  <li>
+                    <strong>Projetos Favoritos:</strong> projetos favoritados ganham selo dourado e
+                    ficam fixados em destaque no topo da seção PROJETOS na sidebar.
+                  </li>
+                  <li>
+                    <strong>Segurança de Dados:</strong> caso exclua um projeto, todas as tarefas
+                    vinculadas voltam em segurança para a Inbox.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* TAREFA 04: FOCAR COM POMODORO */}
+          <section id="focar" className="scroll-mt-6">
+            <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
+              <span className="font-mono text-xl font-bold text-[#C5A880]">04</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Executar em blocos de foco com o Pomodoro integrado
@@ -572,10 +659,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 04: REVISAR SEMANA E MÉTRICAS */}
+          {/* TAREFA 05: REVISAR SEMANA E MÉTRICAS */}
           <section id="revisar" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">04</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Planejar a semana e acompanhar seu ritmo real
@@ -681,10 +768,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 05: DICAS PARA CELULAR */}
+          {/* TAREFA 06: DICAS PARA CELULAR */}
           <section id="dicas-mobile" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">06</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Usando o aplicativo no celular

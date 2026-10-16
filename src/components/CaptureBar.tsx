@@ -99,11 +99,14 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         ? parsedRecurrence.weekdays
         : recurrenceWeekdays
 
-  // Detecção de # (Listas)
+  // Detecção de # (Projetos / Listas)
   const hashMatch = text.match(/(?:^|\s)#([^\s]*)$/)
   const isHashOpen = !!hashMatch
   const hashQuery = hashMatch?.[1] || ''
-  const listMatches = lists.filter((l) => l.name.toLowerCase().includes(hashQuery.toLowerCase()))
+  const activeLists = lists.filter((l) => !l.archived)
+  const listMatches = activeLists.filter((l) =>
+    l.name.toLowerCase().includes(hashQuery.toLowerCase()),
+  )
   const listOptions =
     hashQuery && !listMatches.some((l) => l.name.toLowerCase() === hashQuery.toLowerCase())
       ? [null, ...listMatches]
@@ -393,7 +396,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
               setActive(0)
             }}
             onKeyDown={key}
-            placeholder="O que precisa ser feito? (@tag, #lista, p1–p4 ou !, amanhã...)"
+            placeholder="O que precisa ser feito? (@tag, #projeto, p1–p4 ou !, amanhã...)"
           />
           {parsed && <span className="chip">{formatShortDate(parsed.date)}</span>}
           {priorityMeta && (
@@ -775,24 +778,34 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
 
-      {/* Menu suspenso para # Listas */}
+      {/* Menu suspenso para # Projetos */}
       {isHashOpen && (
         <div className="list-menu">
           {listOptions.length ? (
             listOptions.map((item, i) => (
               <button
                 type="button"
-                className={i === active ? 'active' : ''}
+                className={`autocomplete-project-item ${i === active ? 'active' : ''}`}
                 key={item?.id || 'new'}
                 onClick={() => chooseList(item)}
               >
-                <Folder />
-                {item ? item.name : `Criar lista '${hashQuery}'`}
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 mr-1.5"
+                  style={{ backgroundColor: item?.color || '#C5A880' }}
+                />
+                <span className="flex-1 text-left">
+                  {item ? item.name : `Criar projeto '#${hashQuery}'`}
+                </span>
+                {item?.goal && (
+                  <span className="text-[10px] text-[#71717A] max-w-[130px] truncate italic ml-2">
+                    {item.goal}
+                  </span>
+                )}
               </button>
             ))
           ) : (
             <span className="text-xs text-muted-foreground px-2 py-1">
-              Nenhuma lista encontrada
+              Nenhum projeto encontrado
             </span>
           )}
         </div>
@@ -841,7 +854,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           <kbd>@tag</kbd> etiqueta
         </span>
         <span className="capture-hint-item">
-          <kbd>#lista</kbd> projeto
+          <kbd>#projeto</kbd> projeto
         </span>
         <span className="capture-hint-item">
           <kbd>todo dia / toda semana / todo dia 15</kbd> repetição
