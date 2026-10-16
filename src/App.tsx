@@ -15,8 +15,9 @@ import { PomodoroPage } from '@/pages/Pomodoro'
 import { AuthPage } from '@/pages/AuthPages'
 import { ProjectsPage } from '@/pages/Projects'
 import { ProjectDetail } from '@/pages/ProjectDetail'
-import { getLists, getSessions, getTags, getTasks } from '@/services/data'
-import type { ListRecord, SessionRecord, TagRecord, TaskRecord } from '@/types'
+import { FiltersHubPage } from '@/pages/FiltersHub'
+import { getLists, getSavedFilters, getSessions, getTags, getTasks } from '@/services/data'
+import type { ListRecord, SavedFilterRecord, SessionRecord, TagRecord, TaskRecord } from '@/types'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useTaskNotifications } from '@/hooks/use-task-notifications'
 
@@ -26,18 +27,21 @@ function Protected() {
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [tags, setTags] = useState<TagRecord[]>([])
   const [lists, setLists] = useState<ListRecord[]>([])
+  const [savedFilters, setSavedFilters] = useState<SavedFilterRecord[]>([])
   const refresh = useCallback(() => {
     if (!user) return
     getTasks().then(setTasks)
     getSessions().then(setSessions)
     getTags().then(setTags)
     getLists().then(setLists)
+    getSavedFilters().then(setSavedFilters)
   }, [user])
   useEffect(refresh, [refresh])
   useRealtime<TaskRecord>('tasks', refresh, !!user)
   useRealtime<SessionRecord>('sessions', refresh, !!user)
   useRealtime<TagRecord>('tags', refresh, !!user)
   useRealtime<ListRecord>('lists', refresh, !!user)
+  useRealtime<SavedFilterRecord>('saved_filters', refresh, !!user)
   useRealtime('project_sections', refresh, !!user)
 
   // Alertas nativos e som Web Audio em background enquanto o app estiver aberto
@@ -48,7 +52,17 @@ function Protected() {
   if (!user) return <Navigate to="/login" replace />
   return (
     <Routes>
-      <Route element={<Layout tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}>
+      <Route
+        element={
+          <Layout
+            tasks={tasks}
+            tags={tags}
+            lists={lists}
+            savedFilters={savedFilters}
+            refresh={refresh}
+          />
+        }
+      >
         <Route
           path="/"
           element={<Index tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
@@ -64,6 +78,10 @@ function Protected() {
         <Route
           path="/projetos/:id"
           element={<ProjectDetail tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
+        />
+        <Route
+          path="/filtros"
+          element={<FiltersHubPage tasks={tasks} tags={tags} lists={lists} refresh={refresh} />}
         />
         <Route
           path="/pomodoro"

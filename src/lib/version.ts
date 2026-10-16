@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.52'
+export const APP_VERSION = '0.0.53'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,22 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.52).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.53).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.53',
+    title: 'Etapa 3 Todoist: Hub Etiquetas & Filtros Salvos Guiados',
+    tag: 'Engenharia Todoist',
+    highlights: [
+      'Hub centralizado "Etiquetas & Filtros" (/filtros) acessível pela sidebar desktop, drawer mobile e atalhos rápidos.',
+      'Gestão completa de Etiquetas: listagem unificada com paleta quiet luxury, contagens de tarefas abertas, criação, renomeação inline, troca de cor, exclusão segura (com aviso de desvinculação) e mesclagem de etiquetas com migração automática de tarefas.',
+      'Filtros Salvos como visões dinâmicas: construtor guiado com período (Hoje, Amanhã, Esta semana, Atrasadas, Sem data ou Qualquer), prioridade (P1–P4 ou qualquer), etiqueta (qualquer, sem etiqueta ou específica), projeto e estado (abertas/concluídas).',
+      'Página de execução de filtro com contagem de abertas/concluídas, critérios resumidos em Space Mono e visualização interativa com TaskCards completos.',
+      'Persistência real no PocketBase (migration 0023): coleção saved_filters com regras estritas de isolamento por usuário (user.id = @request.auth.id), índices por usuário e pinned, e suporte a sincronização em tempo real (useRealtime).',
+      'Integração na Sidebar e Drawer Mobile: filtros salvos fixados (pinned=true) aparecem automaticamente na seção FAVORITOS com ícone SlidersHorizontal e cor personalizada.',
+    ],
+  },
   {
     version: '0.0.52',
     title: 'Etapa 2 Todoist: Reestruturação da Sidebar e Favoritos Unificados',

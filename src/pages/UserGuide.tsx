@@ -13,7 +13,9 @@ import {
   Flame,
   ListTodo,
   Maximize2,
+  SlidersHorizontal,
   Sparkles,
+  Tag,
   Target,
   Zap,
 } from 'lucide-react'
@@ -25,9 +27,10 @@ const TOC_ITEMS: TocItem[] = [
   { id: 'capturar', num: '01', title: 'Capturar pendências' },
   { id: 'organizar', num: '02', title: 'Organizar e priorizar' },
   { id: 'projetos', num: '03', title: 'Projetos Todoist & Seções' },
-  { id: 'focar', num: '04', title: 'Focar com Pomodoro' },
-  { id: 'revisar', num: '05', title: 'Revisar semana e métricas' },
-  { id: 'dicas-mobile', num: '06', title: 'Uso no celular' },
+  { id: 'filtros-hub', num: '04', title: 'Etiquetas & Filtros Salvos' },
+  { id: 'focar', num: '05', title: 'Focar com Pomodoro' },
+  { id: 'revisar', num: '06', title: 'Revisar semana e métricas' },
+  { id: 'dicas-mobile', num: '07', title: 'Uso no celular' },
 ]
 
 export function UserGuide() {
@@ -641,10 +644,92 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 04: FOCAR COM POMODORO */}
-          <section id="focar" className="scroll-mt-6">
+          {/* TAREFA NOVA: ETIQUETAS & FILTROS SALVOS (ETAPA 3 TODOIST) */}
+          <section id="filtros-hub" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
               <span className="font-mono text-xl font-bold text-[#C5A880]">04</span>
+              <div>
+                <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
+                  Hub de Etiquetas & Filtros Salvos Guiados
+                </h2>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                  Gestão centralizada de vocabulário e criação de visões dinâmicas personalizadas
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p>
+                O <strong>Hub de Etiquetas & Filtros Salvos (/filtros)</strong> é a central de
+                inteligência visual do Barbosa System. Em vez de exigir o aprendizado de comandos de
+                busca complexos, o sistema adota <strong>combinações guiadas de 5 critérios</strong>{' '}
+                (período, prioridade, etiqueta, projeto e estado), permitindo salvar visões sob
+                demanda e fixá-las na sidebar.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Tag className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Gestão Soberana de Etiquetas
+                    </h3>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#D4D4D8]">
+                    <li>
+                      <strong>Visão consolidada:</strong> veja todas as suas etiquetas com contagem
+                      de tarefas abertas e cor personalizada da paleta quiet luxury.
+                    </li>
+                    <li>
+                      <strong>Edição inline:</strong> renomeie etiquetas e altere sua cor de
+                      destaque sem perder tarefas associadas.
+                    </li>
+                    <li>
+                      <strong>Mesclagem de etiquetas:</strong> mova todas as tarefas de uma etiqueta
+                      para outra existente em 1 clique com exclusão limpa da etiqueta de origem.
+                    </li>
+                    <li>
+                      <strong>Exclusão segura:</strong> ao excluir uma etiqueta, suas tarefas são
+                      preservadas intactas e a referência é desvinculada automaticamente.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <SlidersHorizontal className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Filtros Salvos como Visões Dinâmicas
+                    </h3>
+                  </div>
+                  <ul className="space-y-2 text-xs text-[#D4D4D8]">
+                    <li>
+                      <strong>Combinações guiadas:</strong> filtre por período (Hoje, Amanhã, Esta
+                      semana, Atrasadas, Sem data), prioridade (P1–P4), etiqueta, projeto e estado.
+                    </li>
+                    <li>
+                      <strong>Atalhos de 1 clique:</strong> crie visões instantâneas como
+                      "Atrasadas", "Hoje & P1 Urgente" e "Sem data & Sem etiqueta" para triagem
+                      rápida.
+                    </li>
+                    <li>
+                      <strong>Fixação na Sidebar:</strong> clique no ícone de alfinete (Pin) para
+                      fixar o filtro na seção FAVORITOS da barra lateral e drawer móvel.
+                    </li>
+                    <li>
+                      <strong>Visualizador dedicado:</strong> abra qualquer filtro para navegar
+                      pelas tarefas com cards completos, ações de conclusão, detalhes e edição.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* TAREFA 05: FOCAR COM POMODORO */}
+          <section id="focar" className="scroll-mt-6">
+            <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
+              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Executar em blocos de foco com o Pomodoro integrado
@@ -769,10 +854,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 05: REVISAR SEMANA E MÉTRICAS */}
+          {/* TAREFA 06: REVISAR SEMANA E MÉTRICAS */}
           <section id="revisar" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">06</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Planejar a semana e acompanhar seu ritmo real
@@ -878,10 +963,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 06: DICAS PARA CELULAR */}
+          {/* TAREFA 07: DICAS PARA CELULAR */}
           <section id="dicas-mobile" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">06</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Usando o aplicativo no celular

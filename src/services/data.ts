@@ -1,5 +1,9 @@
 import pb from '@/lib/pocketbase/client'
 import type {
+  FilterCriteria,
+  FilterPeriod,
+  FilterPriority,
+  FilterStatus,
   FocusPresetRecord,
   ListRecord,
   NotificationPreferences,
@@ -7,6 +11,7 @@ import type {
   ProjectSectionRecord,
   RecurrenceMode,
   RecurrenceType,
+  SavedFilterRecord,
   SessionRecord,
   SubtaskItem,
   TagRecord,
@@ -17,11 +22,16 @@ import type {
   WeeklyFocusGoals,
 } from '@/types'
 export type {
+  FilterCriteria,
+  FilterPeriod,
+  FilterPriority,
+  FilterStatus,
   NotificationPreferences,
   ProjectRecord,
   ProjectSectionRecord,
   RecurrenceMode,
   RecurrenceType,
+  SavedFilterRecord,
   SubtaskItem,
   TagRecord,
   TaskPriority,
@@ -478,6 +488,211 @@ export const deleteTag = async (id: string) => {
     console.warn('Aviso ao desvincular tag de tarefas:', err)
   }
   return pb.collection<TagRecord>('tags').delete(id)
+}
+
+/**
+ * Mescla uma etiqueta de origem em uma etiqueta de destino:
+ * Adiciona a etiqueta destino em todas as tarefas que tinham a etiqueta origem,
+ * remove a etiqueta origem dessas tarefas e opcionalmente exclui a etiqueta origem.
+ */
+export const mergeTags = async (
+  sourceTagId: string,
+  targetTagId: string,
+  deleteSource: boolean = true,
+) => {
+  if (sourceTagId === targetTagId) return
+  try {
+    const tasksWithSource = await pb.collection<TaskRecord>('tasks').getFullList({
+      filter: pb.filter('tags ~ {:tagId}', { tagId: sourceTagId }),
+    })
+    for (const task of tasksWithSource) {
+      const currentTags = Array.isArray(task.tags) ? task.tags : []
+      const filtered = currentTags.filter((t) => t !== sourceTagId)
+      if (!filtered.includes(targetTagId)) {
+        filtered.push(targetTagId)
+      }
+      await pb.collection('tasks').update(task.id, { tags: filtered })
+    }
+    if (deleteSource) {
+      await pb.collection('tags').delete(sourceTagId)
+    }
+  } catch (err) {
+    console.error('Erro ao mesclar etiquetas:', err)
+    throw err
+  }
+}
+
+// --- FILTROS SALVOS (SAVED FILTERS) ---
+
+export const getSavedFilters = (userOnly = true) =>
+  pb.collection<SavedFilterRecord>('saved_filters').getFullList({
+    sort: '-pinned,order,name',
+  })
+
+export const createSavedFilter = (data: {
+  name: string
+  user: string
+  color?: string
+  criteria?: FilterCriteria
+  pinned?: boolean
+  order?: number
+}) =>
+  pb.collection<SavedFilterRecord>('saved_filters').create({
+    color: '#C5A880',
+    pinned: false,
+    order: 10,
+    ...data,
+  })
+
+export const updateSavedFilter = (
+  id: string,
+  data: Partial<{
+    name: string
+    color: string
+    criteria: FilterCriteria
+    pinned: boolean
+    order: number
+  }>,
+) => pb.collection<SavedFilterRecord>('saved_filters').update(id, data)
+
+export const toggleSavedFilterPinned = (id: string, currentPinned: boolean) =>
+  pb.collection<SavedFilterRecord>('saved_filters').update(id, { pinned: !currentPinned })
+
+export const deleteSavedFilter = (id: string) =>
+  pb.collection<SavedFilterRecord>('saved_filters').delete(id)
+
+export const reorderSavedFilters = async (orderedFilters: SavedFilterRecord[]): Promise<void> => {
+  const updates: Promise<unknown>[] = []
+  orderedFilters.forEach((f, idx) => {
+    const newOrder = (idx + 1) * 10
+    if (f.order !== newOrder) {
+      updates.push(pb.collection('saved_filters').update(f.id, { order: newOrder }))
+    }
+  })
+  if (updates.length > 0) {
+    await Promise.all(updates)
+  }
+}
+
+/**
+ * Avalia se uma tarefa atende aos critérios do filtro salvo.
+ * Lógica pura e consistente em client-side sobre os dados sincronizados.
+ */
+export function taskMatchesFilterCriteria(
+  task: TaskRecord,
+  criteria?: FilterCriteria,
+  now: Date = new Date(),
+): boolean {
+  if (!criteria) return true
+
+  // 1. Status (open, done, any) - padrão open
+  const statusCriteria = criteria.status || 'open'
+  if (statusCriteria === 'open' && task.done) return false
+  if (statusCriteria === 'done' && !task.done) return false
+
+  // 2. Período
+  const period = criteria.period || 'any'
+  if (period !== 'any') {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const tomDate = new Date(now.getTime() + 86400000)
+    const tomorrow = `${tomDate.getFullYear()}-${String(tomDate.getMonth() + 1).padStart(2, '0')}-${String(tomDate.getDate()).padStart(2, '0')}`
+
+    const taskDay = task.due_date ? task.due_date.slice(0, 10) : ''
+
+    if (period === 'no_date') {
+      if (task.due_date) return false
+    } else if (period === 'overdue') {
+      if (!isTaskOverdue(task, now)) return false
+    } else if (period === 'today') {
+      if (taskDay !== today) return false
+    } else if (period === 'tomorrow') {
+      if (taskDay !== tomorrow) return false
+    } else if (period === 'this_week') {
+      if (!taskDay) return false
+      // Calcula fim dos próximos 7 dias
+      const endWeek = new Date(now.getTime() + 6 * 86400000)
+      const endWeekStr = `${endWeek.getFullYear()}-${String(endWeek.getMonth() + 1).padStart(2, '0')}-${String(endWeek.getDate()).padStart(2, '0')}`
+      if (taskDay < today || taskDay > endWeekStr) return false
+    }
+  }
+
+  // 3. Prioridade (P1..P4, 0=sem prioridade, 'any')
+  const priority = criteria.priority
+  if (priority !== undefined && priority !== 'any') {
+    const taskPrio = task.priority || 0
+    if (taskPrio !== priority) return false
+  }
+
+  // 4. Etiqueta ('any', 'none' ou ID específico)
+  const tagId = criteria.tagId || 'any'
+  if (tagId !== 'any') {
+    const taskTagIds = task.tags || task.expand?.tags?.map((t) => t.id) || []
+    if (tagId === 'none') {
+      if (taskTagIds.length > 0) return false
+    } else {
+      if (!taskTagIds.includes(tagId)) return false
+    }
+  }
+
+  // 5. Projeto ('any', 'none' ou ID específico)
+  const projectId = criteria.projectId || 'any'
+  if (projectId !== 'any') {
+    const taskProjId = task.list || task.expand?.list?.id || ''
+    if (projectId === 'none') {
+      if (taskProjId) return false
+    } else {
+      if (taskProjId !== projectId) return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * Retorna uma descrição em texto amigável (pt-BR) dos critérios de um filtro.
+ * Ex.: "Atrasadas", "Hoje · P1 · Urgente", "Sem data · Sem etiqueta"
+ */
+export function formatCriteriaSummary(
+  criteria?: FilterCriteria,
+  tags: TagRecord[] = [],
+  projects: ListRecord[] = [],
+): string {
+  if (!criteria) return 'Todas as tarefas'
+  const parts: string[] = []
+
+  // Período
+  if (criteria.period === 'today') parts.push('Hoje')
+  else if (criteria.period === 'tomorrow') parts.push('Amanhã')
+  else if (criteria.period === 'this_week') parts.push('Esta semana')
+  else if (criteria.period === 'overdue') parts.push('Atrasadas')
+  else if (criteria.period === 'no_date') parts.push('Sem data')
+
+  // Prioridade
+  if (criteria.priority === 1) parts.push('P1 · Urgente')
+  else if (criteria.priority === 2) parts.push('P2 · Alta')
+  else if (criteria.priority === 3) parts.push('P3 · Média')
+  else if (criteria.priority === 4) parts.push('P4 · Baixa')
+  else if (criteria.priority === 0) parts.push('Sem prioridade')
+
+  // Etiqueta
+  if (criteria.tagId === 'none') parts.push('Sem etiqueta')
+  else if (criteria.tagId && criteria.tagId !== 'any') {
+    const foundTag = tags.find((t) => t.id === criteria.tagId)
+    parts.push(`@${foundTag ? foundTag.name : 'etiqueta'}`)
+  }
+
+  // Projeto
+  if (criteria.projectId === 'none') parts.push('Sem projeto')
+  else if (criteria.projectId && criteria.projectId !== 'any') {
+    const foundProj = projects.find((p) => p.id === criteria.projectId)
+    parts.push(`#${foundProj ? foundProj.name : 'projeto'}`)
+  }
+
+  // Status
+  if (criteria.status === 'done') parts.push('Concluídas')
+  else if (criteria.status === 'any') parts.push('Abertas e concluídas')
+
+  return parts.length > 0 ? parts.join(' · ') : 'Todas as abertas'
 }
 
 /**

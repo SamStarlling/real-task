@@ -18,6 +18,7 @@ import {
   Pin,
   PinOff,
   Plus,
+  SlidersHorizontal,
   Star,
   StarOff,
   Sun,
@@ -52,16 +53,19 @@ import { Brand } from '@/components/Brand'
 import { CaptureBar } from '@/components/CaptureBar'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
 import { useAuth } from '@/contexts/AuthContext'
-import type { ListRecord, TagRecord, TaskRecord } from '@/types'
+import type { ListRecord, SavedFilterRecord, TagRecord, TaskRecord } from '@/types'
 import { localDay } from '@/lib/date-parser'
 import { pbDay } from '@/lib/format'
 import { isTokenNearExpiry, refreshAuthSession } from '@/lib/pocketbase/auth-session'
 import {
+  getSavedFilters,
   reorderLists,
   reorderTags,
   sortPrioritizedItems,
+  taskMatchesFilterCriteria,
   toggleProjectArchived,
   toggleProjectFavorite,
+  toggleSavedFilterPinned,
   toggleTagPinned,
   updateProject,
   TAG_PALETTE,
@@ -93,11 +97,13 @@ export function Layout({
   tasks,
   tags = [],
   lists = [],
+  savedFilters = [],
   refresh,
 }: {
   tasks: TaskRecord[]
   tags?: TagRecord[]
   lists?: ListRecord[]
+  savedFilters?: SavedFilterRecord[]
   refresh: () => void
 }) {
   const { user, logout } = useAuth()
@@ -106,6 +112,7 @@ export function Layout({
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
   const activeUrlTag = searchParams.get('tag')
   const activeUrlList = searchParams.get('list')
+  const activeUrlFilter = searchParams.get('filterId')
   const isPomodoroPage = location.pathname === '/pomodoro'
   const today = localDay()
   const tomorrow = localDay(new Date(Date.now() + 86400000))
@@ -607,7 +614,7 @@ export function Layout({
     })
   }, [activeProjects])
 
-  // 3. FAVORITOS: itens pinados de qualquer tipo (projetos com favorite=true e etiquetas com pinned=true)
+  // 3. FAVORITOS: itens pinados de qualquer tipo (projetos com favorite=true, etiquetas pinned=true e filtros salvos pinned=true)
   const favoriteProjects = useMemo(() => {
     return activeProjects.filter((p) => !!p.favorite)
   }, [activeProjects])
@@ -615,6 +622,23 @@ export function Layout({
   const favoriteTags = useMemo(() => {
     return optimisticTags.filter((t) => !!t.pinned)
   }, [optimisticTags])
+
+  const favoriteFilters = useMemo(() => {
+    return savedFilters.filter((f) => !!f.pinned)
+  }, [savedFilters])
+
+  // Contagem aberta para filtros salvos favoritados
+  const openCountByFilter = useMemo(() => {
+    const map = new Map<string, number>()
+    const now = new Date()
+    for (const filter of favoriteFilters) {
+      const c = tasks.filter(
+        (t) => !t.done && taskMatchesFilterCriteria(t, filter.criteria, now),
+      ).length
+      map.set(filter.id, c)
+    }
+    return map
+  }, [tasks, favoriteFilters])
 
   const favoritesAggregateCount = useMemo(() => {
     let sum = 0
@@ -624,10 +648,20 @@ export function Layout({
     for (const t of favoriteTags) {
       sum += openCountByTag.get(t.id) || 0
     }
+    for (const f of favoriteFilters) {
+      sum += openCountByFilter.get(f.id) || 0
+    }
     return sum
-  }, [favoriteProjects, favoriteTags, openCountByList, openCountByTag])
+  }, [
+    favoriteProjects,
+    favoriteTags,
+    favoriteFilters,
+    openCountByList,
+    openCountByTag,
+    openCountByFilter,
+  ])
 
-  const totalFavoritesCount = favoriteProjects.length + favoriteTags.length
+  const totalFavoritesCount = favoriteProjects.length + favoriteTags.length + favoriteFilters.length
 
   // 4. ETIQUETAS: contagem agregada de tarefas abertas de todas as etiquetas
   const tagsAggregateCount = useMemo(() => {
@@ -828,6 +862,68 @@ export function Layout({
                             >
                               <Archive className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
                               <span>Arquivar projeto</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )
+                  })}
+
+                  {/* Filtros salvos favoritados (pinned) */}
+                  {favoriteFilters.map((filter) => {
+                    const filterCount = openCountByFilter.get(filter.id) || 0
+                    const isActive =
+                      location.pathname === '/filtros' && activeUrlFilter === filter.id
+
+                    return (
+                      <div
+                        key={`fav-f-${filter.id}`}
+                        className={`sidebar-custom-item ${isActive ? 'active' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="sidebar-item-link"
+                          onClick={() => {
+                            navigate(`/filtros?filterId=${filter.id}`)
+                            onItemClick?.()
+                          }}
+                          title={`Filtro salvo favorito: ${filter.name}`}
+                        >
+                          <SlidersHorizontal
+                            className="w-3.5 h-3.5 flex-shrink-0"
+                            style={{ color: filter.color || '#C5A880' }}
+                          />
+                          <span className="sidebar-item-name">{filter.name}</span>
+                          <span className={`sidebar-item-count ${filterCount === 0 ? 'zero' : ''}`}>
+                            {filterCount}
+                          </span>
+                        </button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="sidebar-action-menu-trigger"
+                              title="Mais opções do filtro"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[160px]"
+                          >
+                            <DropdownMenuItem
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                await toggleSavedFilterPinned(filter.id, !!filter.pinned)
+                                refresh()
+                              }}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <PinOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                              <span>Remover dos favoritos</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1243,32 +1339,46 @@ export function Layout({
         {/* 4. SEÇÃO ETIQUETAS: Contagens, Ordenação & Drag-and-Drop       */}
         {/* ============================================================== */}
         <div className="sidebar-custom-section">
-          <button
-            type="button"
-            className="sidebar-section-header"
-            onClick={toggleTagsCollapse}
-            aria-expanded={!tagsCollapsed}
-            title={tagsCollapsed ? 'Expandir etiquetas' : 'Recolher etiquetas'}
-          >
-            <span className="sidebar-section-title">ETIQUETAS</span>
-            <span className="sidebar-section-meta">
-              {tagsCollapsed ? (
-                <>
-                  {tagsAggregateCount > 0 && (
-                    <span className="sidebar-section-count">{tagsAggregateCount}</span>
-                  )}
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </>
-              ) : (
-                <>
-                  {optimisticTags.length > 0 && (
-                    <span className="sidebar-section-count">{optimisticTags.length}</span>
-                  )}
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </>
-              )}
-            </span>
-          </button>
+          <div className="flex items-center justify-between px-1">
+            <button
+              type="button"
+              className="sidebar-section-header flex-1 !p-1"
+              onClick={toggleTagsCollapse}
+              aria-expanded={!tagsCollapsed}
+              title={tagsCollapsed ? 'Expandir etiquetas' : 'Recolher etiquetas'}
+            >
+              <span className="sidebar-section-title">ETIQUETAS</span>
+              <span className="sidebar-section-meta">
+                {tagsCollapsed ? (
+                  <>
+                    {tagsAggregateCount > 0 && (
+                      <span className="sidebar-section-count">{tagsAggregateCount}</span>
+                    )}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </>
+                ) : (
+                  <>
+                    {optimisticTags.length > 0 && (
+                      <span className="sidebar-section-count">{optimisticTags.length}</span>
+                    )}
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/filtros?tab=etiquetas')
+                onItemClick?.()
+              }}
+              className="text-[#71717A] hover:text-[#C5A880] p-1.5 rounded transition-colors"
+              title="Hub de Etiquetas & Filtros (/filtros)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {!tagsCollapsed && (
             <div className="sidebar-custom-list">
@@ -1396,15 +1506,38 @@ export function Layout({
                   )
                 })
               )}
+
+              {/* Botão de Rodapé da Seção Etiquetas -> Hub /filtros */}
+              <button
+                type="button"
+                onClick={() => {
+                  navigate('/filtros')
+                  onItemClick?.()
+                }}
+                className="sidebar-manage-projects-btn"
+                title="Hub de Etiquetas & Filtros Salvos (/filtros)"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#C5A880]" />
+                <span>Etiquetas & Filtros</span>
+              </button>
             </div>
           )}
         </div>
 
         {/* ============================================================== */}
-        {/* NAVEGAÇÃO SECUNDÁRIA: Pomodoro & Histórico                     */}
+        {/* NAVEGAÇÃO SECUNDÁRIA: Hub Filtros, Pomodoro & Histórico        */}
         {/* ============================================================== */}
         <div className="sidebar-custom-section !pt-2">
           <nav className="sidebar-nav-group">
+            <NavLink
+              to="/filtros"
+              onClick={onItemClick}
+              className={({ isActive }) => `sidebar-todoist-view-item ${isActive ? 'active' : ''}`}
+            >
+              <SlidersHorizontal className="sidebar-view-icon text-[#C5A880]" />
+              <span className="sidebar-view-label">Etiquetas & Filtros</span>
+            </NavLink>
+
             {utilityNavLinks.map(([to, label, Icon]) => (
               <NavLink
                 key={label}

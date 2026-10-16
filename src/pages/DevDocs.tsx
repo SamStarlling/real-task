@@ -631,6 +631,16 @@ export function DevDocs() {
                         </td>
                       </tr>
                       <tr>
+                        <td className="p-3 font-mono text-[#C5A880] font-bold">saved_filters</td>
+                        <td className="p-3 text-[#A1A1AA]">base</td>
+                        <td className="p-3 font-mono text-[#A1A1AA]">
+                          name, color, criteria (json), pinned, order, user
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
+                          user.id = @request.auth.id
+                        </td>
+                      </tr>
+                      <tr>
                         <td className="p-3 font-mono text-[#C5A880] font-bold">mcp_tokens</td>
                         <td className="p-3 text-[#A1A1AA]">base</td>
                         <td className="p-3 font-mono text-[#A1A1AA]">
@@ -661,6 +671,12 @@ export function DevDocs() {
                   <code>
                     tags: idx_tags_user_name (UNIQUE: user, name), idx_tags_user_pinned_order (user,
                     pinned, order)
+                  </code>
+                </div>
+                <div>
+                  <code>
+                    saved_filters: idx_saved_filters_user (user), idx_saved_filters_user_pinned
+                    (user, pinned)
                   </code>
                 </div>
                 <div>
@@ -945,7 +961,8 @@ export function DevDocs() {
                 e contagem de tarefas abertas).
                 <br />
                 2. <em>Favoritos:</em> União em memória dos registros de <code>lists</code> (onde{' '}
-                <code>favorite === true</code>) e <code>tags</code> (onde{' '}
+                <code>favorite === true</code>), <code>tags</code> (onde{' '}
+                <code>pinned === true</code>) e <code>saved_filters</code> (onde{' '}
                 <code>pinned === true</code>), preservando os listeners realtime via{' '}
                 <code>useRealtime</code>.
                 <br />
@@ -959,6 +976,26 @@ export function DevDocs() {
                 contagem agregada de pendências.
               </p>
             </div>
+
+            {/* ARQUITETURA DO HUB ETIQUETAS & FILTROS SALVOS (ETAPA 3 TODOIST) */}
+            <div className="mt-4 p-4 rounded-xl bg-[#090A0E] border border-[#C5A880]/30 text-xs space-y-2">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#C5A880] block font-bold">
+                Hub de Etiquetas & Filtros Salvos Guiados (Etapa 3 Todoist)
+              </span>
+              <p className="text-[#A1A1AA] leading-relaxed">
+                <strong>Combinações Guiadas & Persistência Real:</strong> Diferente da sintaxe
+                textual proprietária do Todoist, o Barbosa System implementa filtros salvos por meio
+                de combinações guiadas de 5 critérios estruturados armazenados em JSON (
+                <code>saved_filters.criteria</code>): período temporal (Hoje, Amanhã, Esta semana,
+                Atrasadas, Sem data), prioridade (P1–P4), etiqueta vinculada, projeto e estado de
+                conclusão. A avaliação é client-side em tempo real via{' '}
+                <code>taskMatchesFilterCriteria</code>, assegurando consistência total com os dados
+                locais e zero overhead em requisições de rede. Filtros salvos podem ser pinados para
+                a seção Favoritos da sidebar com indicador visual próprio. A gestão de etiquetas
+                permite renomear, reatribuir cor, mesclar etiquetas migrando tarefas automaticamente
+                e exclusão com segurança referencial (desvinculação sem perda de tarefas).
+              </p>
+            </div>
           </section>
 
           {/* SEÇÃO 07: CHANGELOG DAS ENTREGAS DO POMODORO & SISTEMA */}
@@ -967,7 +1004,7 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas (v0.0.40–v0.0.52)
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.53)
                 </h2>{' '}
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
                   Histórico de arquitetura, engenharia reversa Todoist/TickTick e refinamentos

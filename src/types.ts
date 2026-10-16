@@ -54,6 +54,29 @@ export interface TagRecord extends RecordModel {
   pinned?: boolean
 }
 
+export type FilterPeriod = 'any' | 'today' | 'tomorrow' | 'this_week' | 'overdue' | 'no_date'
+
+export type FilterPriority = 'any' | 0 | 1 | 2 | 3 | 4 // 1=P1, 2=P2, 3=P3, 4=P4, 0=Sem prioridade, any=Qualquer
+
+export type FilterStatus = 'open' | 'done' | 'any'
+
+export interface FilterCriteria {
+  period?: FilterPeriod
+  priority?: FilterPriority
+  tagId?: string // 'any' | 'none' | ID específico
+  projectId?: string // 'any' | 'none' | ID específico
+  status?: FilterStatus // padrão 'open'
+}
+
+export interface SavedFilterRecord extends RecordModel {
+  name: string
+  user: string
+  color?: string
+  criteria?: FilterCriteria
+  pinned?: boolean
+  order?: number
+}
+
 export type RecurrenceType = 'none' | 'daily' | 'weekly_days' | 'weekly' | 'monthly'
 export type RecurrenceMode = 'from_date' | 'from_completion'
 export type TaskPriority = 0 | 1 | 2 | 3 | 4 // 1=P1 (Urgente), 2=P2 (Alta), 3=P3 (Média), 4=P4 (Baixa), 0=Sem prioridade
