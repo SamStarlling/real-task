@@ -607,8 +607,8 @@ export function DevDocs() {
                         <td className="p-3 font-mono text-[#C5A880] font-bold">focus_presets</td>
                         <td className="p-3 text-[#A1A1AA]">base</td>
                         <td className="p-3 font-mono text-[#A1A1AA]">
-                          work_minutes, short_break_minutes, long_break_minutes,
-                          blocks_before_long_break
+                          work_minutes (min: 1), short_break_minutes (min: 1), long_break_minutes
+                          (min: 1), blocks_before_long_break (min: 1), archived
                         </td>
                         <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
                           user.id = @request.auth.id

@@ -467,12 +467,12 @@ export function UserGuide() {
                 <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
                   <Clock className="w-5 h-5 text-[#C5A880] mb-2" />
                   <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
-                    Contagem de excesso
+                    Modo Stopwatch & Pomo
                   </strong>
                   <p className="text-xs text-[#A1A1AA] leading-relaxed">
-                    Quando o cronômetro zera, ele toca o som de vitória e continua contando (
-                    <code>+00:01</code>, <code>+00:02</code>). Se você estiver embalado, não perde o
-                    fluxo.
+                    Escolha entre o tradicional Pomodoro regressivo (com contagem de excesso{' '}
+                    <code>+00:01</code>) ou o modo <strong>Stopwatch</strong> (contagem crescente
+                    contínua para imersão sem tempo limite pré-fixado).
                   </p>
                 </div>
 
@@ -483,7 +483,7 @@ export function UserGuide() {
                   </strong>
                   <p className="text-xs text-[#A1A1AA] leading-relaxed">
                     Defina um objetivo antes de iniciar (âncora anti-drift visível). No encerramento
-                    (natural ou antecipado), avalie em 1 toque: <strong>Batido</strong>,{' '}
+                    (natural, manual ou no Stopwatch), avalie em 1 toque: <strong>Batido</strong>,{' '}
                     <strong>Parcial</strong> ou <strong>Não foi</strong>, e anote o que foi feito e
                     o que fica pendente.
                   </p>
@@ -492,11 +492,12 @@ export function UserGuide() {
                 <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
                   <BookmarkCheck className="w-5 h-5 text-[#C5A880] mb-2" />
                   <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
-                    Trava entre abas
+                    Duração Livre & Presets
                   </strong>
                   <p className="text-xs text-[#A1A1AA] leading-relaxed">
-                    Se você abrir o aplicativo em duas abas, apenas uma comanda o cronômetro. As
-                    outras espelham o tempo real sem duplicar sessões.
+                    Ajuste tempos de 1 em 1 minuto diretamente pelos steppers ou digitando. Crie
+                    novos presets personalizados a partir da duração atual, edite nomes e durações
+                    ou arquive com facilidade.
                   </p>
                 </div>
               </div>

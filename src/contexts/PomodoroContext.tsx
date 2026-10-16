@@ -28,6 +28,7 @@ import {
 import { updateDynamicFavicon, resetDynamicFavicon } from '@/lib/dynamic-favicon'
 
 export type PomodoroPhase = 'foco' | 'descanso_curto' | 'descanso_longo'
+export type PomodoroTimerMode = 'pomo' | 'stopwatch'
 
 export interface ActivePreset {
   id?: string
@@ -55,9 +56,11 @@ export interface PendingSessionNote {
   objective?: string
   outcomeStatus?: SessionRecord['outcome_status']
   isEarlyInterrupted?: boolean
+  mode?: PomodoroTimerMode
 }
 
 export interface PomodoroState {
+  mode?: PomodoroTimerMode // 'pomo' | 'stopwatch'
   task: TaskRecord | null
   objective?: string
   status: 'rodando' | 'pausado'
@@ -79,7 +82,9 @@ export interface PomodoroState {
 interface PomodoroSyncMessage {
   type: 'STATE_UPDATE' | 'DISCARD' | 'REQUEST_SYNC' | 'HEARTBEAT'
   tabId: string
+  mode?: PomodoroTimerMode
   state: {
+    mode?: PomodoroTimerMode
     task: TaskRecord | null
     objective?: string
     status: 'rodando' | 'pausado'
@@ -107,6 +112,8 @@ const TAB_ID =
 const CHANNEL_NAME = 'barbosa_pomodoro_sync_v1'
 
 export interface PomodoroContextValue {
+  timerMode: PomodoroTimerMode
+  setTimerMode: (mode: PomodoroTimerMode) => void
   state: PomodoroState | null
   selectedTask: TaskRecord | null
   currentObjective: string
@@ -114,12 +121,17 @@ export interface PomodoroContextValue {
   seconds: number
   overtimeSeconds: number
   isOvertime: boolean
+  stopwatchSeconds: number
   activePreset: ActivePreset
   setActivePreset: (preset: ActivePreset | FocusPresetRecord) => void
+  setWorkMinutes: (minutes: number) => void
+  setShortBreakMinutes: (minutes: number) => void
+  setLongBreakMinutes: (minutes: number) => void
   start: (
     task?: TaskRecord | null,
     customPreset?: ActivePreset | FocusPresetRecord,
     initialObjective?: string,
+    forcedMode?: PomodoroTimerMode,
   ) => Promise<void>
   toggle: () => void
   finish: (note?: string) => Promise<SessionRecord | null>
@@ -151,6 +163,7 @@ const Context = createContext<PomodoroContextValue | null>(null)
 export function PomodoroProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [activePreset, setActivePresetState] = useState<ActivePreset>(DEFAULT_PRESET)
+  const [timerMode, setTimerModeState] = useState<PomodoroTimerMode>('pomo')
   const [state, setState] = useState<PomodoroState | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
   const [currentObjective, setCurrentObjective] = useState<string>('')
@@ -165,6 +178,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
   const stateRef = useRef(state)
   stateRef.current = state
+
+  const timerModeRef = useRef(timerMode)
+  timerModeRef.current = timerMode
 
   const selectedTaskRef = useRef(selectedTask)
   selectedTaskRef.current = selectedTask
@@ -191,9 +207,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         setActivePresetState({
           id: first.id,
           name: first.name,
-          workMinutes: Math.max(5, first.work_minutes),
-          shortBreakMinutes: Math.max(5, first.short_break_minutes),
-          longBreakMinutes: Math.max(5, first.long_break_minutes),
+          workMinutes: Math.max(1, first.work_minutes),
+          shortBreakMinutes: Math.max(1, first.short_break_minutes),
+          longBreakMinutes: Math.max(1, first.long_break_minutes),
           blocksBeforeLongBreak: Math.max(1, first.blocks_before_long_break),
         })
       })
@@ -221,7 +237,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
           channel.postMessage({
             type: 'STATE_UPDATE',
             tabId: TAB_ID,
+            mode: s.mode || timerModeRef.current,
             state: {
+              mode: s.mode || 'pomo',
               task: s.task,
               objective: s.objective,
               status: s.status,
@@ -247,7 +265,11 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       if (msg.type === 'STATE_UPDATE') {
         if (msg.state) {
           setControllingTabId(msg.tabId)
+          if (msg.state.mode) {
+            setTimerModeState(msg.state.mode)
+          }
           setState({
+            mode: msg.state.mode || 'pomo',
             task: msg.state.task,
             objective: msg.state.objective,
             status: msg.state.status,
@@ -298,7 +320,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         channelRef.current.postMessage({
           type: 'STATE_UPDATE',
           tabId: TAB_ID,
+          mode: s.mode || timerModeRef.current,
           state: {
+            mode: s.mode || 'pomo',
             task: s.task,
             objective: s.objective,
             status: s.status,
@@ -330,25 +354,69 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const setTimerMode = useCallback(
+    (mode: PomodoroTimerMode) => {
+      setTimerModeState(mode)
+      if (stateRef.current) {
+        setState((curr) => {
+          if (!curr) return null
+          const updated = { ...curr, mode }
+          broadcastState(updated)
+          return updated
+        })
+      }
+    },
+    [broadcastState],
+  )
+
   const setActivePreset = useCallback((preset: ActivePreset | FocusPresetRecord) => {
     const normalized: ActivePreset =
       'work_minutes' in preset
         ? {
             id: preset.id,
             name: preset.name,
-            workMinutes: Math.max(5, preset.work_minutes),
-            shortBreakMinutes: Math.max(5, preset.short_break_minutes),
-            longBreakMinutes: Math.max(5, preset.long_break_minutes),
+            workMinutes: Math.max(1, preset.work_minutes),
+            shortBreakMinutes: Math.max(1, preset.short_break_minutes),
+            longBreakMinutes: Math.max(1, preset.long_break_minutes),
             blocksBeforeLongBreak: Math.max(1, preset.blocks_before_long_break),
           }
         : {
             ...preset,
-            workMinutes: Math.max(5, preset.workMinutes),
-            shortBreakMinutes: Math.max(5, preset.shortBreakMinutes),
-            longBreakMinutes: Math.max(5, preset.longBreakMinutes),
+            workMinutes: Math.max(1, preset.workMinutes),
+            shortBreakMinutes: Math.max(1, preset.shortBreakMinutes),
+            longBreakMinutes: Math.max(1, preset.longBreakMinutes),
             blocksBeforeLongBreak: Math.max(1, preset.blocksBeforeLongBreak),
           }
     setActivePresetState(normalized)
+  }, [])
+
+  // Ajustes diretos de duração (1 a 1 minuto) no preset ativo
+  const setWorkMinutes = useCallback((minutes: number) => {
+    const clamped = Math.max(1, Math.min(180, Math.round(minutes)))
+    setActivePresetState((curr) => ({
+      ...curr,
+      workMinutes: clamped,
+    }))
+    // Se o timer não está rodando, ou se quisermos manter sync:
+    if (!stateRef.current) {
+      // Nenhum timer rodando: já reflete no timer inicial
+    }
+  }, [])
+
+  const setShortBreakMinutes = useCallback((minutes: number) => {
+    const clamped = Math.max(1, Math.min(60, Math.round(minutes)))
+    setActivePresetState((curr) => ({
+      ...curr,
+      shortBreakMinutes: clamped,
+    }))
+  }, [])
+
+  const setLongBreakMinutes = useCallback((minutes: number) => {
+    const clamped = Math.max(1, Math.min(60, Math.round(minutes)))
+    setActivePresetState((curr) => ({
+      ...curr,
+      longBreakMinutes: clamped,
+    }))
   }, [])
 
   const selectTask = useCallback(
@@ -406,16 +474,31 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id)
   }, [state?.status])
 
-  // Cálculo de segundos restantes e segundos de excesso
-  const { seconds, isOvertime, overtimeSeconds } = useMemo(() => {
+  // Cálculo de segundos restantes e segundos de excesso (Pomo) ou decorridos (Stopwatch)
+  const { seconds, isOvertime, overtimeSeconds, stopwatchSeconds } = useMemo(() => {
     if (!state) {
       return {
         seconds: activePreset.workMinutes * 60,
         isOvertime: false,
         overtimeSeconds: 0,
+        stopwatchSeconds: 0,
       }
     }
 
+    // Modo Stopwatch: contagem crescente
+    if (state.mode === 'stopwatch') {
+      const elapsedSinceRef =
+        state.status === 'rodando' ? Math.floor((now - state.reference) / 1000) : 0
+      const totalElapsed = state.focusedSeconds + elapsedSinceRef
+      return {
+        seconds: 0,
+        isOvertime: false,
+        overtimeSeconds: 0,
+        stopwatchSeconds: Math.max(0, totalElapsed),
+      }
+    }
+
+    // Modo Pomodoro padrão (contagem regressiva + overtime)
     if (!state.isOvertime) {
       const elapsedSinceRef =
         state.status === 'rodando' ? Math.floor((now - state.reference) / 1000) : 0
@@ -424,6 +507,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         seconds: remainingSec,
         isOvertime: false,
         overtimeSeconds: 0,
+        stopwatchSeconds: 0,
       }
     }
 
@@ -435,6 +519,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       seconds: 0,
       isOvertime: true,
       overtimeSeconds: totalOt,
+      stopwatchSeconds: 0,
     }
   }, [state, now, activePreset.workMinutes])
 
@@ -463,9 +548,11 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   // MÁQUINA DE ESTADOS: Transição quando o timer previsto zera (00:00)
   // REGRA CRÍTICA: NÃO transita automaticamente para pausa nem inicia novo bloco sozinho!
   // Toca o som respectivo, envia notificação de backup se aba oculta e ENTRA EM MODO DE EXCESSO.
+  // Nota: stopwatch não zera (não tem contagem regressiva), então ignora no modo stopwatch.
   const phaseCompletedRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!state || state.status !== 'rodando' || state.isOvertime) return
+    if (!state || state.mode === 'stopwatch' || state.status !== 'rodando' || state.isOvertime)
+      return
 
     // Se a contagem regressiva chegou a zero:
     if (seconds <= 0) {
@@ -547,7 +634,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       // Tempo decorrido nesta fase de foco
       let totalElapsedSec = current.focusedSeconds
-      if (current.isOvertime) {
+      if (current.mode === 'stopwatch') {
+        totalElapsedSec +=
+          current.status === 'rodando' ? Math.floor((Date.now() - current.reference) / 1000) : 0
+      } else if (current.isOvertime) {
         totalElapsedSec +=
           current.totalDurationSeconds +
           current.overtimeSeconds +
@@ -559,10 +649,14 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             : 0
       }
 
-      // SÓ blocos de foco registram sessão na coleção `sessions`
+      // SÓ blocos de foco registram sessão na coleção `sessions` (stopwatch é sempre fase 'foco')
       if (current.phase === 'foco' && totalElapsedSec > 0) {
         const minutes = totalElapsedSec / 60
-        const isComplete = current.isOvertime || totalElapsedSec >= current.totalDurationSeconds - 1
+        // Em stopwatch, considera completa se correu por ao menos 1 minuto
+        const isComplete =
+          current.mode === 'stopwatch'
+            ? totalElapsedSec >= 60
+            : current.isOvertime || totalElapsedSec >= current.totalDurationSeconds - 1
         const activeObjective = current.objective || currentObjectiveRef.current || ''
 
         try {
@@ -570,7 +664,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             current.task,
             current.startedAt,
             new Date(),
-            minutes,
+            Math.max(1 / 60, minutes),
             isComplete ? 'completa' : 'interrompida',
             note,
             activeObjective,
@@ -583,15 +677,16 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         const roundedMins = Math.max(1, Math.round(minutes))
 
         // Toast de confirmação mostrando a duração e indicando que a nota pode ser adicionada
+        const modeLabel = current.mode === 'stopwatch' ? 'Stopwatch' : 'Sessão'
         toast({
           title: isComplete
-            ? `Sessão concluída — ${roundedMins} min${taskLabel}`
-            : `Sessão encerrada antes do tempo — ${roundedMins} min${taskLabel}`,
+            ? `${modeLabel} concluído — ${roundedMins} min${taskLabel}`
+            : `${modeLabel} encerrado — ${roundedMins} min${taskLabel}`,
           description: 'Você pode registrar o veredito e anotações agora.',
         })
 
         // DISPARO DE NOTA PÓS-FOCO EM finish():
-        // Não-bloqueante; bloco abortado quase imediatamente (menos de 60s) marcado para sem pré-julgamento
+        // Idêntico para Pomodoro e Stopwatch
         if (savedSession) {
           setPendingNote({
             sessionId: savedSession.id,
@@ -601,6 +696,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             totalBlocks: current.totalBlocks,
             objective: activeObjective,
             isEarlyInterrupted: !isComplete && totalElapsedSec < 60,
+            mode: current.mode || 'pomo',
           })
         }
       }
@@ -729,12 +825,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     })
   }, [broadcastState])
 
-  // Iniciar timer com um preset opcional, tarefa opcional e objetivo opcional
+  // Iniciar timer com um preset opcional, tarefa opcional, objetivo opcional e modo opcional
   const start = useCallback(
     async (
       task?: TaskRecord | null,
       customPreset?: ActivePreset | FocusPresetRecord,
       initialObjective?: string,
+      forcedMode?: PomodoroTimerMode,
     ) => {
       unlockAudioContext()
       playFocusStartSound() // Som de início
@@ -744,6 +841,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       }
 
       setControllingTabId(TAB_ID)
+
+      const effectiveMode: PomodoroTimerMode = forcedMode || timerModeRef.current || 'pomo'
+      setTimerModeState(effectiveMode)
 
       const effectiveTask = task !== undefined ? task : (selectedTaskRef.current ?? null)
       setSelectedTask(effectiveTask)
@@ -762,24 +862,25 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             ? {
                 id: customPreset.id,
                 name: customPreset.name,
-                workMinutes: Math.max(5, customPreset.work_minutes),
-                shortBreakMinutes: Math.max(5, customPreset.short_break_minutes),
-                longBreakMinutes: Math.max(5, customPreset.long_break_minutes),
+                workMinutes: Math.max(1, customPreset.work_minutes),
+                shortBreakMinutes: Math.max(1, customPreset.short_break_minutes),
+                longBreakMinutes: Math.max(1, customPreset.long_break_minutes),
                 blocksBeforeLongBreak: Math.max(1, customPreset.blocks_before_long_break),
               }
             : {
                 ...customPreset,
-                workMinutes: Math.max(5, customPreset.workMinutes),
-                shortBreakMinutes: Math.max(5, customPreset.shortBreakMinutes),
-                longBreakMinutes: Math.max(5, customPreset.longBreakMinutes),
+                workMinutes: Math.max(1, customPreset.workMinutes),
+                shortBreakMinutes: Math.max(1, customPreset.shortBreakMinutes),
+                longBreakMinutes: Math.max(1, customPreset.longBreakMinutes),
                 blocksBeforeLongBreak: Math.max(1, customPreset.blocksBeforeLongBreak),
               }
         setActivePresetState(chosenPreset)
       }
 
-      const totalSec = chosenPreset.workMinutes * 60
+      const totalSec = effectiveMode === 'stopwatch' ? 0 : chosenPreset.workMinutes * 60
       setNow(Date.now())
       const newState: PomodoroState = {
+        mode: effectiveMode,
         task: effectiveTask,
         objective: effectiveObjective,
         status: 'rodando',
@@ -811,8 +912,10 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         playFocusStartSound()
         const initialTask = selectedTaskRef.current ?? null
         const initialObj = (currentObjectiveRef.current || initialTask?.title || '').trim()
-        const totalSec = activePresetRef.current.workMinutes * 60
+        const currentMode = timerModeRef.current || 'pomo'
+        const totalSec = currentMode === 'stopwatch' ? 0 : activePresetRef.current.workMinutes * 60
         const fresh: PomodoroState = {
+          mode: currentMode,
           task: initialTask,
           objective: initialObj,
           status: 'rodando',
@@ -833,6 +936,16 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       }
 
       if (current.status === 'rodando') {
+        if (current.mode === 'stopwatch') {
+          const elapsed = Math.floor((Date.now() - current.reference) / 1000)
+          const paused: PomodoroState = {
+            ...current,
+            status: 'pausado',
+            focusedSeconds: current.focusedSeconds + elapsed,
+          }
+          broadcastState(paused)
+          return paused
+        }
         if (current.isOvertime) {
           const add = Math.floor((Date.now() - current.reference) / 1000)
           const paused: PomodoroState = {
@@ -1061,10 +1174,20 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const phaseName = state.phase === 'foco' ? 'Foco' : 'Pausa'
+    const phaseName =
+      state.mode === 'stopwatch' ? 'Stopwatch' : state.phase === 'foco' ? 'Foco' : 'Pausa'
     let timeDisplay = ''
 
-    if (state.isOvertime) {
+    if (state.mode === 'stopwatch') {
+      const totalSec = stopwatchSeconds
+      const h = Math.floor(totalSec / 3600)
+      const m = Math.floor((totalSec % 3600) / 60)
+      const s = totalSec % 60
+      timeDisplay =
+        h > 0
+          ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    } else if (state.isOvertime) {
       const otM = Math.floor(overtimeSeconds / 60)
       const otS = overtimeSeconds % 60
       timeDisplay = `+${String(otM).padStart(2, '0')}:${String(otS).padStart(2, '0')}`
@@ -1079,19 +1202,23 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
     // Favicon dinâmico
     const progress =
-      state.totalDurationSeconds > 0
-        ? Math.max(0, Math.min(1, 1 - seconds / state.totalDurationSeconds))
-        : 1
+      state.mode === 'stopwatch'
+        ? 1
+        : state.totalDurationSeconds > 0
+          ? Math.max(0, Math.min(1, 1 - seconds / state.totalDurationSeconds))
+          : 1
     updateDynamicFavicon(progress, state.isOvertime, state.phase === 'foco' ? 'foco' : 'descanso')
 
     return () => {
       document.title = 'Barbosa System'
       resetDynamicFavicon()
     }
-  }, [state, seconds, isOvertime, overtimeSeconds])
+  }, [state, seconds, isOvertime, overtimeSeconds, stopwatchSeconds])
 
   const value = useMemo(
     () => ({
+      timerMode,
+      setTimerMode,
       state,
       selectedTask,
       currentObjective,
@@ -1099,8 +1226,12 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       seconds,
       overtimeSeconds,
       isOvertime,
+      stopwatchSeconds,
       activePreset,
       setActivePreset,
+      setWorkMinutes,
+      setShortBreakMinutes,
+      setLongBreakMinutes,
       start,
       toggle,
       finish,
@@ -1117,14 +1248,20 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       activeTabOwner,
     }),
     [
+      timerMode,
+      setTimerMode,
       state,
       selectedTask,
       currentObjective,
       seconds,
       overtimeSeconds,
       isOvertime,
+      stopwatchSeconds,
       activePreset,
       setActivePreset,
+      setWorkMinutes,
+      setShortBreakMinutes,
+      setLongBreakMinutes,
       start,
       toggle,
       finish,

@@ -82,12 +82,14 @@ export interface SessionRecord extends RecordModel {
   expand?: { task?: TaskRecord }
 }
 
+export type PomodoroTimerMode = 'pomo' | 'stopwatch'
+
 export interface FocusPresetRecord extends RecordModel {
   name: string
   user: string
-  work_minutes: number // mínimo 5 min
-  short_break_minutes: number // mínimo 5 min
-  long_break_minutes: number // mínimo 5 min
+  work_minutes: number // mínimo 1 min
+  short_break_minutes: number // mínimo 1 min
+  long_break_minutes: number // mínimo 1 min
   blocks_before_long_break: number // mínimo 1
   archived?: boolean
 }

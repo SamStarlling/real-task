@@ -4,6 +4,7 @@ import {
   Pause,
   Square,
   Plus,
+  Minus,
   RotateCcw,
   Check,
   Archive,
@@ -22,6 +23,9 @@ import {
   CheckSquare,
   AlertCircle,
   HelpCircle,
+  Timer,
+  Clock,
+  Save,
 } from 'lucide-react'
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -60,6 +64,8 @@ interface PomodoroPageProps {
 export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageProps) {
   const { user } = useAuth()
   const {
+    timerMode,
+    setTimerMode,
     state,
     selectedTask,
     currentObjective,
@@ -67,8 +73,11 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     seconds,
     overtimeSeconds,
     isOvertime,
+    stopwatchSeconds,
     activePreset,
     setActivePreset,
+    setWorkMinutes,
+    setShortBreakMinutes,
     start,
     toggle,
     finish,
@@ -179,27 +188,27 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
       return
     }
 
-    // Validação estrita: mínimo de 5 min para foco e pausas; blocos >= 1
-    if (presetForm.workMinutes < 5) {
+    // Validação de 1 a 1 minuto: mínimo de 1 min para foco e pausas; blocos >= 1
+    if (presetForm.workMinutes < 1) {
       toast({
         title: 'Tempo de foco inválido',
-        description: 'O tempo de foco deve ser de no mínimo 5 minutos.',
+        description: 'O tempo de foco deve ser de no mínimo 1 minuto.',
         variant: 'destructive',
       })
       return
     }
-    if (presetForm.shortBreakMinutes < 5) {
+    if (presetForm.shortBreakMinutes < 1) {
       toast({
         title: 'Descanso curto inválido',
-        description: 'O descanso curto deve ser de no mínimo 5 minutos.',
+        description: 'O descanso curto deve ser de no mínimo 1 minuto.',
         variant: 'destructive',
       })
       return
     }
-    if (presetForm.longBreakMinutes < 5) {
+    if (presetForm.longBreakMinutes < 1) {
       toast({
         title: 'Descanso longo inválido',
-        description: 'O descanso longo deve ser de no mínimo 5 minutos.',
+        description: 'O descanso longo deve ser de no mínimo 1 minuto.',
         variant: 'destructive',
       })
       return
@@ -218,9 +227,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
       if (editingPreset) {
         const updated = await updateFocusPreset(editingPreset.id, {
           name: presetForm.name.trim(),
-          work_minutes: Math.max(5, Math.round(presetForm.workMinutes)),
-          short_break_minutes: Math.max(5, Math.round(presetForm.shortBreakMinutes)),
-          long_break_minutes: Math.max(5, Math.round(presetForm.longBreakMinutes)),
+          work_minutes: Math.max(1, Math.round(presetForm.workMinutes)),
+          short_break_minutes: Math.max(1, Math.round(presetForm.shortBreakMinutes)),
+          long_break_minutes: Math.max(1, Math.round(presetForm.longBreakMinutes)),
           blocks_before_long_break: Math.max(1, Math.round(presetForm.blocksBeforeLongBreak)),
         })
         toast({ title: `Preset '${updated.name}' atualizado` })
@@ -231,9 +240,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
         const created = await createFocusPreset({
           name: presetForm.name.trim(),
           user: user.id,
-          work_minutes: Math.max(5, Math.round(presetForm.workMinutes)),
-          short_break_minutes: Math.max(5, Math.round(presetForm.shortBreakMinutes)),
-          long_break_minutes: Math.max(5, Math.round(presetForm.longBreakMinutes)),
+          work_minutes: Math.max(1, Math.round(presetForm.workMinutes)),
+          short_break_minutes: Math.max(1, Math.round(presetForm.shortBreakMinutes)),
+          long_break_minutes: Math.max(1, Math.round(presetForm.longBreakMinutes)),
           blocks_before_long_break: Math.max(1, Math.round(presetForm.blocksBeforeLongBreak)),
           archived: false,
         })
@@ -246,6 +255,19 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     } finally {
       setSavingPreset(false)
     }
+  }
+
+  // Criar preset a partir da duração atual do timer
+  const handleCreateFromCurrent = () => {
+    setEditingPreset(null)
+    setPresetForm({
+      name: `${activePreset.workMinutes}m Foco`,
+      workMinutes: activePreset.workMinutes,
+      shortBreakMinutes: activePreset.shortBreakMinutes,
+      longBreakMinutes: activePreset.longBreakMinutes,
+      blocksBeforeLongBreak: activePreset.blocksBeforeLongBreak,
+    })
+    setModalOpen(true)
   }
 
   const handleToggleArchive = async (preset: FocusPresetRecord) => {
@@ -531,12 +553,27 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     }
   }, [pendingNote])
 
-  // Helper de minutos / segundos do timer da barra fixa
-  const timerMinutes = Math.floor(seconds / 60)
-  const timerSeconds = seconds % 60
-  const formattedTimer = isOvertime
-    ? `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
-    : `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
+  // Formatação do timer da barra fixa (suporta Stopwatch contagem crescente mm:ss ou hh:mm:ss)
+  const currentMode = state?.mode || timerMode
+  const isStopwatch = currentMode === 'stopwatch'
+
+  let formattedTimer = ''
+  if (isStopwatch) {
+    const totalSec = stopwatchSeconds
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    formattedTimer =
+      h > 0
+        ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+        : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  } else if (isOvertime) {
+    formattedTimer = `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
+  } else {
+    const timerMinutes = Math.floor(seconds / 60)
+    const timerSeconds = seconds % 60
+    formattedTimer = `${String(timerMinutes).padStart(2, '0')}:${String(timerSeconds).padStart(2, '0')}`
+  }
 
   const isRunning = state?.status === 'rodando'
   const isPaused = state?.status === 'pausado'
@@ -546,8 +583,9 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   // Fase e bloco
   const currentBlock = state?.currentBlock ?? 1
   const totalBlocks = state?.totalBlocks ?? activePreset.blocksBeforeLongBreak
-  const phaseLabel =
-    state?.phase === 'foco'
+  const phaseLabel = isStopwatch
+    ? 'STOPWATCH · FOCO LIVRE CRESCENTE'
+    : state?.phase === 'foco'
       ? `FOCO · BLOCO ${currentBlock}/${totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
       : state?.phase === 'descanso_longo'
         ? `DESCANSO LONGO · BLOCO ${currentBlock}/${totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
@@ -563,6 +601,36 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           <header className="pomodoro-presets-header">
             <h1 className="pomodoro-title">Pomodoro</h1>
             <div className="pomodoro-presets-actions">
+              {/* Seletor de Modo Pomo / Stopwatch */}
+              <div className="inline-flex items-center bg-[#090A0E] p-0.5 rounded-lg border border-[#C5A880]/30 mr-1">
+                <button
+                  type="button"
+                  onClick={() => setTimerMode('pomo')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded-md transition-all flex items-center gap-1 ${
+                    timerMode === 'pomo'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                  title="Modo Pomodoro (contagem regressiva + ciclos de blocos)"
+                >
+                  <Timer size={12} />
+                  <span>Pomo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimerMode('stopwatch')}
+                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded-md transition-all flex items-center gap-1 ${
+                    timerMode === 'stopwatch'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                  title="Modo Stopwatch (contagem crescente contínua)"
+                >
+                  <Clock size={12} />
+                  <span>Stopwatch</span>
+                </button>
+              </div>
+
               {/* Chips Ativo / Arquivado estilo TickTick */}
               <div className="pomodoro-tab-chips">
                 <button
@@ -591,6 +659,101 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
               </button>
             </div>
           </header>
+
+          {/* AJUSTE RÁPIDO DE DURAÇÃO LIVRE (1 A 1 MINUTO) */}
+          <div className="mx-4 mb-3 p-3 rounded-xl bg-[#090A0E] border border-white/5 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
+              <span className="uppercase tracking-wider font-semibold text-[#F4F4F6]">
+                Duração Livre (1 em 1 min)
+              </span>
+              <button
+                type="button"
+                onClick={handleCreateFromCurrent}
+                className="text-[#C5A880] hover:underline flex items-center gap-1 text-[10px]"
+                title="Criar novo preset a partir dos minutos atuais"
+              >
+                <Save size={11} /> Salvar como preset
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {/* Stepper Foco */}
+              <div className="bg-[#12141C] p-2 rounded-lg border border-white/5">
+                <span className="block text-[10px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] mb-1">
+                  Foco
+                </span>
+                <div className="flex items-center justify-between gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setWorkMinutes(activePreset.workMinutes - 1)}
+                    disabled={activePreset.workMinutes <= 1}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
+                    title="-1 minuto"
+                  >
+                    <Minus size={11} />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={activePreset.workMinutes}
+                      onChange={(e) => setWorkMinutes(Number(e.target.value))}
+                      className="w-12 text-center bg-transparent border border-white/10 focus:border-[#C5A880] rounded py-0.5 text-xs font-['Space_Mono'] font-bold text-[#C5A880] outline-none"
+                    />
+                    <span className="text-[10px] font-['Space_Mono'] text-[#71717A]">min</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWorkMinutes(activePreset.workMinutes + 1)}
+                    disabled={activePreset.workMinutes >= 180}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
+                    title="+1 minuto"
+                  >
+                    <Plus size={11} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Stepper Pausa Curta */}
+              <div className="bg-[#12141C] p-2 rounded-lg border border-white/5">
+                <span className="block text-[10px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA] mb-1">
+                  Pausa
+                </span>
+                <div className="flex items-center justify-between gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShortBreakMinutes(activePreset.shortBreakMinutes - 1)}
+                    disabled={activePreset.shortBreakMinutes <= 1}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
+                    title="-1 minuto"
+                  >
+                    <Minus size={11} />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={activePreset.shortBreakMinutes}
+                      onChange={(e) => setShortBreakMinutes(Number(e.target.value))}
+                      className="w-12 text-center bg-transparent border border-white/10 focus:border-[#C5A880] rounded py-0.5 text-xs font-['Space_Mono'] font-bold text-[#C5A880] outline-none"
+                    />
+                    <span className="text-[10px] font-['Space_Mono'] text-[#71717A]">min</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShortBreakMinutes(activePreset.shortBreakMinutes + 1)}
+                    disabled={activePreset.shortBreakMinutes >= 60}
+                    className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
+                    title="+1 minuto"
+                  >
+                    <Plus size={11} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* LISTA DE PRESETS */}
           <div className="pomodoro-presets-list">
@@ -1459,7 +1622,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={5}
+                  min={1}
                   max={240}
                   required
                   value={presetForm.workMinutes}
@@ -1469,8 +1632,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
                 <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
-                  Mínimo 5 min
-                </span>
+                  1 em 1 min (mínimo 1 min)
+                </span>{' '}
               </div>
 
               <div>
@@ -1479,7 +1642,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={5}
+                  min={1}
                   max={60}
                   required
                   value={presetForm.shortBreakMinutes}
@@ -1489,8 +1652,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
                 <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
-                  Mínimo 5 min
-                </span>
+                  1 em 1 min (mínimo 1 min)
+                </span>{' '}
               </div>
 
               <div>
@@ -1499,7 +1662,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 </label>
                 <input
                   type="number"
-                  min={5}
+                  min={1}
                   max={120}
                   required
                   value={presetForm.longBreakMinutes}
@@ -1509,8 +1672,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   className="w-full bg-[#090A0E] border border-[rgba(197,168,128,0.22)] rounded-lg px-3 py-2 text-sm font-['Space_Mono'] text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
                 />
                 <span className="text-[11px] text-[#A1A1AA] font-['Space_Mono'] mt-1 block">
-                  Mínimo 5 min
-                </span>
+                  1 em 1 min (mínimo 1 min)
+                </span>{' '}
               </div>
 
               <div>

@@ -1,10 +1,24 @@
 import { useState } from 'react'
-import { Pause, Play, Square, X, Check, MessageSquare, Target } from 'lucide-react'
+import {
+  Pause,
+  Play,
+  Square,
+  X,
+  Check,
+  MessageSquare,
+  Target,
+  Plus,
+  Minus,
+  Timer,
+  Clock,
+} from 'lucide-react'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import type { SessionRecord } from '@/types'
 
 export function PomodoroWidget() {
   const {
+    timerMode,
+    setTimerMode,
     state,
     selectedTask,
     currentObjective,
@@ -13,11 +27,13 @@ export function PomodoroWidget() {
     seconds,
     overtimeSeconds,
     isOvertime,
+    stopwatchSeconds,
     activePreset,
+    setWorkMinutes,
+    start,
     toggle,
     finish,
     discard,
-    start,
     startBreakFromOvertime,
     startNextBlockFromBreak,
     pendingNote,
@@ -25,6 +41,7 @@ export function PomodoroWidget() {
     dismissPendingNote,
     isReadOnlyTab,
   } = usePomodoro()
+
   const [doneInput, setDoneInput] = useState('')
   const [nextInput, setNextInput] = useState('')
   const [selectedVerdict, setSelectedVerdict] = useState<SessionRecord['outcome_status'] | null>(
@@ -33,25 +50,44 @@ export function PomodoroWidget() {
 
   if (!state && !pendingNote && !selectedTask) return null
 
-  const minutes = Math.floor(seconds / 60)
-  const remainingSec = seconds % 60
-  const timerDisplay = isOvertime
-    ? `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
-    : `${String(minutes).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`
+  const currentMode = state?.mode || timerMode
+  const isStopwatch = currentMode === 'stopwatch'
 
-  const progressRatio = state
-    ? state.totalDurationSeconds > 0
-      ? Math.max(0, Math.min(1, 1 - seconds / state.totalDurationSeconds))
+  let timerDisplay = ''
+  if (isStopwatch) {
+    const totalSec = stopwatchSeconds
+    const h = Math.floor(totalSec / 3600)
+    const m = Math.floor((totalSec % 3600) / 60)
+    const s = totalSec % 60
+    timerDisplay =
+      h > 0
+        ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+        : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  } else if (isOvertime) {
+    timerDisplay = `+${String(Math.floor(overtimeSeconds / 60)).padStart(2, '0')}:${String(overtimeSeconds % 60).padStart(2, '0')}`
+  } else {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSec = seconds % 60
+    timerDisplay = `${String(minutes).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`
+  }
+
+  const progressRatio = isStopwatch
+    ? 1
+    : state
+      ? state.totalDurationSeconds > 0
+        ? Math.max(0, Math.min(1, 1 - seconds / state.totalDurationSeconds))
+        : 0
       : 0
-    : 0
 
-  const phaseLabel = state
-    ? state.phase === 'foco'
-      ? `FOCO · BLOCO ${state.currentBlock}/${state.totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
-      : state.phase === 'descanso_longo'
-        ? `DESCANSO LONGO${isOvertime ? ' (EXCESSO)' : ''}`
-        : `DESCANSO CURTO${isOvertime ? ' (EXCESSO)' : ''}`
-    : 'PRONTO PARA INICIAR'
+  const phaseLabel = isStopwatch
+    ? 'STOPWATCH · FOCO CRESCENTE'
+    : state
+      ? state.phase === 'foco'
+        ? `FOCO · BLOCO ${state.currentBlock}/${state.totalBlocks}${isOvertime ? ' (EXCESSO)' : ''}`
+        : state.phase === 'descanso_longo'
+          ? `DESCANSO LONGO${isOvertime ? ' (EXCESSO)' : ''}`
+          : `DESCANSO CURTO${isOvertime ? ' (EXCESSO)' : ''}`
+      : 'PRONTO PARA INICIAR'
 
   const handleConfirmNote = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -336,9 +372,84 @@ export function PomodoroWidget() {
       {/* Widget Ativo ou Pré-início com tarefa selecionada */}
       {(state || selectedTask) && (
         <>
+          {/* Seletor de modo Pomo / Stopwatch no widget */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '6px',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: '10px',
+                color: '#A1A1AA',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              MODO
+            </span>
+            <div
+              style={{
+                display: 'inline-flex',
+                background: '#090A0E',
+                padding: '2px',
+                borderRadius: '6px',
+                border: '1px solid rgba(197, 168, 128, 0.2)',
+                gap: '2px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setTimerMode('pomo')}
+                style={{
+                  padding: '2px 6px',
+                  fontSize: '9px',
+                  fontFamily: "'Space Mono', monospace",
+                  borderRadius: '4px',
+                  border: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  background: currentMode === 'pomo' ? '#C5A880' : 'transparent',
+                  color: currentMode === 'pomo' ? '#090A0E' : '#A1A1AA',
+                  fontWeight: currentMode === 'pomo' ? 700 : 400,
+                }}
+              >
+                <Timer size={10} /> Pomo
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimerMode('stopwatch')}
+                style={{
+                  padding: '2px 6px',
+                  fontSize: '9px',
+                  fontFamily: "'Space Mono', monospace",
+                  borderRadius: '4px',
+                  border: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  background: currentMode === 'stopwatch' ? '#C5A880' : 'transparent',
+                  color: currentMode === 'stopwatch' ? '#090A0E' : '#A1A1AA',
+                  fontWeight: currentMode === 'stopwatch' ? 700 : 400,
+                }}
+              >
+                <Clock size={10} /> Stopwatch
+              </button>
+            </div>
+          </div>
+
           <div className="eyebrow" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>{phaseLabel}</span>
-            <span style={{ opacity: 0.7 }}>{state?.preset?.name || activePreset.name}</span>
+            <span style={{ opacity: 0.7 }}>
+              {isStopwatch ? 'LIVRE' : state?.preset?.name || activePreset.name}
+            </span>
           </div>
           <strong>{state?.task?.title || selectedTask?.title || 'Sem tarefa vinculada'}</strong>
 
@@ -514,6 +625,90 @@ export function PomodoroWidget() {
             </div>
           )}
 
+          {/* Stepper rápido de 1 em 1 minuto no widget quando parado e em modo Pomo */}
+          {!state && currentMode === 'pomo' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#090A0E',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                margin: '4px 0 8px',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: '9px',
+                  color: '#A1A1AA',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                DURAÇÃO
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setWorkMinutes(activePreset.workMinutes - 1)}
+                  disabled={activePreset.workMinutes <= 1}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: 0,
+                    borderRadius: '4px',
+                    color: '#F4F4F6',
+                    cursor: 'pointer',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: activePreset.workMinutes <= 1 ? 0.3 : 1,
+                  }}
+                  title="-1 min"
+                >
+                  <Minus size={10} />
+                </button>
+                <span
+                  style={{
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#C5A880',
+                    minWidth: '28px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {activePreset.workMinutes}m
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setWorkMinutes(activePreset.workMinutes + 1)}
+                  disabled={activePreset.workMinutes >= 180}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: 0,
+                    borderRadius: '4px',
+                    color: '#F4F4F6',
+                    cursor: 'pointer',
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: activePreset.workMinutes >= 180 ? 0.3 : 1,
+                  }}
+                  title="+1 min"
+                >
+                  <Plus size={10} />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="pomodoro-row">
             <div
               className={`timer ${isOvertime ? 'overtime' : ''}`}
@@ -533,7 +728,7 @@ export function PomodoroWidget() {
                   onClick={() => {
                     if (!state) {
                       const objToSave = currentObjective.trim() || selectedTask?.title || ''
-                      start(selectedTask, undefined, objToSave)
+                      start(selectedTask, undefined, objToSave, currentMode)
                     } else {
                       toggle()
                     }
