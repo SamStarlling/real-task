@@ -26,6 +26,8 @@ import {
   Timer,
   Clock,
   Save,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -127,8 +129,25 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   })
   const [savingPreset, setSavingPreset] = useState(false)
 
-  // Seletor de tarefa para vincular na barra inferior
+  // Seletor de tarefa para vincular
   const [taskPickerOpen, setTaskPickerOpen] = useState(false)
+
+  // MODO FOCO EM TELA CHEIA (Etapa 3)
+  const [isFullscreenFocus, setIsFullscreenFocus] = useState(false)
+
+  // Tecla Esc sai do modo tela cheia
+  useEffect(() => {
+    if (!isFullscreenFocus) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreenFocus(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreenFocus])
 
   // Carrega os presets reais do usuário
   const loadPresets = useCallback(async () => {
@@ -595,42 +614,480 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
   return (
     <div className="pomodoro-page-container">
-      <div className="pomodoro-columns-layout">
-        {/* COLUNA ESQUERDA: PRESETS */}
-        <section className="pomodoro-presets-column">
-          <header className="pomodoro-presets-header">
-            <h1 className="pomodoro-title">Pomodoro</h1>
-            <div className="pomodoro-presets-actions">
-              {/* Seletor de Modo Pomo / Stopwatch */}
-              <div className="inline-flex items-center bg-[#090A0E] p-0.5 rounded-lg border border-[#C5A880]/30 mr-1">
+      {/* =========================================================
+          HERO TIMER CENTRAL (PROTAGONISTA VISUAL DA PÁGINA /pomodoro)
+          ========================================================= */}
+      <section className="pomodoro-hero-section">
+        <div
+          className={`pomodoro-hero-card ${isRunning ? 'is-running' : ''} ${
+            isOvertime ? 'is-overtime' : ''
+          }`}
+        >
+          {/* TOPO DO HERO: FASE / CICLO E BOTÃO TELA CHEIA */}
+          <div className="pomodoro-hero-topbar">
+            <div className="pomodoro-hero-phase-badge">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isRunning
+                    ? 'bg-[#C5A880] animate-pulse'
+                    : isPaused
+                      ? 'bg-amber-400'
+                      : 'bg-[#71717A]'
+                }`}
+              />
+              <span>{phaseLabel}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFullscreenFocus(true)}
+              className="pomodoro-hero-fullscreen-trigger"
+              title="Expandir para o modo imersivo de tela cheia (ou clique no timer)"
+            >
+              <Maximize2 size={13} className="text-[#C5A880]" />
+              <span>Foco em tela cheia</span>
+            </button>
+          </div>
+
+          {/* ÁREA CENTRAL DO TIMER (CLICÁVEL PARA EXPANDIR EM TELA CHEIA) */}
+          <div
+            className="pomodoro-hero-clock-wrap"
+            onClick={() => setIsFullscreenFocus(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setIsFullscreenFocus(true)
+              }
+            }}
+            title="Clique para modo imersivo em tela cheia"
+          >
+            <div className={`pomodoro-hero-time-digits ${isOvertime ? 'is-overtime' : ''}`}>
+              {formattedTimer}
+            </div>
+            <span className="pomodoro-hero-hint-subtext">
+              <Maximize2 size={11} />
+              <span>Clique no timer para focar em tela cheia</span>
+            </span>
+          </div>
+
+          {/* PILL DO OBJETIVO DO BLOCO (DURANTE FOCO OU EDITADO) */}
+          {(state?.objective || currentObjective) && (
+            <div className="pomodoro-hero-objective-pill" title="Objetivo do bloco fixado">
+              <span className="tag">OBJETIVO</span>
+              <span className="text">{state?.objective || currentObjective}</span>
+            </div>
+          )}
+
+          {/* CONTROLES CENTRAIS DO HERO */}
+          <div className="pomodoro-hero-controls">
+            {/* Botão de transição manual exigido em overtime */}
+            {isOvertime && !isReadOnlyTab && (
+              <>
+                {state?.phase === 'foco' ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await startBreakFromOvertime()
+                      if (refreshSessions) refreshSessions()
+                    }}
+                    className="pomodoro-hero-btn primary"
+                    title="Encerrar foco, registrar sessão e iniciar descanso"
+                  >
+                    Iniciar Pausa
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await startNextBlockFromBreak()
+                      if (refreshSessions) refreshSessions()
+                    }}
+                    className="pomodoro-hero-btn primary"
+                    title="Iniciar o próximo bloco de foco"
+                  >
+                    Iniciar Próximo Bloco
+                  </button>
+                )}
+              </>
+            )}
+
+            {!isReadOnlyTab && !isOvertime && (
+              <>
+                {/* Botão Play / Pause Principal */}
                 <button
                   type="button"
-                  onClick={() => setTimerMode('pomo')}
-                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded-md transition-all flex items-center gap-1 ${
-                    timerMode === 'pomo'
-                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
-                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
-                  }`}
-                  title="Modo Pomodoro (contagem regressiva + ciclos de blocos)"
+                  className="pomodoro-hero-btn primary"
+                  onClick={() => {
+                    if (!isRunning) {
+                      start(state?.task ?? selectedTask, activePreset, currentObjective)
+                    } else {
+                      toggle()
+                    }
+                  }}
+                  title={isRunning ? 'Pausar foco' : 'Iniciar foco'}
                 >
-                  <Timer size={12} />
-                  <span>Pomo</span>
+                  {isRunning ? (
+                    <>
+                      <Pause size={18} fill="currentColor" />
+                      <span>Pausar</span>
+                    </>
+                  ) : isPaused ? (
+                    <>
+                      <Play size={18} fill="currentColor" />
+                      <span>Retomar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} fill="currentColor" />
+                      <span>Começar</span>
+                    </>
+                  )}
                 </button>
+
+                {/* Botão Encerrar e Registrar */}
                 <button
                   type="button"
-                  onClick={() => setTimerMode('stopwatch')}
-                  className={`px-2.5 py-1 text-[11px] font-['Space_Mono'] rounded-md transition-all flex items-center gap-1 ${
-                    timerMode === 'stopwatch'
-                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
-                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
-                  }`}
-                  title="Modo Stopwatch (contagem crescente contínua)"
+                  className="pomodoro-hero-btn"
+                  onClick={async () => {
+                    await finish()
+                    if (refreshSessions) refreshSessions()
+                  }}
+                  disabled={!hasActiveSession}
+                  title="Encerrar bloco e registrar tempo"
                 >
-                  <Clock size={12} />
-                  <span>Stopwatch</span>
+                  <Square size={16} />
+                  <span>Encerrar</span>
+                </button>
+
+                {/* Botão Descartar sem registrar */}
+                {hasActiveSession && (
+                  <button
+                    type="button"
+                    className="pomodoro-hero-btn text-muted"
+                    onClick={discard}
+                    title="Descartar timer sem registrar"
+                  >
+                    <RotateCcw size={15} />
+                    <span>Descartar</span>
+                  </button>
+                )}
+              </>
+            )}
+
+            {isReadOnlyTab && (
+              <span className="pomodoro-readonly-badge">
+                Timer ativo em outra aba (somente leitura)
+              </span>
+            )}
+          </div>
+
+          {/* BARRA DE PREPARAÇÃO: MODO (POMO/STOPWATCH) + VINCULAR TAREFA */}
+          <div className="pomodoro-hero-prep-bar">
+            {/* Seletor Pomo / Stopwatch */}
+            <div className="inline-flex items-center bg-[#090A0E] p-1 rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => setTimerMode('pomo')}
+                className={`px-3 py-1.5 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
+                  timerMode === 'pomo'
+                    ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                    : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                }`}
+                title="Modo Pomodoro (contagem regressiva + blocos)"
+              >
+                <Timer size={13} />
+                <span>Pomodoro</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimerMode('stopwatch')}
+                className={`px-3 py-1.5 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
+                  timerMode === 'stopwatch'
+                    ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                    : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                }`}
+                title="Modo Stopwatch (contagem crescente contínua)"
+              >
+                <Clock size={13} />
+                <span>Stopwatch</span>
+              </button>
+            </div>
+
+            {/* Dropdown de vincular tarefa */}
+            <DropdownMenu open={taskPickerOpen} onOpenChange={setTaskPickerOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090A0E] border border-white/10 hover:border-[#C5A880]/40 text-xs font-['Plus_Jakarta_Sans'] text-[#F4F4F6] transition-colors max-w-[280px]"
+                  title="Clique para vincular ou alterar a tarefa em foco"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#C5A880] shrink-0" />
+                  <span className="truncate">
+                    {currentLinkedTask ? currentLinkedTask.title : 'Vincular tarefa...'}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="center"
+                className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] w-72 max-h-64 overflow-y-auto"
+              >
+                <DropdownMenuItem
+                  onClick={() => selectTask(null)}
+                  className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                >
+                  <em>Nenhuma tarefa vinculada (foco livre)</em>
+                  {!currentLinkedTask && (
+                    <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
+                  )}
+                </DropdownMenuItem>
+                {tasks
+                  .filter((t) => !t.done)
+                  .map((t) => (
+                    <DropdownMenuItem
+                      key={t.id}
+                      onClick={() => selectTask(t)}
+                      className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                    >
+                      <span className="truncate">{t.title}</span>
+                      {currentLinkedTask?.id === t.id && (
+                        <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Indicação do preset ativo */}
+            <span className="text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
+              Preset: <strong className="text-[#C5A880] font-bold">{activePreset.name}</strong> (
+              {activePreset.workMinutes}m)
+            </span>
+          </div>
+
+          {/* PAINEL DE NOTA / VEREDITO PÓS-FOCO NO HERO (QUANDO PENDENTE) */}
+          {pendingNote && (
+            <div className="mt-4 bg-[#12141C] border border-[#C5A880]/40 rounded-xl p-3.5 shadow-2xl max-w-lg w-full animate-in fade-in">
+              <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-['Space_Mono'] uppercase tracking-wider text-[#C5A880] font-bold">
+                    Bloco {pendingNote.blockNumber} finalizado · {pendingNote.durationMinutes} min
+                  </span>
+                  {pendingNote.taskTitle && (
+                    <span
+                      className="text-xs text-[#A1A1AA] truncate max-w-[180px]"
+                      title={pendingNote.taskTitle}
+                    >
+                      ({pendingNote.taskTitle})
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dismissPendingNote()
+                    setDoneInput('')
+                    setNextInput('')
+                    setPendingVerdict(null)
+                  }}
+                  className="text-[#A1A1AA] hover:text-[#F4F4F6] p-1"
+                  title="Fechar sem salvar notas adicionais (Esc)"
+                >
+                  <XIcon size={14} />
                 </button>
               </div>
 
+              {/* Veredito de 1 toque: selo visual padronizado do objetivo pós-foco */}
+              {pendingNote.objective && (
+                <div className="mb-2.5 bg-[#090A0E] border border-[rgba(197,168,128,0.3)] rounded-lg p-2.5 text-left">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Target size={12} className="text-[#C5A880] shrink-0" />
+                    <span className="font-['Space_Mono'] text-[10px] font-bold uppercase tracking-wider text-[#C5A880]">
+                      OBJETIVO DO BLOCO
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#F4F4F6] font-medium mb-2.5 pl-3 border-l-2 border-[#C5A880] break-words leading-relaxed font-['Plus_Jakarta_Sans']">
+                    "{pendingNote.objective}"
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setPendingVerdict('batido')}
+                      className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                        pendingVerdict === 'batido'
+                          ? 'bg-[#C5A880] text-[#090A0E] border-[#C5A880] font-bold'
+                          : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#C5A880]/40'
+                      }`}
+                    >
+                      <Check size={12} />
+                      Batido
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingVerdict('parcial')}
+                      className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                        pendingVerdict === 'parcial'
+                          ? 'bg-[#F59E0B] text-[#090A0E] border-[#F59E0B] font-bold'
+                          : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#F59E0B]/40'
+                      }`}
+                    >
+                      <span>~</span>
+                      Parcial
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingVerdict('nao_foi')}
+                      className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
+                        pendingVerdict === 'nao_foi'
+                          ? 'bg-[#71717A] text-[#F4F4F6] border-[#71717A] font-bold'
+                          : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#71717A]/40'
+                      }`}
+                    >
+                      <XIcon size={12} />
+                      Não foi
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Duas perguntas de texto: 'O que foi feito?' e 'O que fica para o próximo bloco?' */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  submitPendingNote({
+                    doneText: doneInput,
+                    nextText: nextInput,
+                    outcomeStatus: pendingVerdict || undefined,
+                    objective: pendingNote.objective,
+                  })
+                  setDoneInput('')
+                  setNextInput('')
+                  setPendingVerdict(null)
+                  if (refreshSessions) refreshSessions()
+                }}
+                className="space-y-2 text-left"
+              >
+                <div>
+                  <input
+                    type="text"
+                    autoFocus={!pendingNote.objective}
+                    maxLength={250}
+                    placeholder="O que foi feito neste bloco? (opcional)"
+                    value={doneInput}
+                    onChange={(e) => setDoneInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.preventDefault()
+                        dismissPendingNote()
+                      }
+                    }}
+                    className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    maxLength={250}
+                    placeholder="O que fica para o próximo bloco? (opcional)"
+                    value={nextInput}
+                    onChange={(e) => setNextInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.preventDefault()
+                        dismissPendingNote()
+                      }
+                    }}
+                    className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] font-['Space_Mono'] text-[#71717A]">
+                    Enter salva · Esc pula
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        dismissPendingNote()
+                        setDoneInput('')
+                        setNextInput('')
+                        setPendingVerdict(null)
+                      }}
+                      className="px-2 py-1 text-[11px] font-['Space_Mono'] text-[#A1A1AA] hover:text-[#F4F4F6]"
+                    >
+                      Pular
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-3 py-1 bg-[#C5A880] hover:bg-[#d6bc96] text-[#090A0E] font-bold text-xs font-['Space_Mono'] uppercase tracking-wider rounded-md"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
+      {!hasActiveSession && !isReadOnlyTab && (
+        <div className="pomodoro-objective-card mb-6">
+          <div
+            className={`pomodoro-objective-card-inner ${
+              selectedTask && currentObjective === selectedTask.title ? 'is-compact' : ''
+            }`}
+          >
+            <div className="pomodoro-objective-header">
+              <label htmlFor="pomodoro-block-objective-input" className="pomodoro-objective-label">
+                <Target size={13} className="text-[#C5A880] shrink-0" />
+                <span>OBJETIVO DO BLOCO</span>
+              </label>
+              {selectedTask && (
+                <span className="text-[10px] font-['Space_Mono'] text-[#A1A1AA] truncate max-w-[220px]">
+                  Tarefa: {selectedTask.title}
+                </span>
+              )}
+            </div>
+
+            <div className="pomodoro-objective-input-wrap">
+              <input
+                id="pomodoro-block-objective-input"
+                type="text"
+                maxLength={300}
+                value={currentObjective}
+                onChange={(e) => setCurrentObjective(e.target.value)}
+                placeholder={
+                  selectedTask
+                    ? selectedTask.title
+                    : 'O que deve existir ao fim deste bloco? (opcional)'
+                }
+                title="Objetivo do bloco: valor pré-preenchido editável salvo ao dar play"
+                className="pomodoro-objective-input"
+              />
+            </div>
+
+            <p className="pomodoro-objective-hint">
+              Será pedido o veredito ao fim do bloco — ✓ Batido · ~ Parcial · ✗ Não foi
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* SEÇÃO PRINCIPAL EM COLUNAS: PRESETS (ESQ) & VISÃO GERAL + TIMELINE (DIR) */}
+      <div className="pomodoro-columns-layout">
+        {/* COLUNA ESQUERDA: PRESETS E DURAÇÃO */}
+        <section className="pomodoro-presets-column">
+          <header className="pomodoro-presets-header">
+            <h2 className="font-['Clash_Display'] font-semibold text-lg text-[#F4F4F6]">
+              Presets de Foco
+            </h2>
+            <div className="pomodoro-presets-actions">
               {/* Chips Ativo / Arquivado estilo TickTick */}
               <div className="pomodoro-tab-chips">
                 <button
@@ -1125,345 +1582,161 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
         </div>
       )}
 
-      {/* BARRA INFERIOR FIXA DO TIMER (ESTILO TICKTICK / DESIGN SYSTEM BARBOSA) */}
-      <footer className="pomodoro-bottom-bar">
-        <div className="pomodoro-bottom-bar-inner">
-          <div className="pomodoro-bottom-left flex-wrap md:flex-nowrap">
-            {/* Ícone de status sutil */}
-            <div
-              className={`pomodoro-bottom-avatar ${isRunning ? 'running' : ''}`}
-              title={phaseLabel}
-            >
-              <span className="pomodoro-bottom-avatar-icon" />
+      {/* =========================================================
+          MODO FOCO EM TELA CHEIA (IMERSÃO TOTAL · BARBOSA SYSTEM)
+          ========================================================= */}
+      {isFullscreenFocus && (
+        <div className="pomodoro-fullscreen-overlay">
+          {/* TOPO: FASE E BOTÃO SAIR DE TELA CHEIA */}
+          <div className="pomodoro-fullscreen-header">
+            <div className="pomodoro-fullscreen-phase">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isRunning
+                    ? 'bg-[#C5A880] animate-pulse'
+                    : isPaused
+                      ? 'bg-amber-400'
+                      : 'bg-[#71717A]'
+                }`}
+              />
+              <span>{phaseLabel}</span>
             </div>
 
-            <div className="pomodoro-bottom-meta">
-              <span className="pomodoro-bottom-eyebrow">{phaseLabel}</span>
+            <button
+              type="button"
+              onClick={() => setIsFullscreenFocus(false)}
+              className="pomodoro-fullscreen-close-btn"
+              title="Sair do modo tela cheia (Esc)"
+            >
+              <Minimize2 size={15} className="text-[#C5A880]" />
+              <span>Sair da tela cheia</span>
+            </button>
+          </div>
 
-              <div className="pomodoro-bottom-time-row flex-wrap gap-2">
-                <span className={`pomodoro-bottom-digits ${isOvertime ? 'is-overtime' : ''}`}>
-                  {formattedTimer}
-                </span>
+          {/* CENTRO: TIMER GIGANTE + OBJETIVO DO BLOCO + TAREFA */}
+          <div className="pomodoro-fullscreen-center">
+            <div className={`pomodoro-fullscreen-digits ${isOvertime ? 'is-overtime' : ''}`}>
+              {formattedTimer}
+            </div>
 
-                {/* Seletor de tarefa para vinculação */}
-                <DropdownMenu open={taskPickerOpen} onOpenChange={setTaskPickerOpen}>
-                  <DropdownMenuTrigger asChild>
+            {(state?.objective || currentObjective) && (
+              <div className="pomodoro-fullscreen-objective" title="Objetivo ativo deste bloco">
+                <span className="tag">OBJETIVO</span>
+                <span className="title">{state?.objective || currentObjective}</span>
+              </div>
+            )}
+
+            {currentLinkedTask && (
+              <div className="pomodoro-fullscreen-task-sub">
+                <span className="w-2 h-2 rounded-full bg-[#C5A880]" />
+                <span className="truncate">Tarefa: {currentLinkedTask.title}</span>
+              </div>
+            )}
+          </div>
+
+          {/* RODAPÉ: CONTROLES MÍNIMOS (PLAY/PAUSE, ENCERRAR, DESCARTAR) */}
+          <div className="pomodoro-fullscreen-footer">
+            <div className="pomodoro-fullscreen-controls">
+              {/* Botão transição em overtime */}
+              {isOvertime && !isReadOnlyTab && (
+                <>
+                  {state?.phase === 'foco' ? (
                     <button
                       type="button"
-                      className="pomodoro-bottom-task-tag"
-                      title="Clique para vincular ou alterar a tarefa em foco"
+                      onClick={async () => {
+                        await startBreakFromOvertime()
+                        if (refreshSessions) refreshSessions()
+                      }}
+                      className="pomodoro-fullscreen-btn primary"
                     >
-                      <span className="pomodoro-task-dot" />
-                      <span className="pomodoro-task-title">
-                        {currentLinkedTask ? currentLinkedTask.title : 'Vincular tarefa...'}
-                      </span>
+                      Iniciar Pausa
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] w-72 max-h-64 overflow-y-auto"
-                  >
-                    <DropdownMenuItem
-                      onClick={() => selectTask(null)}
-                      className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await startNextBlockFromBreak()
+                        if (refreshSessions) refreshSessions()
+                      }}
+                      className="pomodoro-fullscreen-btn primary"
                     >
-                      <em>Nenhuma tarefa vinculada (foco livre)</em>
-                      {!currentLinkedTask && (
-                        <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                    {tasks
-                      .filter((t) => !t.done)
-                      .map((t) => (
-                        <DropdownMenuItem
-                          key={t.id}
-                          onClick={() => selectTask(t)}
-                          className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
-                        >
-                          <span className="truncate">{t.title}</span>
-                          {currentLinkedTask?.id === t.id && (
-                            <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
-                          )}
-                        </DropdownMenuItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                      Iniciar Próximo Bloco
+                    </button>
+                  )}
+                </>
+              )}
 
-              {/* ÂNCORA ANTI-DRIFT VISÍVEL DURANTE O FOCO (Pill reforçada com borda champagne) */}
-              {isRunning && (state?.objective || currentObjective) && (
-                <div
-                  className="pomodoro-anti-drift-bar mt-1.5"
-                  title="Objetivo ativo deste bloco (âncora anti-drift)"
-                >
-                  <Target size={12} className="text-[#090A0E] shrink-0" />
-                  <span className="pomodoro-anti-drift-tag">OBJETIVO</span>
-                  <span className="truncate font-medium text-xs text-[#F4F4F6]">
-                    {state?.objective || currentObjective}
-                  </span>
-                </div>
+              {!isReadOnlyTab && !isOvertime && (
+                <>
+                  <button
+                    type="button"
+                    className="pomodoro-fullscreen-btn primary"
+                    onClick={() => {
+                      if (!isRunning) {
+                        start(state?.task ?? selectedTask, activePreset, currentObjective)
+                      } else {
+                        toggle()
+                      }
+                    }}
+                    title={isRunning ? 'Pausar foco' : 'Iniciar/Retomar foco'}
+                  >
+                    {isRunning ? (
+                      <>
+                        <Pause size={20} fill="currentColor" />
+                        <span>Pausar</span>
+                      </>
+                    ) : isPaused ? (
+                      <>
+                        <Play size={20} fill="currentColor" />
+                        <span>Retomar</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={20} fill="currentColor" />
+                        <span>Começar</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="pomodoro-fullscreen-btn"
+                    onClick={async () => {
+                      await finish()
+                      if (refreshSessions) refreshSessions()
+                      setIsFullscreenFocus(false)
+                    }}
+                    disabled={!hasActiveSession}
+                    title="Encerrar e registrar tempo"
+                  >
+                    <Square size={18} />
+                    <span>Encerrar</span>
+                  </button>
+
+                  {hasActiveSession && (
+                    <button
+                      type="button"
+                      className="pomodoro-fullscreen-btn"
+                      onClick={() => {
+                        discard()
+                        setIsFullscreenFocus(false)
+                      }}
+                      title="Descartar timer"
+                    >
+                      <RotateCcw size={16} />
+                      <span>Descartar</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
-          </div>
 
-          <div className="pomodoro-bottom-controls flex-wrap justify-end gap-2">
-            {/* Aviso discreto de trava de abas */}
-            {isReadOnlyTab && (
-              <span className="pomodoro-readonly-badge">
-                Timer ativo em outra aba (somente leitura)
-              </span>
-            )}
-
-            {/* Botão de transição manual exigido pelo usuário */}
-            {isOvertime && !isReadOnlyTab && (
-              <>
-                {state?.phase === 'foco' ? (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await startBreakFromOvertime()
-                      if (refreshSessions) refreshSessions()
-                    }}
-                    className="pomodoro-transition-btn"
-                    title="Encerrar foco, registrar sessão e iniciar descanso"
-                  >
-                    Iniciar Pausa
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await startNextBlockFromBreak()
-                      if (refreshSessions) refreshSessions()
-                    }}
-                    className="pomodoro-transition-btn"
-                    title="Iniciar o próximo bloco de foco"
-                  >
-                    Iniciar Próximo Bloco
-                  </button>
-                )}
-              </>
-            )}
-
-            {/* PAINEL DE NOTA / VEREDITO PÓS-FOCO EXPANDIDO (VEREDITO DE 1 TOQUE + 2 PERGUNTAS) */}
-            {pendingNote && (
-              <div className="bg-[#12141C] border border-[#C5A880]/40 rounded-xl p-3 shadow-2xl max-w-md w-full animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-[#C5A880] font-bold">
-                      Bloco {pendingNote.blockNumber} finalizado · {pendingNote.durationMinutes} min
-                    </span>
-                    {pendingNote.taskTitle && (
-                      <span
-                        className="text-xs text-[#A1A1AA] truncate max-w-[160px]"
-                        title={pendingNote.taskTitle}
-                      >
-                        ({pendingNote.taskTitle})
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      dismissPendingNote()
-                      setDoneInput('')
-                      setNextInput('')
-                      setPendingVerdict(null)
-                    }}
-                    className="text-[#A1A1AA] hover:text-[#F4F4F6] p-1"
-                    title="Fechar sem salvar notas adicionais (Esc)"
-                  >
-                    <XIcon size={14} />
-                  </button>
-                </div>
-
-                {/* Veredito de 1 toque: selo visual padronizado do objetivo pós-foco */}
-                {pendingNote.objective && (
-                  <div className="mb-2.5 bg-[#090A0E] border border-[rgba(197,168,128,0.3)] rounded-lg p-2.5">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Target size={12} className="text-[#C5A880] shrink-0" />
-                      <span className="font-['Space_Mono'] text-[10px] font-bold uppercase tracking-wider text-[#C5A880]">
-                        OBJETIVO DO BLOCO
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#F4F4F6] font-medium mb-2.5 pl-3 border-l-2 border-[#C5A880] break-words leading-relaxed font-['Plus_Jakarta_Sans']">
-                      "{pendingNote.objective}"
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPendingVerdict('batido')}
-                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
-                          pendingVerdict === 'batido'
-                            ? 'bg-[#C5A880] text-[#090A0E] border-[#C5A880] font-bold'
-                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#C5A880]/40'
-                        }`}
-                      >
-                        <Check size={12} />
-                        Batido
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPendingVerdict('parcial')}
-                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
-                          pendingVerdict === 'parcial'
-                            ? 'bg-[#F59E0B] text-[#090A0E] border-[#F59E0B] font-bold'
-                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#F59E0B]/40'
-                        }`}
-                      >
-                        <span>~</span>
-                        Parcial
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPendingVerdict('nao_foi')}
-                        className={`py-1 px-2 text-[11px] font-['Space_Mono'] rounded-md border flex items-center justify-center gap-1 transition-all ${
-                          pendingVerdict === 'nao_foi'
-                            ? 'bg-[#71717A] text-[#F4F4F6] border-[#71717A] font-bold'
-                            : 'bg-white/5 text-[#F4F4F6] border-white/10 hover:border-[#71717A]/40'
-                        }`}
-                      >
-                        <XIcon size={12} />
-                        Não foi
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Duas perguntas de texto: 'O que foi feito?' e 'O que fica para o próximo bloco?' */}
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    submitPendingNote({
-                      doneText: doneInput,
-                      nextText: nextInput,
-                      outcomeStatus: pendingVerdict || undefined,
-                      objective: pendingNote.objective,
-                    })
-                    setDoneInput('')
-                    setNextInput('')
-                    setPendingVerdict(null)
-                    if (refreshSessions) refreshSessions()
-                  }}
-                  className="space-y-2"
-                >
-                  <div>
-                    <input
-                      type="text"
-                      autoFocus={!pendingNote.objective}
-                      maxLength={250}
-                      placeholder="O que foi feito neste bloco? (opcional)"
-                      value={doneInput}
-                      onChange={(e) => setDoneInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          e.preventDefault()
-                          dismissPendingNote()
-                        }
-                      }}
-                      className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
-                    />
-                  </div>
-
-                  <div>
-                    <input
-                      type="text"
-                      maxLength={250}
-                      placeholder="O que fica para o próximo bloco? (opcional)"
-                      value={nextInput}
-                      onChange={(e) => setNextInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          e.preventDefault()
-                          dismissPendingNote()
-                        }
-                      }}
-                      className="w-full bg-[#090A0E] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-[#F4F4F6] placeholder:text-[#71717A] focus:outline-none focus:border-[#C5A880]"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] font-['Space_Mono'] text-[#71717A]">
-                      Enter salva · Esc pula
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          dismissPendingNote()
-                          setDoneInput('')
-                          setNextInput('')
-                          setPendingVerdict(null)
-                        }}
-                        className="px-2 py-1 text-[11px] font-['Space_Mono'] text-[#A1A1AA] hover:text-[#F4F4F6]"
-                      >
-                        Pular
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-3 py-1 bg-[#C5A880] hover:bg-[#d6bc96] text-[#090A0E] font-bold text-xs font-['Space_Mono'] uppercase tracking-wider rounded-md"
-                      >
-                        Salvar
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {!isReadOnlyTab && (
-              <>
-                {/* Botão Play / Pause */}
-                <button
-                  type="button"
-                  className="pomodoro-bottom-action-btn primary"
-                  onClick={() => {
-                    if (!isRunning) {
-                      start(state?.task ?? selectedTask, activePreset, currentObjective)
-                    } else {
-                      toggle()
-                    }
-                  }}
-                  title={isRunning ? 'Pausar foco' : 'Iniciar foco'}
-                >
-                  {isRunning ? (
-                    <Pause size={18} fill="currentColor" />
-                  ) : (
-                    <Play size={18} fill="currentColor" />
-                  )}
-                </button>
-
-                {/* Botão Encerrar e Registrar */}
-                <button
-                  type="button"
-                  className="pomodoro-bottom-action-btn"
-                  onClick={async () => {
-                    await finish()
-                    if (refreshSessions) refreshSessions()
-                  }}
-                  disabled={!hasActiveSession}
-                  title="Encerrar e registrar tempo"
-                >
-                  <Square size={16} />
-                </button>
-
-                {/* Botão Descartar sem registrar */}
-                {hasActiveSession && (
-                  <button
-                    type="button"
-                    className="pomodoro-bottom-action-btn text-muted"
-                    onClick={discard}
-                    title="Descartar timer sem registrar"
-                  >
-                    <RotateCcw size={15} />
-                  </button>
-                )}
-              </>
-            )}
+            <span className="pomodoro-fullscreen-hint">
+              Pressione Esc para voltar à visão completa
+            </span>
           </div>
         </div>
-      </footer>
+      )}
 
       {/* MODAL DE EDIÇÃO DE SESSÃO / NOTA / OBJETIVO / VEREDITO */}
       <Dialog open={!!editingSession} onOpenChange={(open) => !open && setEditingSession(null)}>

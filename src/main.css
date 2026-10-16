@@ -2083,8 +2083,8 @@ a {
 .pomodoro-page-container {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 120px);
-  padding-bottom: 90px; /* espaço para barra inferior fixa */
+  min-height: calc(100vh - 80px);
+  padding-bottom: 40px;
   position: relative;
 }
 
@@ -3809,6 +3809,503 @@ a {
   }
   .pomodoro-bottom-task-tag {
     max-width: 150px;
+  }
+}
+
+/* =========================================================================
+   ETAPA 3: HERO TIMER CENTRALIZADO & MODO FOCO EM TELA CHEIA (BARBOSA SYSTEM)
+   ========================================================================= */
+
+/* Hero Timer Central da página /pomodoro */
+.pomodoro-hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 32px 0;
+  position: relative;
+  width: 100%;
+}
+
+.pomodoro-hero-card {
+  width: 100%;
+  max-width: 760px;
+  background: radial-gradient(ellipse at top, rgba(197, 168, 128, 0.05) 0%, #12141c 70%);
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 24px rgba(197, 168, 128, 0.04);
+  position: relative;
+  transition: all 220ms ease;
+}
+
+.pomodoro-hero-card:hover {
+  border-color: rgba(197, 168, 128, 0.35);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.55),
+    0 0 32px rgba(197, 168, 128, 0.08);
+}
+
+.pomodoro-hero-card.is-running {
+  border-color: rgba(197, 168, 128, 0.45);
+  background: radial-gradient(ellipse at top, rgba(197, 168, 128, 0.09) 0%, #12141c 75%);
+}
+
+.pomodoro-hero-card.is-overtime {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: radial-gradient(ellipse at top, rgba(245, 158, 11, 0.08) 0%, #12141c 75%);
+}
+
+/* Barra superior do Hero Timer: Botão Tela Cheia discreto + fase */
+.pomodoro-hero-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pomodoro-hero-phase-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+  border: 1px solid rgba(197, 168, 128, 0.28);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pomodoro-hero-fullscreen-trigger {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  user-select: none;
+}
+
+.pomodoro-hero-fullscreen-trigger:hover {
+  background: rgba(197, 168, 128, 0.12);
+  border-color: #c5a880;
+  color: #f4f4f6;
+  transform: translateY(-1px);
+}
+
+/* Área central do timer com display gigante em Clash Display */
+.pomodoro-hero-clock-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 16px;
+  transition: all 180ms ease;
+}
+
+.pomodoro-hero-clock-wrap:hover .pomodoro-hero-time-digits {
+  color: #c5a880;
+  text-shadow: 0 0 24px rgba(197, 168, 128, 0.35);
+}
+
+.pomodoro-hero-time-digits {
+  font-family: 'Clash Display', 'Space Mono', sans-serif;
+  font-size: 82px;
+  font-weight: 700;
+  line-height: 1;
+  color: #f4f4f6;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  transition:
+    color 200ms ease,
+    text-shadow 200ms ease;
+  text-align: center;
+  user-select: none;
+}
+
+.pomodoro-hero-time-digits.is-overtime {
+  color: #fbbf24;
+  text-shadow: 0 0 24px rgba(245, 158, 11, 0.35);
+}
+
+.pomodoro-hero-hint-subtext {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #71717a;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.85;
+  transition: opacity 150ms ease;
+}
+
+.pomodoro-hero-clock-wrap:hover .pomodoro-hero-hint-subtext {
+  color: #c5a880;
+  opacity: 1;
+}
+
+/* Controles centrais (Play/Pause, Stop, Discard) */
+.pomodoro-hero-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.pomodoro-hero-btn {
+  height: 48px;
+  min-width: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  user-select: none;
+  background: #090a0e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f4f4f6;
+}
+
+.pomodoro-hero-btn:hover:not(:disabled) {
+  border-color: rgba(197, 168, 128, 0.45);
+  color: #c5a880;
+  transform: translateY(-1px);
+}
+
+.pomodoro-hero-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pomodoro-hero-btn.primary {
+  background: #c5a880;
+  border-color: #c5a880;
+  color: #090a0e;
+  box-shadow: 0 4px 16px rgba(197, 168, 128, 0.25);
+  height: 52px;
+  min-width: 140px;
+  padding: 0 24px;
+  font-size: 13px;
+}
+
+.pomodoro-hero-btn.primary:hover:not(:disabled) {
+  background: #d6bc96;
+  border-color: #d6bc96;
+  color: #090a0e;
+  box-shadow: 0 6px 22px rgba(197, 168, 128, 0.4);
+}
+
+.pomodoro-hero-btn.text-muted {
+  color: #94949e;
+  padding: 0 14px;
+}
+
+/* Pill de Objetivo do Bloco / Anti-drift no Hero */
+.pomodoro-hero-objective-pill {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(197, 168, 128, 0.1);
+  border: 1px solid #c5a880;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  max-width: 90%;
+  box-shadow: 0 0 16px rgba(197, 168, 128, 0.12);
+  animation: pomodoroNoteFadeIn 200ms ease;
+}
+
+.pomodoro-hero-objective-pill .tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: #c5a880;
+  color: #090a0e;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.pomodoro-hero-objective-pill .text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #f4f4f6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Grupo de Preparação do Hero: Seletor de modo + duração rápida + tarefa */
+.pomodoro-hero-prep-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+/* =========================================================================
+   MODO FOCO EM TELA CHEIA (FULLSCREEN IMMERSIVE)
+   ========================================================================= */
+.pomodoro-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #090a0e;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32px 24px;
+  animation: pomodoroFullscreenFadeIn 200ms ease-out;
+}
+
+@keyframes pomodoroFullscreenFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pomodoro-fullscreen-header {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pomodoro-fullscreen-phase {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pomodoro-fullscreen-close-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.pomodoro-fullscreen-close-btn:hover {
+  background: rgba(197, 168, 128, 0.15);
+  border-color: #c5a880;
+  color: #f4f4f6;
+}
+
+.pomodoro-fullscreen-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+  gap: 18px;
+}
+
+.pomodoro-fullscreen-digits {
+  font-family: 'Clash Display', 'Space Mono', sans-serif;
+  font-size: clamp(88px, 16vw, 190px);
+  font-weight: 700;
+  line-height: 0.95;
+  color: #f4f4f6;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  text-shadow: 0 0 40px rgba(197, 168, 128, 0.15);
+  transition:
+    color 200ms ease,
+    text-shadow 200ms ease;
+}
+
+.pomodoro-fullscreen-digits.is-overtime {
+  color: #fbbf24;
+  text-shadow: 0 0 50px rgba(245, 158, 11, 0.35);
+}
+
+.pomodoro-fullscreen-objective {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(197, 168, 128, 0.12);
+  border: 1.5px solid #c5a880;
+  border-radius: 9999px;
+  padding: 8px 24px;
+  max-width: 80vw;
+  box-shadow: 0 0 24px rgba(197, 168, 128, 0.2);
+}
+
+.pomodoro-fullscreen-objective .tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: #c5a880;
+  color: #090a0e;
+  padding: 2.5px 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.pomodoro-fullscreen-objective .title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+  color: #f4f4f6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pomodoro-fullscreen-task-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: #a1a1aa;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 80vw;
+}
+
+.pomodoro-fullscreen-footer {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pomodoro-fullscreen-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pomodoro-fullscreen-btn {
+  height: 52px;
+  min-width: 52px;
+  padding: 0 24px;
+  border-radius: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  user-select: none;
+  background: #12141c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f4f6;
+}
+
+.pomodoro-fullscreen-btn:hover:not(:disabled) {
+  border-color: rgba(197, 168, 128, 0.5);
+  color: #c5a880;
+}
+
+.pomodoro-fullscreen-btn.primary {
+  background: #c5a880;
+  border-color: #c5a880;
+  color: #090a0e;
+  box-shadow: 0 6px 20px rgba(197, 168, 128, 0.35);
+  min-width: 160px;
+}
+
+.pomodoro-fullscreen-btn.primary:hover:not(:disabled) {
+  background: #d6bc96;
+  border-color: #d6bc96;
+  color: #090a0e;
+}
+
+.pomodoro-fullscreen-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #71717a;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+  .pomodoro-hero-card {
+    padding: 24px 16px 20px;
+  }
+  .pomodoro-hero-time-digits {
+    font-size: 58px;
   }
 }
 .icon {

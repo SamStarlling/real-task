@@ -825,47 +825,51 @@ export function Layout({
 
       {/* CONTEÚDO PRINCIPAL */}
       <main className="main">
-        <div className="capture-sticky">
-          <CaptureBar onCreated={refresh} />
-        </div>
+        {!isPomodoroPage && (
+          <div className="capture-sticky">
+            <CaptureBar onCreated={refresh} />
+          </div>
+        )}
         <Outlet />
       </main>
 
-      {/* BOTÃO FLUTUANTE DE CAPTURA (+) OU PAINEL EXPANDIDO NO MOBILE */}
-      <div className="mobile-capture-container">
-        {mobileCaptureOpen ? (
-          <div className="mobile-capture-expanded">
-            <div className="mobile-capture-expanded-header">
-              <span className="mobile-capture-expanded-title">NOVA TAREFA</span>
-              <button
-                type="button"
-                className="mobile-capture-close-btn"
-                onClick={() => setMobileCaptureOpen(false)}
-                title="Fechar captura rápida"
-                aria-label="Fechar captura rápida"
-              >
-                <X className="w-4 h-4 text-[#a1a1aa]" />
-              </button>
+      {/* BOTÃO FLUTUANTE DE CAPTURA (+) OU PAINEL EXPANDIDO NO MOBILE (Oculto em /pomodoro para foco visual absoluto) */}
+      {!isPomodoroPage && (
+        <div className="mobile-capture-container">
+          {mobileCaptureOpen ? (
+            <div className="mobile-capture-expanded">
+              <div className="mobile-capture-expanded-header">
+                <span className="mobile-capture-expanded-title">NOVA TAREFA</span>
+                <button
+                  type="button"
+                  className="mobile-capture-close-btn"
+                  onClick={() => setMobileCaptureOpen(false)}
+                  title="Fechar captura rápida"
+                  aria-label="Fechar captura rápida"
+                >
+                  <X className="w-4 h-4 text-[#a1a1aa]" />
+                </button>
+              </div>
+              <CaptureBar
+                onCreated={() => {
+                  refresh()
+                  setMobileCaptureOpen(false)
+                }}
+              />
             </div>
-            <CaptureBar
-              onCreated={() => {
-                refresh()
-                setMobileCaptureOpen(false)
-              }}
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="mobile-capture-fab"
-            onClick={() => setMobileCaptureOpen(true)}
-            title="Nova tarefa rápida (+)"
-            aria-label="Nova tarefa rápida"
-          >
-            <Plus className="w-6 h-6 text-[#090a0e]" strokeWidth={2.2} />
-          </button>
-        )}
-      </div>
+          ) : (
+            <button
+              type="button"
+              className="mobile-capture-fab"
+              onClick={() => setMobileCaptureOpen(true)}
+              title="Nova tarefa rápida (+)"
+              aria-label="Nova tarefa rápida"
+            >
+              <Plus className="w-6 h-6 text-[#090a0e]" strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* WIDGET POMODORO FLUTUANTE: Posicionado acima da bottom nav no mobile */}
       {!isPomodoroPage && <PomodoroWidget />}

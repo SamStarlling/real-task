@@ -12,6 +12,7 @@ import {
   Compass,
   Flame,
   ListTodo,
+  Maximize2,
   Sparkles,
   Target,
   Zap,
@@ -463,7 +464,20 @@ export function UserGuide() {
                 bloco de trabalho se inicia.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <Maximize2 className="w-5 h-5 text-[#C5A880] mb-2" />
+                  <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
+                    Modo Foco em Tela Cheia
+                  </strong>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                    Clique no timer central em <code>/pomodoro</code> ou no botão{' '}
+                    <em>"Foco em tela cheia"</em> para entrar no modo 100% imersivo: fundo escuro
+                    absoluto (#090A0E), timer gigante em Clash Display, âncora do objetivo visível e
+                    atalho <strong>Esc</strong> para sair.
+                  </p>
+                </div>
+
                 <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
                   <Clock className="w-5 h-5 text-[#C5A880] mb-2" />
                   <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
