@@ -517,7 +517,10 @@ export function Index({
         : view === 'lista'
           ? `#${activeListName}`
           : 'Inbox'
-  const estimated = optimisticPending.reduce((n, t) => n + t.estimated_minutes, 0),
+  const estimated = optimisticPending.reduce(
+      (n, t) => n + (typeof t.estimated_minutes === 'number' ? t.estimated_minutes : 0),
+      0,
+    ),
     actual = filtered.reduce((n, t) => n + t.actual_minutes, 0)
 
   // Resumo de tarefas do dia com horário (para o banner in-app)

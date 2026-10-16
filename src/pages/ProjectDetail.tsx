@@ -36,6 +36,7 @@ import { TaskCard } from '@/components/TaskCard'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
 import { formatMinutes } from '@/lib/format'
+import { EstimateInput } from '@/components/EstimateInput'
 import {
   createProjectSection,
   createTask,
@@ -77,7 +78,7 @@ export function ProjectDetail({ tasks, tags, lists = [], refresh }: ProjectDetai
   // Captura rápida contextual dentro de uma seção
   const [addingTaskSectionId, setAddingTaskSectionId] = useState<string | null>(null)
   const [inlineTaskTitle, setInlineTaskTitle] = useState('')
-  const [inlineEstimatedMinutes, setInlineEstimatedMinutes] = useState(25)
+  const [inlineEstimatedMinutes, setInlineEstimatedMinutes] = useState<number | null>(25)
 
   // Drag and drop de tarefas
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
@@ -237,7 +238,7 @@ export function ProjectDetail({ tasks, tags, lists = [], refresh }: ProjectDetai
         list: id,
         section: sectionId || '',
         done: false,
-        estimated_minutes: inlineEstimatedMinutes || 25,
+        estimated_minutes: inlineEstimatedMinutes,
         actual_minutes: 0,
         order: 0,
       })
@@ -653,30 +654,20 @@ export function ProjectDetail({ tasks, tags, lists = [], refresh }: ProjectDetai
 
               {/* FORMULÁRIO INLINE DE CAPTURA RÁPIDA NA SEÇÃO */}
               {addingTaskSectionId === sec.id && (
-                <div className="mb-3 p-3 bg-[#12131A] rounded-lg border border-[#C5A880] flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    value={inlineTaskTitle}
-                    onChange={(e) => setInlineTaskTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCreateTaskInSection(sec.id)
-                      if (e.key === 'Escape') setAddingTaskSectionId(null)
-                    }}
-                    autoFocus
-                    placeholder={`Nome da tarefa em "${sec.name}"...`}
-                    className="flex-1 bg-transparent text-sm text-[#F4F4F6] placeholder-[#71717A] focus:outline-none"
-                  />
-                  <div className="flex items-center gap-2 justify-end">
-                    <select
-                      value={inlineEstimatedMinutes}
-                      onChange={(e) => setInlineEstimatedMinutes(Number(e.target.value))}
-                      className="bg-[#090A0E] text-xs font-mono text-[#C5A880] rounded px-2 py-1 border border-[rgba(255,255,255,0.1)] focus:outline-none"
-                    >
-                      <option value={15}>15 min</option>
-                      <option value={25}>25 min</option>
-                      <option value={50}>50 min</option>
-                      <option value={90}>90 min</option>
-                    </select>
+                <div className="mb-3 p-3 bg-[#12131A] rounded-lg border border-[#C5A880] flex flex-col gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={inlineTaskTitle}
+                      onChange={(e) => setInlineTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateTaskInSection(sec.id)
+                        if (e.key === 'Escape') setAddingTaskSectionId(null)
+                      }}
+                      autoFocus
+                      placeholder={`Nome da tarefa em "${sec.name}"...`}
+                      className="flex-1 bg-transparent text-sm text-[#F4F4F6] placeholder-[#71717A] focus:outline-none"
+                    />
                     <button
                       type="button"
                       onClick={() => handleCreateTaskInSection(sec.id)}
@@ -691,6 +682,18 @@ export function ProjectDetail({ tasks, tags, lists = [], refresh }: ProjectDetai
                     >
                       <X className="w-4 h-4" />
                     </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2">
+                    <EstimateInput
+                      value={inlineEstimatedMinutes}
+                      onChange={(val) => setInlineEstimatedMinutes(val)}
+                      allowClear
+                      showQuickChips
+                      showWarning
+                      variant="compact"
+                      onConfirm={() => handleCreateTaskInSection(sec.id)}
+                    />
                   </div>
                 </div>
               )}

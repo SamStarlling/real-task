@@ -35,15 +35,15 @@ export interface CaptureTaskParsedResult {
   dueDate: string | null
   dueTime: string | null
   priority: number
+  estimatedMinutes?: number | null
   recurrence: {
     type: string
     interval: number
-    weekdays?: number[] | null
+    weekdays: number[] | null
   } | null
   tags: string[]
   list: string | null
 }
-
 export const TAG_COLORS = [
   '#C5A880',
   '#8F9E82',
@@ -468,6 +468,55 @@ export function parseServerTime(text: string): ParsedServerTime | null {
   return null
 }
 
+export function parseServerDuration(text: string): ParsedServerDuration | null {
+  const clean = normalize(text)
+
+  const minRegex = /\b(?:(por|durante|em)\s+)?([1-9]\d{0,2})\s*(minutos?|mins?|m)\b/
+  const minMatch = clean.match(minRegex)
+  if (minMatch && minMatch.index !== undefined) {
+    const rawMin = minMatch[0]
+    const nextWords = clean.slice(
+      minMatch.index + rawMin.length,
+      minMatch.index + rawMin.length + 10,
+    )
+    if (!/^\s*(?:dias?|semanas?|mes(?:es)?)\b/.test(nextWords)) {
+      const mins = Number(minMatch[2])
+      if (mins >= 1 && mins <= 600) {
+        return {
+          minutes: mins,
+          token: text.slice(minMatch.index, minMatch.index + rawMin.length),
+        }
+      }
+    }
+  }
+
+  const hmRegex =
+    /\b(?:(por|durante)\s+)?([1-9]|10)\s*h(?:oras?)?(?:\s*([0-5]\d)(?:\s*(?:minutos?|mins?|m))?)?\b/
+  const hmMatch = clean.match(hmRegex)
+  if (hmMatch && hmMatch.index !== undefined) {
+    const rawMatch = hmMatch[0]
+    const preceding = clean.slice(Math.max(0, hmMatch.index - 5), hmMatch.index)
+    const isScheduleTime = /\b(?:as|as\s+)$/.test(preceding)
+    if (!isScheduleTime) {
+      const hasPrefix = Boolean(hmMatch[1])
+      const hours = Number(hmMatch[2])
+      const rawMins = hmMatch[3]
+      const hasMins = rawMins !== undefined && rawMins !== ''
+      const minutes = hasMins ? Number(rawMins) : 0
+      const totalMinutes = hours * 60 + minutes
+
+      if ((hasPrefix || hasMins || hours <= 4) && totalMinutes >= 1 && totalMinutes <= 600) {
+        return {
+          minutes: totalMinutes,
+          token: text.slice(hmMatch.index, hmMatch.index + rawMatch.length),
+        }
+      }
+    }
+  }
+
+  return null
+}
+
 export function parseServerPriority(text: string): ParsedServerPriority | null {
   const pMatch = text.match(/(?:^|\s)(p[1-4])(?:\s|$)/i)
   if (pMatch) {
@@ -493,6 +542,7 @@ export function parseCaptureTaskInput(rawInput: string, nowRef?: Date): CaptureT
   const parsedDate = parseServerDate(rawInput, now)
   const parsedTime = parseServerTime(rawInput)
   const parsedPrio = parseServerPriority(rawInput)
+  const parsedDur = parseServerDuration(rawInput)
 
   const listNamesFound: string[] = []
   const listRegex = /(?:^|\s)#([a-zA-Z0-9À-ÿ_-]+)/g
@@ -529,6 +579,9 @@ export function parseCaptureTaskInput(rawInput: string, nowRef?: Date): CaptureT
     const escaped = parsedPrio.token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
     cleanTitle = cleanTitle.replace(new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`, 'i'), ' ')
   }
+  if (parsedDur && parsedDur.token) {
+    cleanTitle = cleanTitle.replace(parsedDur.token, ' ')
+  }
 
   cleanTitle = cleanTitle
     .replace(/(?:^|\s)p[1-4](?=\s|$)/gi, ' ')
@@ -554,6 +607,7 @@ export function parseCaptureTaskInput(rawInput: string, nowRef?: Date): CaptureT
     dueDate: effectiveDueDateStr,
     dueTime: parsedTime ? parsedTime.time : null,
     priority: parsedPrio ? parsedPrio.priority : 0,
+    estimatedMinutes: parsedDur ? parsedDur.minutes : null,
     recurrence: parsedRec
       ? {
           type: parsedRec.type,

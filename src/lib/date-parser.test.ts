@@ -2,9 +2,11 @@ import {
   parsePortugueseDate,
   parsePortugueseTime,
   parsePortugueseRecurrence,
+  parsePortugueseDuration,
   cleanDateToken,
   cleanTimeToken,
   cleanRecurrenceToken,
+  cleanDurationToken,
 } from './date-parser'
 import {
   parsePriorityToken,
@@ -828,6 +830,39 @@ export function runDateParserTests() {
       null,
       'Taxa deve ser null quando não há objetivos',
     )
+  }
+
+  // =========================================================================
+  // TESTES DO PARSER DE DURAÇÃO ("Estimativa Livre" em Linguagem Natural)
+  // =========================================================================
+  {
+    const t1 = parsePortugueseDuration('Relatório por 90 min')
+    assert(Boolean(t1), 'Deve reconhecer "por 90 min"')
+    assertEquals(t1?.minutes, 90, 'Minutos de "por 90 min" deve ser 90')
+    assertEquals(cleanDurationToken('Relatório por 90 min', t1), 'Relatório', 'Limpeza do token')
+
+    const t2 = parsePortugueseDuration('ligar para cliente em 15m')
+    assert(Boolean(t2), 'Deve reconhecer "em 15m"')
+    assertEquals(t2?.minutes, 15, 'Minutos de "em 15m" deve ser 15')
+
+    const t3 = parsePortugueseDuration('treino por 1h30')
+    assert(Boolean(t3), 'Deve reconhecer "por 1h30"')
+    assertEquals(t3?.minutes, 90, 'Minutos de "por 1h30" deve ser 90')
+
+    const t4 = parsePortugueseDuration('estudo 45min')
+    assert(Boolean(t4), 'Deve reconhecer "45min"')
+    assertEquals(t4?.minutes, 45, 'Minutos de "45min" deve ser 45')
+
+    const t5 = parsePortugueseDuration('planejamento 2h')
+    assert(Boolean(t5), 'Deve reconhecer "2h"')
+    assertEquals(t5?.minutes, 120, 'Minutos de "2h" deve ser 120')
+
+    const t6 = parsePortugueseDuration('revisão 90 minutos')
+    assert(Boolean(t6), 'Deve reconhecer "90 minutos"')
+    assertEquals(t6?.minutes, 90, 'Minutos de "90 minutos" deve ser 90')
+
+    const t7 = parsePortugueseDuration('reunião às 9h30')
+    assertEquals(t7, null, '"às 9h30" é horário agendado, não duração')
   }
 
   return true

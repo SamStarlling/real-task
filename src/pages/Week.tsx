@@ -24,6 +24,7 @@ import { formatMinutes, pbDay } from '@/lib/format'
 import { localDay, toPocketDate } from '@/lib/date-parser'
 import { TaskDetail } from '@/components/TaskDetail'
 import { BrandMark } from '@/components/Brand'
+import { EstimateInput } from '@/components/EstimateInput'
 import {
   compareTasksWithinDay,
   createTask,
@@ -269,7 +270,7 @@ export function WeekPage({
   // Estados de captura inline por coluna (+ no rodapé)
   const [activeInlineDay, setActiveInlineDay] = useState<string | null>(null)
   const [inlineTitle, setInlineTitle] = useState('')
-  const [inlineMinutes, setInlineMinutes] = useState(25)
+  const [inlineMinutes, setInlineMinutes] = useState<number | null>(25)
   const [isSubmittingInline, setIsSubmittingInline] = useState(false)
   const inlineInputRef = useRef<HTMLInputElement>(null)
 
@@ -1179,22 +1180,16 @@ export function WeekPage({
                         </button>
                       </div>
 
-                      <div className="inline-capture-actions">
-                        <div className="inline-stepper">
-                          <button
-                            type="button"
-                            onClick={() => setInlineMinutes(Math.max(5, inlineMinutes - 5))}
-                          >
-                            −
-                          </button>
-                          <span>{inlineMinutes}M</span>
-                          <button
-                            type="button"
-                            onClick={() => setInlineMinutes(Math.min(240, inlineMinutes + 5))}
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="inline-capture-actions flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <EstimateInput
+                          value={inlineMinutes}
+                          onChange={(val) => setInlineMinutes(val)}
+                          allowClear
+                          showQuickChips={false}
+                          showWarning
+                          variant="compact"
+                          onConfirm={() => handleCreateInline(day)}
+                        />
                         <button
                           type="submit"
                           className="inline-confirm-btn"

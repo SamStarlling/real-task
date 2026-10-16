@@ -459,3 +459,87 @@ export const cleanRecurrenceToken = (text: string, parsed: ParsedRecurrence | nu
   parsed
     ? `${text.slice(0, parsed.start)} ${text.slice(parsed.end)}`.replace(/\s+/g, ' ').trim()
     : text.trim()
+
+export type ParsedDuration = {
+  minutes: number
+  token: string
+  start: number
+  end: number
+}
+
+/**
+ * Reconhece duração estimada em português do Brasil (1 a 600 min):
+ * - "por 90 min", "por 90 minutos", "por 90m", "90 min", "90 minutos", "90m", "45min"
+ * - "em 15m", "em 15 min", "em 45 minutos"
+ * - "1h30", "1h30m", "1h30min", "1h 30m", "1h 30min", "2h", "1h", "por 1h30", "por 2h"
+ * - "durante 45 min", "durante 1h"
+ * Cuidados:
+ * - Não confundir com horários (ex: "às 9h30", "14:00", "às 14h")
+ * - Não confundir com "em 3 dias" (relativo de data)
+ */
+export function parsePortugueseDuration(text: string): ParsedDuration | null {
+  const clean = normalize(text)
+
+  // 1. Duração expressa em minutos: ex: "por 90 min", "em 15m", "45min", "90 minutos", "durante 30m"
+  // Quando usa apenas sufixo 'm' sem prefixo (ex: '15m'), exige que 'm' não seja seguido de letras
+  const minRegex = /\b(?:(por|durante|em)\s+)?([1-9]\d{0,2})\s*(minutos?|mins?|m)\b/
+  const minMatch = clean.match(minRegex)
+  if (minMatch && minMatch.index !== undefined) {
+    const rawMin = minMatch[0]
+    const prefix = minMatch[1]
+    const unit = minMatch[3]
+    // Evitar conflito com "em X dias / semanas / meses"
+    const nextWords = clean.slice(
+      minMatch.index + rawMin.length,
+      minMatch.index + rawMin.length + 10,
+    )
+    if (!/^\s*(?:dias?|semanas?|mes(?:es)?)\b/.test(nextWords)) {
+      // Se a unidade for apenas 'm' (ex: "15m"), aceitar com ou sem prefixo "em/por/durante"
+      const mins = Number(minMatch[2])
+      if (mins >= 1 && mins <= 600) {
+        return {
+          minutes: mins,
+          token: text.slice(minMatch.index, minMatch.index + rawMin.length),
+          start: minMatch.index,
+          end: minMatch.index + rawMin.length,
+        }
+      }
+    }
+  }
+
+  // 2. Duração com horas e minutos: ex: "por 1h30", "1h30", "1h30m", "1h 30min", "durante 2h15", "por 2h", "1h", "2h"
+  // Não deve ser precedido por "as" ou "às" (que indica horário de agendamento: "às 9h30", "as 14h")
+  const hmRegex =
+    /\b(?:(por|durante)\s+)?([1-9]|10)\s*h(?:oras?)?(?:\s*([0-5]\d)(?:\s*(?:minutos?|mins?|m))?)?\b/
+  const hmMatch = clean.match(hmRegex)
+  if (hmMatch && hmMatch.index !== undefined) {
+    const rawMatch = hmMatch[0]
+    const preceding = clean.slice(Math.max(0, hmMatch.index - 5), hmMatch.index)
+    const isScheduleTime = /\b(?:as|as\s+)$/.test(preceding)
+    if (!isScheduleTime) {
+      const hasPrefix = Boolean(hmMatch[1])
+      const hours = Number(hmMatch[2])
+      const rawMins = hmMatch[3]
+      const hasMins = rawMins !== undefined && rawMins !== ''
+      const minutes = hasMins ? Number(rawMins) : 0
+      const totalMinutes = hours * 60 + minutes
+
+      // Se não tem prefixo e nem minutos (ex: "1h", "2h"), aceitar até 4h se não for conflito
+      if ((hasPrefix || hasMins || hours <= 4) && totalMinutes >= 1 && totalMinutes <= 600) {
+        return {
+          minutes: totalMinutes,
+          token: text.slice(hmMatch.index, hmMatch.index + rawMatch.length),
+          start: hmMatch.index,
+          end: hmMatch.index + rawMatch.length,
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+export const cleanDurationToken = (text: string, parsed: ParsedDuration | null) =>
+  parsed
+    ? `${text.slice(0, parsed.start)} ${text.slice(parsed.end)}`.replace(/\s+/g, ' ').trim()
+    : text.trim()

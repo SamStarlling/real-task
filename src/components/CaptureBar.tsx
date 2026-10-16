@@ -12,13 +12,16 @@ import {
 } from 'lucide-react'
 import {
   cleanDateToken,
+  cleanDurationToken,
   cleanRecurrenceToken,
   cleanTimeToken,
   parsePortugueseDate,
+  parsePortugueseDuration,
   parsePortugueseRecurrence,
   parsePortugueseTime,
   toPocketDate,
 } from '@/lib/date-parser'
+import { EstimateInput } from '@/components/EstimateInput'
 import { formatShortDate } from '@/lib/format'
 import {
   cleanPriorityToken,
@@ -45,7 +48,12 @@ import {
 export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const { user } = useAuth()
   const [text, setText] = useState('')
-  const [minutes, setMinutes] = useState(25)
+  // Estimativa livre opcional na Inbox/captura:
+  // null = sem estimativa (padrão se o usuário não tocar/definir)
+  // number = minutos definidos manualmente ou pelo parser de linguagem natural
+  const [customMinutes, setCustomMinutes] = useState<number | null>(null)
+  const [isEstimateActive, setIsEstimateActive] = useState(false)
+  const [isEstimatePopoverOpen, setIsEstimatePopoverOpen] = useState(false)
   const [lists, setLists] = useState<ListRecord[]>([])
   const [tags, setTags] = useState<TagRecord[]>([])
   const [selectedList, setSelectedList] = useState<ListRecord | null>(null)
@@ -71,6 +79,21 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
   const parsed = parsePortugueseDate(text)
   const parsedTime = parsePortugueseTime(text)
   const parsedRecurrence = parsePortugueseRecurrence(text)
+  const parsedDuration = parsePortugueseDuration(text)
+
+  // Quando o parser detecta duração ("por 90 min", "1h30", etc.), sincroniza na estimativa
+  useEffect(() => {
+    if (parsedDuration) {
+      setCustomMinutes(parsedDuration.minutes)
+      setIsEstimateActive(true)
+    }
+  }, [parsedDuration?.minutes, parsedDuration?.token])
+
+  const effectiveMinutes: number | null = isEstimateActive
+    ? customMinutes !== null
+      ? customMinutes
+      : 25
+    : null
 
   const effectiveTime = manualTime !== null ? manualTime : parsedTime?.time || null
   const parsedPriority = parsePriorityToken(text)
@@ -200,7 +223,11 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     if (parsedTime) {
       title = cleanTimeToken(title, parsedTime)
     }
-    // 4. Limpar tokens de prioridade
+    // 4. Limpar duração detectada
+    if (parsedDuration) {
+      title = cleanDurationToken(title, parsedDuration)
+    }
+    // 5. Limpar tokens de prioridade
     if (parsedPriority) {
       title = cleanPriorityToken(title, parsedPriority.token)
     }
@@ -279,7 +306,7 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         due_date: effectiveDueDate,
         due_time: effectiveTime || '',
         done: false,
-        estimated_minutes: minutes,
+        estimated_minutes: effectiveMinutes,
         actual_minutes: 0,
         order: 0,
         priority: effectivePriority,
@@ -330,7 +357,9 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
     setRecurrenceWeekdays([1, 3, 5])
     setRecurrenceMode('from_date')
     setIsRecurrencePopoverOpen(false)
-    setMinutes(25)
+    setCustomMinutes(null)
+    setIsEstimateActive(false)
+    setIsEstimatePopoverOpen(false)
     onCreated()
     setTimeout(() => input.current?.focus(), 0)
   }
@@ -535,15 +564,83 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
           <Repeat />
         </button>
 
-        <div className="stepper">
-          <button onClick={() => setMinutes(Math.max(5, minutes - 5))}>
-            <Minus />
+        {/* Estimativa livre opcional na barra de captura */}
+        <div className="capture-estimate-trigger-wrap relative">
+          <button
+            type="button"
+            className={`capture-estimate-chip ${effectiveMinutes !== null ? 'has-value' : 'is-optional'}`}
+            title={
+              effectiveMinutes !== null
+                ? `Estimativa: ${effectiveMinutes} min (clique para editar)`
+                : 'Sem estimativa na Inbox (clique para definir de 1 a 600 min)'
+            }
+            onClick={() => {
+              if (effectiveMinutes === null) {
+                setCustomMinutes(25)
+                setIsEstimateActive(true)
+              }
+              setIsEstimatePopoverOpen(!isEstimatePopoverOpen)
+            }}
+          >
+            <Clock className="w-3 h-3 text-[#C5A880]" />
+            <span className="font-mono text-[11px]">
+              {effectiveMinutes !== null ? `${effectiveMinutes} MIN` : '~25 MIN'}
+            </span>
           </button>
-          <span>{minutes} MIN</span>
-          <button onClick={() => setMinutes(Math.min(240, minutes + 5))}>
-            <Plus />
-          </button>
+
+          {isEstimatePopoverOpen && (
+            <div className="capture-estimate-popover">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                <span className="text-xs font-mono text-[#C5A880] uppercase tracking-wider">
+                  Estimativa Livre
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-[#71717a] hover:text-white"
+                  onClick={() => setIsEstimatePopoverOpen(false)}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <EstimateInput
+                value={effectiveMinutes}
+                onChange={(val) => {
+                  if (val === null) {
+                    setCustomMinutes(null)
+                    setIsEstimateActive(false)
+                  } else {
+                    setCustomMinutes(val)
+                    setIsEstimateActive(true)
+                  }
+                }}
+                allowClear
+                showQuickChips
+                showWarning
+                variant="compact"
+                onConfirm={() => setIsEstimatePopoverOpen(false)}
+              />
+
+              <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-[#71717a]">
+                <span>1–600 min livres</span>
+                {effectiveMinutes !== null && (
+                  <button
+                    type="button"
+                    className="text-[#C5A880] hover:underline"
+                    onClick={() => {
+                      setCustomMinutes(null)
+                      setIsEstimateActive(false)
+                      setIsEstimatePopoverOpen(false)
+                    }}
+                  >
+                    Deixar sem estimativa
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
         <button className="send" onClick={submit} aria-label="Capturar tarefa">
           <ArrowRight />
         </button>
@@ -864,6 +961,9 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         </span>
         <span className="capture-hint-item">
           <kbd>14:00 / às 9h30</kbd> horário
+        </span>
+        <span className="capture-hint-item">
+          <kbd>por 90 min · 1h30 · 45min · 2h</kbd> duração livre
         </span>
       </div>
     </div>

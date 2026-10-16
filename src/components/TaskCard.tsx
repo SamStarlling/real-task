@@ -50,7 +50,10 @@ export function TaskCard({
 }: TaskCardProps) {
   const { start } = usePomodoro()
   const today = localDay()
-  const ratio = Math.min(100, (task.actual_minutes / task.estimated_minutes) * 100)
+  const hasEstimate = typeof task.estimated_minutes === 'number' && task.estimated_minutes > 0
+  const ratio = hasEstimate
+    ? Math.min(100, (task.actual_minutes / task.estimated_minutes) * 100)
+    : 0
   const overdue = isTaskOverdue(task)
   const isRecurrent = task.recurrence_type && task.recurrence_type !== 'none'
   const recurrenceLabel = isRecurrent ? formatRecurrenceRule(task) : ''
@@ -217,19 +220,31 @@ export function TaskCard({
           </span>
           <span
             className="meta-times"
-            title={`Estimado: ${formatMinutes(task.estimated_minutes)} · Realizado: ${formatMinutes(task.actual_minutes)}`}
+            title={
+              hasEstimate
+                ? `Estimado: ${formatMinutes(task.estimated_minutes)} · Realizado: ${formatMinutes(task.actual_minutes)}`
+                : `Sem estimativa · Realizado: ${formatMinutes(task.actual_minutes)}`
+            }
           >
-            EST. {formatMinutes(task.estimated_minutes)} ·{' '}
-            <b className={task.actual_minutes > task.estimated_minutes ? 'exceeded' : ''}>
+            EST. {hasEstimate ? formatMinutes(task.estimated_minutes) : '—'} ·{' '}
+            <b
+              className={
+                hasEstimate && task.actual_minutes > task.estimated_minutes ? 'exceeded' : ''
+              }
+            >
               REAL {formatMinutes(task.actual_minutes)}
             </b>
           </span>
         </div>
         <div
           className="progress"
-          title={`Real ${Math.round(task.actual_minutes)} min / Estimado ${task.estimated_minutes} min`}
+          title={
+            hasEstimate
+              ? `Real ${Math.round(task.actual_minutes)} min / Estimado ${task.estimated_minutes} min`
+              : `Realizado ${Math.round(task.actual_minutes)} min (sem estimativa)`
+          }
         >
-          <i style={{ width: `${ratio}%` }} />
+          <i style={{ width: hasEstimate ? `${ratio}%` : '0%' }} />
         </div>
         {subtaskProgress.total > 0 && (
           <div

@@ -42,6 +42,7 @@ import {
 } from '@/services/data'
 import { usePomodoro } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { EstimateInput } from '@/components/EstimateInput'
 
 /**
  * Renderiza texto convertendo URLs (https://, http:// e obsidian://) em links clicáveis.
@@ -107,7 +108,12 @@ export function TaskDetail({
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [isEditingDescription, setIsEditingDescription] = useState(false)
-  const [estimate, setEstimate] = useState(task.estimated_minutes)
+  const [estimate, setEstimate] = useState<number | null>(
+    typeof task.estimated_minutes === 'number' && task.estimated_minutes > 0
+      ? task.estimated_minutes
+      : null,
+  )
+  const [isEditingEstimate, setIsEditingEstimate] = useState(false)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [userTags, setUserTags] = useState<TagRecord[]>([])
   const [allProjects, setAllProjects] = useState<ListRecord[]>([])
@@ -139,7 +145,11 @@ export function TaskDetail({
   useEffect(() => {
     setTitle(task.title)
     setDescription(task.description || '')
-    setEstimate(task.estimated_minutes)
+    setEstimate(
+      typeof task.estimated_minutes === 'number' && task.estimated_minutes > 0
+        ? task.estimated_minutes
+        : null,
+    )
     setPriority(task.priority || 0)
     setRecurrenceType(task.recurrence_type || 'none')
     setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval) || 1))
@@ -1033,18 +1043,75 @@ export function TaskDetail({
           )}
         </div>
 
-        <label className="detail-label">ESTIMATIVA</label>
-        <div className="estimate">
-          <button onClick={() => setEstimate(Math.max(5, estimate - 5))}>−</button>
-          <span>{estimate} MIN</span>
-          <button onClick={() => setEstimate(Math.min(240, estimate + 5))}>+</button>
-          <button onClick={() => save({ estimated_minutes: estimate })}>Salvar</button>
-        </div>
+        <label className="detail-label flex items-center justify-between">
+          <span>ESTIMATIVA</span>
+          {estimate !== null && !isEditingEstimate && (
+            <button
+              type="button"
+              onClick={() => setIsEditingEstimate(true)}
+              className="text-[11px] font-mono text-[#C5A880] hover:underline"
+            >
+              Editar
+            </button>
+          )}
+        </label>
+
+        {isEditingEstimate || estimate === null ? (
+          <div className="p-3 bg-[#12141C] border border-[#C5A880]/20 rounded-lg mb-3">
+            <EstimateInput
+              value={estimate}
+              onChange={async (newVal) => {
+                setEstimate(newVal)
+                await save({ estimated_minutes: newVal })
+                if (newVal !== null) {
+                  setIsEditingEstimate(false)
+                }
+              }}
+              allowClear
+              showQuickChips
+              showWarning
+              variant="full"
+              autoFocus={isEditingEstimate}
+              onConfirm={() => setIsEditingEstimate(false)}
+            />
+            {estimate === null && (
+              <div className="mt-2 text-[11px] font-mono text-[#71717a] flex items-center justify-between">
+                <span>Clique em um atalho ou digite de 1 a 600 min</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div
+            className="estimate cursor-pointer hover:border-[#C5A880]/50 transition-colors"
+            onClick={() => setIsEditingEstimate(true)}
+            title="Clique para editar estimativa livre (1–600 min)"
+          >
+            <span>{estimate} MIN</span>
+            <button
+              type="button"
+              className="text-[11px] text-[#C5A880] ml-auto font-mono hover:underline"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsEditingEstimate(true)
+              }}
+            >
+              Alterar
+            </button>
+          </div>
+        )}
+
         <div className="compare">
-          <span>PREVISTO {formatMinutes(estimate)}</span>
+          <span>PREVISTO {estimate !== null ? formatMinutes(estimate) : '—'}</span>
           <span>REAL {formatMinutes(task.actual_minutes)}</span>
           <i>
-            <b style={{ width: `${Math.min(100, (task.actual_minutes / estimate) * 100)}%` }} />
+            <b
+              style={{
+                width:
+                  estimate !== null && estimate > 0
+                    ? `${Math.min(100, (task.actual_minutes / estimate) * 100)}%`
+                    : '0%',
+              }}
+            />
           </i>
         </div>
         <button className="primary" onClick={() => start(task)}>
