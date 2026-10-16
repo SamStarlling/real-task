@@ -29,6 +29,7 @@ export function PomodoroWidget() {
     isOvertime,
     stopwatchSeconds,
     activePreset,
+    workMinutes,
     setWorkMinutes,
     start,
     toggle,
@@ -653,8 +654,8 @@ export function PomodoroWidget() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <button
                   type="button"
-                  onClick={() => setWorkMinutes(activePreset.workMinutes - 1)}
-                  disabled={activePreset.workMinutes <= 1}
+                  onClick={() => setWorkMinutes(workMinutes - 1)}
+                  disabled={workMinutes <= 1}
                   style={{
                     background: 'rgba(255,255,255,0.06)',
                     border: 0,
@@ -666,28 +667,56 @@ export function PomodoroWidget() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: activePreset.workMinutes <= 1 ? 0.3 : 1,
+                    opacity: workMinutes <= 1 ? 0.3 : 1,
                   }}
                   title="-1 min"
                 >
                   <Minus size={10} />
                 </button>
-                <span
+                <div
                   style={{
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#C5A880',
-                    minWidth: '28px',
-                    textAlign: 'center',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    background: '#12141C',
+                    border: '1px solid rgba(197, 168, 128, 0.3)',
+                    borderRadius: '4px',
+                    padding: '1px 4px',
                   }}
                 >
-                  {activePreset.workMinutes}m
-                </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={workMinutes}
+                    onChange={(e) => setWorkMinutes(Number(e.target.value))}
+                    style={{
+                      width: '26px',
+                      background: 'transparent',
+                      border: 0,
+                      outline: 'none',
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#C5A880',
+                      textAlign: 'center',
+                      padding: 0,
+                    }}
+                    title="Duração em minutos"
+                  />
+                  <span
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '9px',
+                      color: '#71717A',
+                    }}
+                  >
+                    m
+                  </span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setWorkMinutes(activePreset.workMinutes + 1)}
-                  disabled={activePreset.workMinutes >= 180}
+                  onClick={() => setWorkMinutes(workMinutes + 1)}
+                  disabled={workMinutes >= 180}
                   style={{
                     background: 'rgba(255,255,255,0.06)',
                     border: 0,
@@ -699,7 +728,7 @@ export function PomodoroWidget() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    opacity: activePreset.workMinutes >= 180 ? 0.3 : 1,
+                    opacity: workMinutes >= 180 ? 0.3 : 1,
                   }}
                   title="+1 min"
                 >

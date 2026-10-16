@@ -124,12 +124,16 @@ export interface PomodoroContextValue {
   stopwatchSeconds: number
   activePreset: ActivePreset
   setActivePreset: (preset: ActivePreset | FocusPresetRecord) => void
+  workMinutes: number
   setWorkMinutes: (minutes: number) => void
+  shortBreakMinutes: number
   setShortBreakMinutes: (minutes: number) => void
+  longBreakMinutes: number
   setLongBreakMinutes: (minutes: number) => void
+  applyPresetToDraft: (preset: ActivePreset | FocusPresetRecord) => void
   start: (
     task?: TaskRecord | null,
-    customPreset?: ActivePreset | FocusPresetRecord,
+    customPreset?: ActivePreset | FocusPresetRecord | { workMinutes: number },
     initialObjective?: string,
     forcedMode?: PomodoroTimerMode,
   ) => Promise<void>
@@ -163,6 +167,42 @@ const Context = createContext<PomodoroContextValue | null>(null)
 export function PomodoroProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [activePreset, setActivePresetState] = useState<ActivePreset>(DEFAULT_PRESET)
+
+  // Duração dinâmica (draft) desacoplada do preset:
+  // Inicializada a partir do localStorage ou do default (25m foco, 5m pausa, 15m longo)
+  const [workMinutes, setWorkMinutesState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('barbosa_pomodoro_work_minutes')
+      if (saved) {
+        const parsed = Number(saved)
+        if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 180) return parsed
+      }
+    }
+    return DEFAULT_PRESET.workMinutes
+  })
+
+  const [shortBreakMinutes, setShortBreakMinutesState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('barbosa_pomodoro_break_minutes')
+      if (saved) {
+        const parsed = Number(saved)
+        if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 60) return parsed
+      }
+    }
+    return DEFAULT_PRESET.shortBreakMinutes
+  })
+
+  const [longBreakMinutes, setLongBreakMinutesState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('barbosa_pomodoro_long_break_minutes')
+      if (saved) {
+        const parsed = Number(saved)
+        if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 60) return parsed
+      }
+    }
+    return DEFAULT_PRESET.longBreakMinutes
+  })
+
   const [timerMode, setTimerModeState] = useState<PomodoroTimerMode>('pomo')
   const [state, setState] = useState<PomodoroState | null>(null)
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null)
@@ -191,6 +231,15 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const activePresetRef = useRef(activePreset)
   activePresetRef.current = activePreset
 
+  const workMinutesRef = useRef(workMinutes)
+  workMinutesRef.current = workMinutes
+
+  const shortBreakMinutesRef = useRef(shortBreakMinutes)
+  shortBreakMinutesRef.current = shortBreakMinutes
+
+  const longBreakMinutesRef = useRef(longBreakMinutes)
+  longBreakMinutesRef.current = longBreakMinutes
+
   const userRef = useRef(user)
   userRef.current = user
 
@@ -204,14 +253,24 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       .then((presets) => {
         if (!mounted || presets.length === 0) return
         const first = presets[0]
-        setActivePresetState({
+        const loadedPreset: ActivePreset = {
           id: first.id,
           name: first.name,
           workMinutes: Math.max(1, first.work_minutes),
           shortBreakMinutes: Math.max(1, first.short_break_minutes),
           longBreakMinutes: Math.max(1, first.long_break_minutes),
           blocksBeforeLongBreak: Math.max(1, first.blocks_before_long_break),
-        })
+        }
+        setActivePresetState(loadedPreset)
+        // Se o usuário ainda não tinha ajustado localStorage, adota o valor inicial do preset padrão
+        if (
+          typeof window !== 'undefined' &&
+          !localStorage.getItem('barbosa_pomodoro_work_minutes')
+        ) {
+          setWorkMinutesState(loadedPreset.workMinutes)
+          setShortBreakMinutesState(loadedPreset.shortBreakMinutes)
+          setLongBreakMinutesState(loadedPreset.longBreakMinutes)
+        }
       })
       .catch(() => {})
     return () => {
@@ -390,34 +449,62 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     setActivePresetState(normalized)
   }, [])
 
-  // Ajustes diretos de duração (1 a 1 minuto) no preset ativo
+  // Ajustes diretos de duração dinâmica (1 a 1 minuto e digitação direta), desacoplados do preset
   const setWorkMinutes = useCallback((minutes: number) => {
+    if (isNaN(minutes)) return
     const clamped = Math.max(1, Math.min(180, Math.round(minutes)))
-    setActivePresetState((curr) => ({
-      ...curr,
-      workMinutes: clamped,
-    }))
-    // Se o timer não está rodando, ou se quisermos manter sync:
-    if (!stateRef.current) {
-      // Nenhum timer rodando: já reflete no timer inicial
+    setWorkMinutesState(clamped)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('barbosa_pomodoro_work_minutes', String(clamped))
+      }
+    } catch {
+      // Silencioso
     }
   }, [])
 
   const setShortBreakMinutes = useCallback((minutes: number) => {
+    if (isNaN(minutes)) return
     const clamped = Math.max(1, Math.min(60, Math.round(minutes)))
-    setActivePresetState((curr) => ({
-      ...curr,
-      shortBreakMinutes: clamped,
-    }))
+    setShortBreakMinutesState(clamped)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('barbosa_pomodoro_break_minutes', String(clamped))
+      }
+    } catch {
+      // Silencioso
+    }
   }, [])
 
   const setLongBreakMinutes = useCallback((minutes: number) => {
+    if (isNaN(minutes)) return
     const clamped = Math.max(1, Math.min(60, Math.round(minutes)))
-    setActivePresetState((curr) => ({
-      ...curr,
-      longBreakMinutes: clamped,
-    }))
+    setLongBreakMinutesState(clamped)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('barbosa_pomodoro_long_break_minutes', String(clamped))
+      }
+    } catch {
+      // Silencioso
+    }
   }, [])
+
+  // Presets viram atalhos: aplicar preset copia suas durações para o draft atual
+  // e define activePreset como referência de metadados sem acoplamento permanente
+  const applyPresetToDraft = useCallback(
+    (preset: ActivePreset | FocusPresetRecord) => {
+      setActivePreset(preset)
+      const w = 'work_minutes' in preset ? preset.work_minutes : preset.workMinutes
+      const sb =
+        'short_break_minutes' in preset ? preset.short_break_minutes : preset.shortBreakMinutes
+      const lb =
+        'long_break_minutes' in preset ? preset.long_break_minutes : preset.longBreakMinutes
+      setWorkMinutes(w)
+      setShortBreakMinutes(sb)
+      setLongBreakMinutes(lb)
+    },
+    [setActivePreset, setWorkMinutes, setShortBreakMinutes, setLongBreakMinutes],
+  )
 
   const selectTask = useCallback(
     (task: TaskRecord | null) => {
@@ -477,8 +564,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   // Cálculo de segundos restantes e segundos de excesso (Pomo) ou decorridos (Stopwatch)
   const { seconds, isOvertime, overtimeSeconds, stopwatchSeconds } = useMemo(() => {
     if (!state) {
+      // Desacoplado do preset: o timer parado espelha a duração atual do draft (workMinutes)
       return {
-        seconds: activePreset.workMinutes * 60,
+        seconds: workMinutes * 60,
         isOvertime: false,
         overtimeSeconds: 0,
         stopwatchSeconds: 0,
@@ -521,7 +609,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       overtimeSeconds: totalOt,
       stopwatchSeconds: 0,
     }
-  }, [state, now, activePreset.workMinutes])
+  }, [state, now, workMinutes])
 
   // Disparo de notificação nativa como backup para aba em segundo plano (document.hidden)
   const sendBackgroundNotification = useCallback((title: string, body: string) => {
@@ -829,7 +917,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const start = useCallback(
     async (
       task?: TaskRecord | null,
-      customPreset?: ActivePreset | FocusPresetRecord,
+      customPreset?: ActivePreset | FocusPresetRecord | { workMinutes: number },
       initialObjective?: string,
       forcedMode?: PomodoroTimerMode,
     ) => {
@@ -855,29 +943,50 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       setCurrentObjective(effectiveObjective)
 
+      // Determina a duração efetiva:
+      // Se um preset específico foi passado (ex.: clique no Play da linha de presets), adota suas durações
+      // Caso contrário, usa rigorosamente o draft atual (workMinutesRef.current)
       let chosenPreset = activePresetRef.current
+      let effectiveWorkMinutes = workMinutesRef.current
+
       if (customPreset) {
-        chosenPreset =
-          'work_minutes' in customPreset
-            ? {
-                id: customPreset.id,
-                name: customPreset.name,
-                workMinutes: Math.max(1, customPreset.work_minutes),
-                shortBreakMinutes: Math.max(1, customPreset.short_break_minutes),
-                longBreakMinutes: Math.max(1, customPreset.long_break_minutes),
-                blocksBeforeLongBreak: Math.max(1, customPreset.blocks_before_long_break),
-              }
-            : {
-                ...customPreset,
-                workMinutes: Math.max(1, customPreset.workMinutes),
-                shortBreakMinutes: Math.max(1, customPreset.shortBreakMinutes),
-                longBreakMinutes: Math.max(1, customPreset.longBreakMinutes),
-                blocksBeforeLongBreak: Math.max(1, customPreset.blocksBeforeLongBreak),
-              }
-        setActivePresetState(chosenPreset)
+        if ('work_minutes' in customPreset) {
+          chosenPreset = {
+            id: customPreset.id,
+            name: customPreset.name,
+            workMinutes: Math.max(1, customPreset.work_minutes),
+            shortBreakMinutes: Math.max(1, customPreset.short_break_minutes),
+            longBreakMinutes: Math.max(1, customPreset.long_break_minutes),
+            blocksBeforeLongBreak: Math.max(1, customPreset.blocks_before_long_break),
+          }
+          effectiveWorkMinutes = chosenPreset.workMinutes
+          setActivePresetState(chosenPreset)
+        } else if ('name' in customPreset && 'workMinutes' in customPreset) {
+          chosenPreset = {
+            ...customPreset,
+            workMinutes: Math.max(1, customPreset.workMinutes),
+            shortBreakMinutes: Math.max(1, customPreset.shortBreakMinutes),
+            longBreakMinutes: Math.max(1, customPreset.longBreakMinutes),
+            blocksBeforeLongBreak: Math.max(1, customPreset.blocksBeforeLongBreak),
+          }
+          effectiveWorkMinutes = chosenPreset.workMinutes
+          setActivePresetState(chosenPreset)
+        } else if ('workMinutes' in customPreset) {
+          effectiveWorkMinutes = Math.max(1, customPreset.workMinutes)
+        }
       }
 
-      const totalSec = effectiveMode === 'stopwatch' ? 0 : chosenPreset.workMinutes * 60
+      // Constrói o preset representativo da sessão com a duração do draft
+      const sessionPreset: ActivePreset = {
+        id: chosenPreset.id,
+        name: chosenPreset.name,
+        workMinutes: effectiveWorkMinutes,
+        shortBreakMinutes: shortBreakMinutesRef.current,
+        longBreakMinutes: longBreakMinutesRef.current,
+        blocksBeforeLongBreak: chosenPreset.blocksBeforeLongBreak || 4,
+      }
+
+      const totalSec = effectiveMode === 'stopwatch' ? 0 : effectiveWorkMinutes * 60
       setNow(Date.now())
       const newState: PomodoroState = {
         mode: effectiveMode,
@@ -886,8 +995,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         status: 'rodando',
         phase: 'foco',
         currentBlock: 1,
-        totalBlocks: chosenPreset.blocksBeforeLongBreak,
-        preset: chosenPreset,
+        totalBlocks: sessionPreset.blocksBeforeLongBreak,
+        preset: sessionPreset,
         totalDurationSeconds: totalSec,
         remaining: totalSec,
         startedAt: new Date(),
@@ -913,7 +1022,16 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
         const initialTask = selectedTaskRef.current ?? null
         const initialObj = (currentObjectiveRef.current || initialTask?.title || '').trim()
         const currentMode = timerModeRef.current || 'pomo'
-        const totalSec = currentMode === 'stopwatch' ? 0 : activePresetRef.current.workMinutes * 60
+        const draftWork = workMinutesRef.current
+        const sessionPreset: ActivePreset = {
+          id: activePresetRef.current.id,
+          name: activePresetRef.current.name,
+          workMinutes: draftWork,
+          shortBreakMinutes: shortBreakMinutesRef.current,
+          longBreakMinutes: longBreakMinutesRef.current,
+          blocksBeforeLongBreak: activePresetRef.current.blocksBeforeLongBreak || 4,
+        }
+        const totalSec = currentMode === 'stopwatch' ? 0 : draftWork * 60
         const fresh: PomodoroState = {
           mode: currentMode,
           task: initialTask,
@@ -921,8 +1039,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
           status: 'rodando',
           phase: 'foco',
           currentBlock: 1,
-          totalBlocks: activePresetRef.current.blocksBeforeLongBreak,
-          preset: activePresetRef.current,
+          totalBlocks: sessionPreset.blocksBeforeLongBreak,
+          preset: sessionPreset,
           totalDurationSeconds: totalSec,
           remaining: totalSec,
           startedAt: new Date(),
@@ -1229,9 +1347,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       stopwatchSeconds,
       activePreset,
       setActivePreset,
+      workMinutes,
       setWorkMinutes,
+      shortBreakMinutes,
       setShortBreakMinutes,
+      longBreakMinutes,
       setLongBreakMinutes,
+      applyPresetToDraft,
       start,
       toggle,
       finish,
@@ -1259,9 +1381,13 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       stopwatchSeconds,
       activePreset,
       setActivePreset,
+      workMinutes,
       setWorkMinutes,
+      shortBreakMinutes,
       setShortBreakMinutes,
+      longBreakMinutes,
       setLongBreakMinutes,
+      applyPresetToDraft,
       start,
       toggle,
       finish,

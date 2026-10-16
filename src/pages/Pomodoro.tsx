@@ -79,8 +79,12 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     stopwatchSeconds,
     activePreset,
     setActivePreset,
+    workMinutes,
     setWorkMinutes,
+    shortBreakMinutes,
     setShortBreakMinutes,
+    longBreakMinutes,
+    applyPresetToDraft,
     start,
     toggle,
     finish,
@@ -286,11 +290,11 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const handleCreateFromCurrent = () => {
     setEditingPreset(null)
     setPresetForm({
-      name: `${activePreset.workMinutes}m Foco`,
-      workMinutes: activePreset.workMinutes,
-      shortBreakMinutes: activePreset.shortBreakMinutes,
-      longBreakMinutes: activePreset.longBreakMinutes,
-      blocksBeforeLongBreak: activePreset.blocksBeforeLongBreak,
+      name: `${workMinutes}m Foco`,
+      workMinutes: workMinutes,
+      shortBreakMinutes: shortBreakMinutes,
+      longBreakMinutes: longBreakMinutes,
+      blocksBeforeLongBreak: activePreset.blocksBeforeLongBreak || 4,
     })
     setModalOpen(true)
   }
@@ -323,7 +327,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
   // Executar preset via botão Play na linha
   const handlePlayPreset = (preset: FocusPresetRecord) => {
-    setActivePreset(preset)
+    applyPresetToDraft(preset)
     // Se o timer já está rodando nesta mesma tarefa/preset, apenas segue; senão inicia com este preset
     start(state?.task ?? selectedTask, preset)
   }
@@ -746,6 +750,45 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             </span>
           </div>
 
+          {/* CONTROLE DE DURAÇÃO JUNTO AO TIMER NO HERO (QUANDO PARADO E EM MODO POMO) */}
+          {!hasActiveSession && !isReadOnlyTab && timerMode === 'pomo' && (
+            <div className="pomodoro-hero-duration-bar">
+              <span className="pomodoro-hero-duration-label">Duração:</span>
+              <div className="pomodoro-hero-stepper">
+                <button
+                  type="button"
+                  onClick={() => setWorkMinutes(workMinutes - 1)}
+                  disabled={workMinutes <= 1}
+                  className="pomodoro-hero-stepper-btn"
+                  title="Diminuir 1 minuto (-1 min)"
+                >
+                  <Minus size={12} />
+                </button>
+                <div className="pomodoro-hero-duration-input-wrap">
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={workMinutes}
+                    onChange={(e) => setWorkMinutes(Number(e.target.value))}
+                    className="pomodoro-hero-duration-input"
+                    title="Digite o tempo desejado em minutos (ex: 23)"
+                  />
+                  <span className="pomodoro-hero-duration-unit">min</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWorkMinutes(workMinutes + 1)}
+                  disabled={workMinutes >= 180}
+                  className="pomodoro-hero-stepper-btn"
+                  title="Aumentar 1 minuto (+1 min)"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* PILL DO OBJETIVO DO BLOCO (DURANTE FOCO OU EDITADO) */}
           {(state?.objective || currentObjective) && (
             <div className="pomodoro-hero-objective-pill" title="Objetivo do bloco fixado">
@@ -795,7 +838,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   className="pomodoro-hero-btn primary"
                   onClick={() => {
                     if (!isRunning) {
-                      start(state?.task ?? selectedTask, activePreset, currentObjective)
+                      start(state?.task ?? selectedTask, undefined, currentObjective)
                     } else {
                       toggle()
                     }
@@ -935,8 +978,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
             {/* Indicação do preset ativo */}
             <span className="text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
-              Preset: <strong className="text-[#C5A880] font-bold">{activePreset.name}</strong> (
-              {activePreset.workMinutes}m)
+              Atalho base: <strong className="text-[#C5A880] font-bold">{activePreset.name}</strong>{' '}
+              ({workMinutes}m foco)
             </span>
           </div>
 
@@ -1198,7 +1241,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           <div className="mx-4 mb-3 p-3 rounded-xl bg-[#090A0E] border border-white/5 space-y-2">
             <div className="flex items-center justify-between text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
               <span className="uppercase tracking-wider font-semibold text-[#F4F4F6]">
-                Duração Livre (1 em 1 min)
+                Duração Atual (1 em 1 min)
               </span>
               <button
                 type="button"
@@ -1219,8 +1262,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 <div className="flex items-center justify-between gap-1">
                   <button
                     type="button"
-                    onClick={() => setWorkMinutes(activePreset.workMinutes - 1)}
-                    disabled={activePreset.workMinutes <= 1}
+                    onClick={() => setWorkMinutes(workMinutes - 1)}
+                    disabled={workMinutes <= 1}
                     className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
                     title="-1 minuto"
                   >
@@ -1231,7 +1274,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                       type="number"
                       min={1}
                       max={180}
-                      value={activePreset.workMinutes}
+                      value={workMinutes}
                       onChange={(e) => setWorkMinutes(Number(e.target.value))}
                       className="w-12 text-center bg-transparent border border-white/10 focus:border-[#C5A880] rounded py-0.5 text-xs font-['Space_Mono'] font-bold text-[#C5A880] outline-none"
                     />
@@ -1239,8 +1282,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   </div>
                   <button
                     type="button"
-                    onClick={() => setWorkMinutes(activePreset.workMinutes + 1)}
-                    disabled={activePreset.workMinutes >= 180}
+                    onClick={() => setWorkMinutes(workMinutes + 1)}
+                    disabled={workMinutes >= 180}
                     className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
                     title="+1 minuto"
                   >
@@ -1257,8 +1300,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                 <div className="flex items-center justify-between gap-1">
                   <button
                     type="button"
-                    onClick={() => setShortBreakMinutes(activePreset.shortBreakMinutes - 1)}
-                    disabled={activePreset.shortBreakMinutes <= 1}
+                    onClick={() => setShortBreakMinutes(shortBreakMinutes - 1)}
+                    disabled={shortBreakMinutes <= 1}
                     className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
                     title="-1 minuto"
                   >
@@ -1269,7 +1312,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                       type="number"
                       min={1}
                       max={60}
-                      value={activePreset.shortBreakMinutes}
+                      value={shortBreakMinutes}
                       onChange={(e) => setShortBreakMinutes(Number(e.target.value))}
                       className="w-12 text-center bg-transparent border border-white/10 focus:border-[#C5A880] rounded py-0.5 text-xs font-['Space_Mono'] font-bold text-[#C5A880] outline-none"
                     />
@@ -1277,8 +1320,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShortBreakMinutes(activePreset.shortBreakMinutes + 1)}
-                    disabled={activePreset.shortBreakMinutes >= 60}
+                    onClick={() => setShortBreakMinutes(shortBreakMinutes + 1)}
+                    disabled={shortBreakMinutes >= 60}
                     className="w-6 h-6 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-[#F4F4F6] disabled:opacity-30 text-xs"
                     title="+1 minuto"
                   >
@@ -1289,7 +1332,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
             </div>
           </div>
 
-          {/* LISTA DE PRESETS */}
+          {/* LISTA DE PRESETS (ATALHOS) */}
           <div className="pomodoro-presets-list">
             {loadingPresets ? (
               <div className="pomodoro-presets-empty">Carregando presets...</div>
@@ -1306,7 +1349,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                   <div
                     key={preset.id}
                     className={`pomodoro-preset-row ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => setActivePreset(preset)}
+                    onClick={() => applyPresetToDraft(preset)}
+                    title={`Aplicar duração de '${preset.name}' (${preset.work_minutes}m)`}
                   >
                     <div className="pomodoro-preset-left">
                       <span className="pomodoro-preset-bullet" />
@@ -1789,7 +1833,7 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
                     className="pomodoro-fullscreen-btn primary"
                     onClick={() => {
                       if (!isRunning) {
-                        start(state?.task ?? selectedTask, activePreset, currentObjective)
+                        start(state?.task ?? selectedTask, undefined, currentObjective)
                       } else {
                         toggle()
                       }
