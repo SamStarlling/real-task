@@ -56,7 +56,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 interface PomodoroPageProps {
   sessions: SessionRecord[]
@@ -113,6 +117,11 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   >('todas')
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
 
+  // Estado do Acordeão / Seção unificada de Métricas e Estatísticas
+  // Padrão inteligente: aberto quando ocioso/parado, colapsado quando há foco ativo
+  const [metricsSectionOpen, setMetricsSectionOpen] = useState(state?.status !== 'rodando')
+  const [metricsTab, setMetricsTab] = useState<'resumo' | 'estatisticas'>('resumo')
+
   // Modal de edição de sessão existente na timeline
   const [editingSession, setEditingSession] = useState<SessionRecord | null>(null)
   const [editSessionNote, setEditSessionNote] = useState('')
@@ -158,6 +167,14 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreenFocus])
+
+  // Colapsa automaticamente a seção de estatísticas quando o foco é iniciado
+  // mantendo a tela do timer despoluída e focada
+  useEffect(() => {
+    if (state?.status === 'rodando') {
+      setMetricsSectionOpen(false)
+    }
+  }, [state?.status])
 
   // Carrega os presets reais do usuário
   const loadPresets = useCallback(async () => {
@@ -902,85 +919,143 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
 
           {/* BARRA DE PREPARAÇÃO: MODO (POMO/STOPWATCH) + VINCULAR TAREFA */}
           <div className="pomodoro-hero-prep-bar">
-            {/* Seletor Pomo / Stopwatch */}
-            <div className="inline-flex items-center bg-[#090A0E] p-1 rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => setTimerMode('pomo')}
-                className={`px-3 py-1.5 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
-                  timerMode === 'pomo'
-                    ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
-                    : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
-                }`}
-                title="Modo Pomodoro (contagem regressiva + blocos)"
-              >
-                <Timer size={13} />
-                <span>Pomodoro</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimerMode('stopwatch')}
-                className={`px-3 py-1.5 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
-                  timerMode === 'stopwatch'
-                    ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
-                    : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
-                }`}
-                title="Modo Stopwatch (contagem crescente contínua)"
-              >
-                <Clock size={13} />
-                <span>Stopwatch</span>
-              </button>
-            </div>
-
-            {/* Dropdown de vincular tarefa */}
-            <DropdownMenu open={taskPickerOpen} onOpenChange={setTaskPickerOpen}>
-              <DropdownMenuTrigger asChild>
+            {/* Controles Agrupados e Compactos da Barra de Preparação */}
+            <div className="pomodoro-prep-unified-cluster">
+              {/* Seletor Pomo / Stopwatch */}
+              <div className="inline-flex items-center bg-[#090A0E] p-1 rounded-xl border border-white/10 shrink-0">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090A0E] border border-white/10 hover:border-[#C5A880]/40 text-xs font-['Plus_Jakarta_Sans'] text-[#F4F4F6] transition-colors max-w-[280px]"
-                  title="Clique para vincular ou alterar a tarefa em foco"
+                  onClick={() => setTimerMode('pomo')}
+                  className={`px-2.5 py-1 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
+                    timerMode === 'pomo'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                  title="Modo Pomodoro (contagem regressiva + blocos)"
                 >
-                  <span className="w-2 h-2 rounded-full bg-[#C5A880] shrink-0" />
-                  <span className="truncate">
-                    {currentLinkedTask ? currentLinkedTask.title : 'Vincular tarefa...'}
-                  </span>
+                  <Timer size={13} />
+                  <span>Pomodoro</span>
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="center"
-                className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] w-72 max-h-64 overflow-y-auto"
-              >
-                <DropdownMenuItem
-                  onClick={() => selectTask(null)}
-                  className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                <button
+                  type="button"
+                  onClick={() => setTimerMode('stopwatch')}
+                  className={`px-2.5 py-1 text-xs font-['Space_Mono'] rounded-lg transition-all flex items-center gap-1.5 ${
+                    timerMode === 'stopwatch'
+                      ? 'bg-[#C5A880] text-[#090A0E] font-bold shadow-sm'
+                      : 'text-[#A1A1AA] hover:text-[#F4F4F6]'
+                  }`}
+                  title="Modo Stopwatch (contagem crescente contínua)"
                 >
-                  <em>Nenhuma tarefa vinculada (foco livre)</em>
-                  {!currentLinkedTask && (
-                    <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
-                  )}
-                </DropdownMenuItem>
-                {tasks
-                  .filter((t) => !t.done)
-                  .map((t) => (
-                    <DropdownMenuItem
-                      key={t.id}
-                      onClick={() => selectTask(t)}
-                      className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
-                    >
-                      <span className="truncate">{t.title}</span>
-                      {currentLinkedTask?.id === t.id && (
-                        <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <Clock size={13} />
+                  <span>Stopwatch</span>
+                </button>
+              </div>
 
-            {/* Indicação do preset ativo */}
-            <span className="text-[11px] font-['Space_Mono'] text-[#A1A1AA]">
-              Atalho base: <strong className="text-[#C5A880] font-bold">{activePreset.name}</strong>{' '}
-              ({workMinutes}m foco)
-            </span>
+              {/* Seletor / Menu Compacto de Preset no Hero */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#090A0E] border border-white/10 hover:border-[#C5A880]/40 text-xs font-['Space_Mono'] text-[#F4F4F6] transition-colors shrink-0"
+                    title={`Preset base: ${activePreset.name} (${workMinutes}m) · Clique para alternar`}
+                  >
+                    <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA] hidden sm:inline">
+                      Preset:
+                    </span>
+                    <strong className="text-[#C5A880] font-bold truncate max-w-[110px]">
+                      {activePreset.name}
+                    </strong>
+                    <span className="text-[10px] text-[#A1A1AA] font-normal">{workMinutes}m</span>
+                    <ChevronDown size={12} className="text-[#A1A1AA] ml-0.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="center"
+                  className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] w-64 max-h-72 overflow-y-auto"
+                >
+                  <DropdownMenuLabel className="text-[10px] font-['Space_Mono'] uppercase tracking-wider text-[#A1A1AA]">
+                    Presets Disponíveis
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  {filteredPresets.map((preset) => {
+                    const isSelected = activePreset.id === preset.id
+                    return (
+                      <DropdownMenuItem
+                        key={preset.id}
+                        onClick={() => applyPresetToDraft(preset)}
+                        className="cursor-pointer hover:bg-white/5 text-xs font-['Space_Mono'] flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              isSelected ? 'bg-[#C5A880]' : 'bg-[#71717A]'
+                            }`}
+                          />
+                          <span className="truncate">{preset.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-[11px] text-[#A1A1AA]">{preset.work_minutes}m</span>
+                          {isSelected && <Check size={12} className="text-[#C5A880] shrink-0" />}
+                        </div>
+                      </DropdownMenuItem>
+                    )
+                  })}
+                  <DropdownMenuSeparator className="bg-white/5" />
+                  <DropdownMenuItem
+                    onClick={handleOpenCreate}
+                    className="cursor-pointer hover:bg-white/5 text-xs font-['Space_Mono'] text-[#C5A880] flex items-center gap-1.5"
+                  >
+                    <Plus size={13} />
+                    <span>Criar novo preset...</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Dropdown de vincular tarefa */}
+              <DropdownMenu open={taskPickerOpen} onOpenChange={setTaskPickerOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090A0E] border border-white/10 hover:border-[#C5A880]/40 text-xs font-['Plus_Jakarta_Sans'] text-[#F4F4F6] transition-colors max-w-[260px] truncate"
+                    title="Clique para vincular ou alterar a tarefa em foco"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-[#C5A880] shrink-0" />
+                    <span className="truncate">
+                      {currentLinkedTask ? currentLinkedTask.title : 'Vincular tarefa...'}
+                    </span>
+                    <ChevronDown size={12} className="text-[#A1A1AA] shrink-0 ml-0.5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="center"
+                  className="bg-[#12141C] border border-[#C5A880]/20 text-[#F4F4F6] w-72 max-h-64 overflow-y-auto"
+                >
+                  <DropdownMenuItem
+                    onClick={() => selectTask(null)}
+                    className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                  >
+                    <em>Nenhuma tarefa vinculada (foco livre)</em>
+                    {!currentLinkedTask && (
+                      <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                  {tasks
+                    .filter((t) => !t.done)
+                    .map((t) => (
+                      <DropdownMenuItem
+                        key={t.id}
+                        onClick={() => selectTask(t)}
+                        className="cursor-pointer hover:bg-white/5 text-xs font-['Plus_Jakarta_Sans'] flex items-center justify-between"
+                      >
+                        <span className="truncate">{t.title}</span>
+                        {currentLinkedTask?.id === t.id && (
+                          <Check size={12} className="text-[#C5A880] ml-2 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
@@ -1436,56 +1511,157 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
         </section>
 
-        {/* COLUNA DIREITA: VISÃO GERAL (4 CARTÕES + TIMELINE) */}
+        {/* COLUNA DIREITA: VISÃO GERAL E ESTATÍSTICAS UNIFICADAS + TIMELINE */}
         <section className="pomodoro-overview-column">
-          <header className="pomodoro-overview-header">
-            <h2 className="pomodoro-overview-title">Visão geral</h2>
-          </header>
+          {/* PAINEL UNIFICADO E COLAPSÁVEL DE MÉTRICAS E ESTATÍSTICAS */}
+          <Collapsible
+            open={metricsSectionOpen}
+            onOpenChange={setMetricsSectionOpen}
+            className="pomodoro-unified-stats-card mb-6"
+          >
+            <div className="pomodoro-unified-stats-header">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="pomodoro-unified-stats-toggle"
+                  title={
+                    metricsSectionOpen
+                      ? 'Recolher métricas e estatísticas'
+                      : 'Expandir métricas e estatísticas'
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    {metricsSectionOpen ? (
+                      <ChevronDown size={16} className="text-[#C5A880]" />
+                    ) : (
+                      <ChevronRight size={16} className="text-[#C5A880]" />
+                    )}
+                    <span className="font-['Clash_Display'] font-semibold text-base text-[#F4F4F6]">
+                      Visão geral e Estatísticas
+                    </span>
+                  </div>
 
-          {/* 4 CARTÕES DE MÉTRICAS COM MARCAÇÃO DISCRETA DE RECORDE */}
-          <div className="pomodoro-metrics-grid">
-            <div className="pomodoro-metric-card">
-              <span className="pomodoro-metric-label">Pomos de hoje</span>
-              <strong className="pomodoro-metric-value">{pomosDeHoje}</strong>
+                  {/* Resumo compacto quando fechado para visualização rápida */}
+                  {!metricsSectionOpen && (
+                    <div className="flex items-center gap-3 text-xs font-['Space_Mono'] text-[#A1A1AA]">
+                      <span className="hidden sm:inline">
+                        Hoje:{' '}
+                        <strong className="text-[#F4F4F6]">
+                          {formatTotalTime(focoDeHojeMinutos)}
+                        </strong>{' '}
+                        ({pomosDeHoje} {pomosDeHoje === 1 ? 'pomo' : 'pomos'})
+                      </span>
+                      <span>
+                        Total:{' '}
+                        <strong className="text-[#C5A880]">
+                          {formatTotalTime(duracaoTotalMinutos)}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+                </button>
+              </CollapsibleTrigger>
             </div>
 
-            <div className="pomodoro-metric-card">
-              <div className="pomodoro-metric-label-row">
-                <span className="pomodoro-metric-label">Foco de hoje</span>
-                {bestDayStats.isTodayRecord && (
-                  <span
-                    className="pomodoro-metric-record-chip"
-                    title="Hoje é o seu recorde absoluto de foco"
-                  >
-                    <Trophy size={8} />
-                    RECORDE
-                  </span>
-                )}
+            <CollapsibleContent>
+              <div className="p-4 pt-1 border-t border-white/5">
+                <Tabs
+                  value={metricsTab}
+                  onValueChange={(val) => setMetricsTab(val as 'resumo' | 'estatisticas')}
+                  className="w-full"
+                >
+                  <div className="flex items-center justify-between mb-3.5">
+                    <TabsList className="bg-[#090A0E] border border-white/10 p-0.5 rounded-lg h-8">
+                      <TabsTrigger
+                        value="resumo"
+                        className="text-xs font-['Space_Mono'] data-[state=active]:bg-[#C5A880] data-[state=active]:text-[#090A0E] data-[state=active]:font-bold px-3 py-1 rounded"
+                      >
+                        Resumo Geral
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="estatisticas"
+                        className="text-xs font-['Space_Mono'] data-[state=active]:bg-[#C5A880] data-[state=active]:text-[#090A0E] data-[state=active]:font-bold px-3 py-1 rounded"
+                      >
+                        Distribuição & Donut
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <span className="text-[11px] font-['Space_Mono'] text-[#71717A] hidden sm:inline">
+                      {metricsTab === 'resumo'
+                        ? 'Métricas consolidadas'
+                        : `Filtro ativo: ${timeFilterLabel}`}
+                    </span>
+                  </div>
+
+                  {/* ABA 1: RESUMO (4 CARTÕES DE MÉTRICAS) */}
+                  <TabsContent value="resumo" className="mt-0 focus-visible:outline-none">
+                    <div className="pomodoro-metrics-grid">
+                      <div className="pomodoro-metric-card">
+                        <span className="pomodoro-metric-label">Pomos de hoje</span>
+                        <strong className="pomodoro-metric-value">{pomosDeHoje}</strong>
+                      </div>
+
+                      <div className="pomodoro-metric-card">
+                        <div className="pomodoro-metric-label-row">
+                          <span className="pomodoro-metric-label">Foco de hoje</span>
+                          {bestDayStats.isTodayRecord && (
+                            <span
+                              className="pomodoro-metric-record-chip"
+                              title="Hoje é o seu recorde absoluto de foco"
+                            >
+                              <Trophy size={8} />
+                              RECORDE
+                            </span>
+                          )}
+                        </div>
+                        <strong className="pomodoro-metric-value">
+                          {formatTotalTime(focoDeHojeMinutos)}
+                        </strong>
+                        {bestDayStats.bestDay &&
+                          !bestDayStats.isTodayRecord &&
+                          bestDayStats.minutesRemainingToBeat > 0 && (
+                            <span className="pomodoro-metric-subhint">
+                              Faltam {formatTotalTime(bestDayStats.minutesRemainingToBeat)} p/
+                              recorde
+                            </span>
+                          )}
+                      </div>
+
+                      <div className="pomodoro-metric-card">
+                        <span className="pomodoro-metric-label">Pomo Total</span>
+                        <strong className="pomodoro-metric-value">{pomoTotal}</strong>
+                      </div>
+
+                      <div className="pomodoro-metric-card">
+                        <span className="pomodoro-metric-label">Duração Total Focada</span>
+                        <strong className="pomodoro-metric-value">
+                          {formatTotalTime(duracaoTotalMinutos)}
+                        </strong>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* ABA 2: ESTATÍSTICAS (DONUT INTERATIVO + 5 MÉTRICAS DE DISCIPLINA) */}
+                  <TabsContent value="estatisticas" className="mt-0 focus-visible:outline-none">
+                    <div className="pt-1">
+                      <FocusDistributionChart
+                        sessions={periodSessions}
+                        timeFilterLabel={timeFilterLabel}
+                        onSelectTask={(taskId) => {
+                          const foundTask = tasks.find((t) => t.id === taskId)
+                          if (foundTask) {
+                            selectTask(foundTask)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                            toast({ title: `Tarefa "${foundTask.title}" selecionada para foco` })
+                          }
+                        }}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
-              <strong className="pomodoro-metric-value">
-                {formatTotalTime(focoDeHojeMinutos)}
-              </strong>
-              {bestDayStats.bestDay &&
-                !bestDayStats.isTodayRecord &&
-                bestDayStats.minutesRemainingToBeat > 0 && (
-                  <span className="pomodoro-metric-subhint">
-                    Faltam {formatTotalTime(bestDayStats.minutesRemainingToBeat)} p/ recorde
-                  </span>
-                )}
-            </div>
-
-            <div className="pomodoro-metric-card">
-              <span className="pomodoro-metric-label">Pomo Total</span>
-              <strong className="pomodoro-metric-value">{pomoTotal}</strong>
-            </div>
-
-            <div className="pomodoro-metric-card">
-              <span className="pomodoro-metric-label">Duração Total Focada</span>
-              <strong className="pomodoro-metric-value">
-                {formatTotalTime(duracaoTotalMinutos)}
-              </strong>
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* TIMELINE: FOCO EM REGISTRO COM FILTRO DE DATA E REDESIGN DE CARDS */}
           <div className="pomodoro-timeline-section">
@@ -1722,25 +1898,6 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
         </section>
       </div>
-
-      {/* =========================================================
-          SEÇÃO DE ESTATÍSTICAS DE FOCO (ETAPA 4)
-          Gráfico de Pizza/Donut por Tarefa + Métricas de Disciplina
-          ========================================================= */}
-      <section className="pomodoro-stats-section">
-        <FocusDistributionChart
-          sessions={periodSessions}
-          timeFilterLabel={timeFilterLabel}
-          onSelectTask={(taskId) => {
-            const foundTask = tasks.find((t) => t.id === taskId)
-            if (foundTask) {
-              selectTask(foundTask)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-              toast({ title: `Tarefa "${foundTask.title}" selecionada para foco` })
-            }
-          }}
-        />
-      </section>
 
       {/* =========================================================
           MODO FOCO EM TELA CHEIA (IMERSÃO TOTAL · BARBOSA SYSTEM)

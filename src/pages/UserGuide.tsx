@@ -538,24 +538,25 @@ export function UserGuide() {
                   </span>
                 </div>
                 <p className="text-xs text-[#A1A1AA] leading-relaxed">
-                  Na tela <strong>/pomodoro</strong>, logo abaixo dos blocos em registro, você tem
-                  uma seção dedicada de <strong>Estatísticas de foco</strong> (âncora{' '}
-                  <code>#estatisticas</code>):
+                  Na tela <strong>/pomodoro</strong>, para evitar excesso de informação e permitir
+                  que a página respire, a <strong>Visão geral e Estatísticas</strong> está reunida
+                  em um painel colapsável inteligente com abas <em>Resumo Geral</em> e{' '}
+                  <em>Distribuição & Donut</em>:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
-                    <strong className="text-[#F4F4F6] block mb-1">Gráfico de Pizza/Donut</strong>
+                    <strong className="text-[#F4F4F6] block mb-1">Painel Unificado & Abas</strong>
                     <span className="text-[#A1A1AA]">
-                      Distribuição do tempo de foco acumulado pelas Top 5 tarefas + grupo Outras em
-                      paleta champagne harmônica. Clique em qualquer fatia ou legenda para
-                      selecionar a tarefa na hora.
+                      Inicia recolhido automaticamente quando o timer entra em foco e aberto quando
+                      ocioso. Alterna entre os 4 cartões consolidados e o Donut com 1 toque.
                     </span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
-                    <strong className="text-[#F4F4F6] block mb-1">Métricas de Disciplina</strong>
+                    <strong className="text-[#F4F4F6] block mb-1">Donut & Disciplina</strong>
                     <span className="text-[#A1A1AA]">
-                      Total focado no período, contagem de blocos, média por bloco, % de sessões
-                      completas sem corte e % de objetivos de bloco batidos.
+                      Top 5 tarefas + Outras em paleta champagne harmônica. Clique em qualquer fatia
+                      para selecionar a tarefa para foco, acompanhando média e % de objetivos
+                      batidos.
                     </span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
