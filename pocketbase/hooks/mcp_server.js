@@ -669,7 +669,57 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
     return null
   }
 
-  // 4. Parser de Prioridade: "p1".."p4" ou "!" / "!!"
+  // 4. Parser de Duração: "por 90 min", "1h30", "90 minutos", etc.
+  const parseServerDuration = (text) => {
+    const clean = normalize(text)
+
+    const minRegex = /\b(?:(por|durante|em)\s+)?([1-9]\d{0,2})\s*(minutos?|mins?|m)\b/
+    const minMatch = clean.match(minRegex)
+    if (minMatch && minMatch.index !== undefined) {
+      const rawMin = minMatch[0]
+      const nextWords = clean.slice(
+        minMatch.index + rawMin.length,
+        minMatch.index + rawMin.length + 10,
+      )
+      if (!/^\s*(?:dias?|semanas?|mes(?:es)?)\b/.test(nextWords)) {
+        const mins = Number(minMatch[2])
+        if (mins >= 1 && mins <= 600) {
+          return {
+            minutes: mins,
+            token: text.slice(minMatch.index, minMatch.index + rawMin.length),
+          }
+        }
+      }
+    }
+
+    const hmRegex =
+      /\b(?:(por|durante)\s+)?([1-9]|10)\s*h(?:oras?)?(?:\s*([0-5]\d)(?:\s*(?:minutos?|mins?|m))?)?\b/
+    const hmMatch = clean.match(hmRegex)
+    if (hmMatch && hmMatch.index !== undefined) {
+      const rawMatch = hmMatch[0]
+      const preceding = clean.slice(Math.max(0, hmMatch.index - 5), hmMatch.index)
+      const isScheduleTime = /\b(?:as|as\s+)$/.test(preceding)
+      if (!isScheduleTime) {
+        const hasPrefix = Boolean(hmMatch[1])
+        const hours = Number(hmMatch[2])
+        const rawMins = hmMatch[3]
+        const hasMins = rawMins !== undefined && rawMins !== ''
+        const minutes = hasMins ? Number(rawMins) : 0
+        const totalMinutes = hours * 60 + minutes
+
+        if ((hasPrefix || hasMins || hours <= 4) && totalMinutes >= 1 && totalMinutes <= 600) {
+          return {
+            minutes: totalMinutes,
+            token: text.slice(hmMatch.index, hmMatch.index + rawMatch.length),
+          }
+        }
+      }
+    }
+
+    return null
+  }
+
+  // 5. Parser de Prioridade: "p1".."p4" ou "!" / "!!"
   const parseServerPriority = (text) => {
     const pMatch = text.match(/(?:^|\s)(p[1-4])(?:\s|$)/i)
     if (pMatch) {
@@ -737,10 +787,10 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             },
             estimated_minutes: {
               type: 'integer',
-              minimum: 5,
-              maximum: 240,
+              minimum: 0,
+              maximum: 600,
               description:
-                'Estimativa de foco em minutos (padrão 25). Se omitido, utiliza 25 minutos.',
+                'Estimativa de foco em minutos (1 a 600, ou 0 / nulo para "sem estimativa"). Opcional.',
             },
           },
           required: ['text'],
@@ -1001,10 +1051,10 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             },
             estimated_minutes: {
               type: 'integer',
-              minimum: 5,
-              maximum: 240,
+              minimum: 0,
+              maximum: 600,
               description:
-                'Tempo estimado de foco em minutos (mínimo 5, padrão 25, máximo 240). Opcional.',
+                'Tempo estimado de foco em minutos (1 a 600, ou 0 / nulo para "sem estimativa"). Opcional.',
             },
             list: {
               type: 'string',
@@ -1131,9 +1181,10 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
             },
             estimated_minutes: {
               type: 'integer',
-              minimum: 5,
-              maximum: 240,
-              description: 'Novo tempo estimado em minutos.',
+              minimum: 0,
+              maximum: 600,
+              description:
+                'Novo tempo estimado em minutos (1 a 600, ou 0 / nulo para "sem estimativa"). Opcional.',
             },
             list: {
               type: 'string',
@@ -1298,6 +1349,9 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       // 4. Parser de prioridade
       const parsedPrio = parseServerPriority(rawInput)
 
+      // 4.1 Parser de duração em minutos
+      const parsedDur = parseServerDuration(rawInput)
+
       // 5. Extração de Listas (#nome) e Tags (@nome) da frase
       const listNamesFound = []
       const listRegex = /(?:^|\s)#([a-zA-Z0-9À-ÿ_\-]+)/g
@@ -1335,6 +1389,9 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         // Escapa token de prioridade (ex: !, p1)
         const escaped = parsedPrio.token.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
         cleanTitle = cleanTitle.replace(new RegExp('(?:^|\\s)' + escaped + '(?=\\s|$)', 'i'), ' ')
+      }
+      if (parsedDur && parsedDur.token) {
+        cleanTitle = cleanTitle.replace(parsedDur.token, ' ')
       }
 
       // Remove tokens residuais de prioridade, listas e tags
@@ -1437,9 +1494,22 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       const recInterval = parsedRec ? parsedRec.interval || 1 : 1
       const recWeekdays = parsedRec && parsedRec.weekdays ? parsedRec.weekdays : null
 
-      const estMin = args.estimated_minutes
-        ? Math.max(5, Math.min(240, Number(args.estimated_minutes)))
-        : 25
+      let estMin = null
+      if (args.estimated_minutes !== undefined && args.estimated_minutes !== null) {
+        const parsed = Number(args.estimated_minutes)
+        if (parsed <= 0) {
+          estMin = 0
+        } else {
+          estMin = Math.max(1, Math.min(600, parsed))
+        }
+      }
+      if (estMin === null) {
+        if (parsedDur && parsedDur.minutes > 0) {
+          estMin = Math.max(1, Math.min(600, parsedDur.minutes))
+        } else {
+          estMin = 0
+        }
+      }
 
       // Salva no banco de dados na coleção `tasks`
       const tasksCol = $app.findCollectionByNameOrId('tasks')
@@ -3089,9 +3159,13 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
         const pNum = Number(args.priority)
         if (pNum >= 1 && pNum <= 4) taskRecord.set('priority', pNum)
       }
-      const estMin = args.estimated_minutes
-        ? Math.max(5, Math.min(240, Number(args.estimated_minutes)))
-        : 25
+      let estMin = 0
+      if (args.estimated_minutes !== undefined && args.estimated_minutes !== null) {
+        const parsed = Number(args.estimated_minutes)
+        if (parsed > 0) {
+          estMin = Math.max(1, Math.min(600, parsed))
+        }
+      }
       taskRecord.set('estimated_minutes', estMin)
       taskRecord.set('actual_minutes', 0)
       taskRecord.set('done', false)
@@ -3622,8 +3696,13 @@ routerAdd('POST', '/backend/v1/mcp', (e) => {
       }
 
       if (args.estimated_minutes !== undefined) {
-        const estMin = Math.max(5, Math.min(240, Number(args.estimated_minutes)))
-        taskRecord.set('estimated_minutes', estMin)
+        if (args.estimated_minutes === null) {
+          taskRecord.set('estimated_minutes', 0)
+        } else {
+          const parsed = Number(args.estimated_minutes)
+          const estMin = parsed > 0 ? Math.max(1, Math.min(600, parsed)) : 0
+          taskRecord.set('estimated_minutes', estMin)
+        }
       }
 
       // Lista/Projeto

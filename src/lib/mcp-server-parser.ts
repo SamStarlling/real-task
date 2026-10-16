@@ -25,6 +25,11 @@ export interface ParsedServerTime {
   end: number
 }
 
+export interface ParsedServerDuration {
+  minutes: number
+  token: string
+}
+
 export interface ParsedServerPriority {
   priority: number
   token: string
