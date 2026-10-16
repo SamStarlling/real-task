@@ -8349,3 +8349,372 @@ a {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   ETAPA 4 POMODORO: ESTATÍSTICAS DE FOCO & FILTROS NA TIMELINE
+   Design dark-first (#090A0E / #12141C), acento champagne #C5A880
+   ========================================================================== */
+
+/* Barra de Filtros Extras da Timeline (Tarefa + Status) */
+.pomodoro-timeline-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(9, 10, 14, 0.6);
+  border: 1px solid rgba(197, 168, 128, 0.14);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.pomodoro-timeline-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pomodoro-timeline-filter-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(197, 168, 128, 0.08);
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  flex-shrink: 0;
+}
+
+.pomodoro-filter-control {
+  position: relative;
+  min-width: 140px;
+  max-width: 240px;
+  flex: 1;
+}
+
+.pomodoro-filter-select {
+  width: 100%;
+  background: #12141c;
+  color: #f4f4f6;
+  border: 1px solid rgba(197, 168, 128, 0.2);
+  border-radius: 6px;
+  padding: 5px 24px 5px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C5A880' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 150ms ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pomodoro-filter-select:hover,
+.pomodoro-filter-select:focus {
+  border-color: #c5a880;
+}
+
+.pomodoro-filter-select option {
+  background: #12141c;
+  color: #f4f4f6;
+}
+
+.pomodoro-filter-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pomodoro-filter-clear-btn:hover {
+  color: #f4f4f6;
+  border-color: rgba(197, 168, 128, 0.4);
+  background: rgba(197, 168, 128, 0.08);
+}
+
+/* Seção de Estatísticas de Foco */
+.pomodoro-stats-section {
+  margin-top: 32px;
+  width: 100%;
+}
+
+.focus-distribution-card {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.14);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.focus-distribution-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.focus-distribution-title {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f4f4f6;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.focus-distribution-period-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.12);
+  border: 1px solid rgba(197, 168, 128, 0.28);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.focus-distribution-subtitle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 4px 0 0 0;
+}
+
+/* 5 Cartões de Resumo Executivo do Período */
+.focus-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .focus-summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .focus-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.focus-summary-card {
+  background: #090a0e;
+  border: 1px solid rgba(197, 168, 128, 0.12);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 150ms ease;
+}
+
+.focus-summary-card:hover {
+  border-color: rgba(197, 168, 128, 0.26);
+}
+
+.focus-summary-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #a1a1aa;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.focus-summary-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f4f4f6;
+  letter-spacing: -0.01em;
+}
+
+.focus-summary-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #71717a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Layout do Gráfico e Legenda */
+.focus-chart-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: center;
+  background: #090a0e;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+@media (max-width: 768px) {
+  .focus-chart-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 14px;
+  }
+}
+
+.focus-chart-donut-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.focus-donut-canvas {
+  width: 100%;
+  max-width: 220px;
+  height: 210px;
+  position: relative;
+}
+
+.focus-donut-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.focus-donut-center-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #a1a1aa;
+  text-transform: uppercase;
+}
+
+.focus-donut-center-main {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c5a880;
+  letter-spacing: -0.02em;
+}
+
+.focus-chart-tooltip {
+  background: #12141c;
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Legenda da Distribuição */
+.focus-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.focus-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: all 150ms ease;
+}
+
+.focus-legend-row.is-clickable {
+  cursor: pointer;
+}
+
+.focus-legend-row.is-clickable:hover {
+  background: rgba(197, 168, 128, 0.08);
+}
+
+.focus-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.focus-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.focus-legend-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #f4f4f6;
+}
+
+.focus-legend-row.is-clickable:hover .focus-legend-title {
+  color: #c5a880;
+}
+
+.focus-legend-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.focus-legend-minutes {
+  font-weight: 700;
+  color: #f4f4f6;
+}
+
+.focus-legend-pct {
+  color: #a1a1aa;
+}
+
+.focus-distribution-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 36px 16px;
+  background: #090a0e;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}

@@ -528,6 +528,45 @@ export function UserGuide() {
                   para ajudá-lo a calibrar futuras estimativas.
                 </p>
               </div>
+
+              {/* ESTATÍSTICAS DE FOCO & FILTROS NA TIMELINE (NOVO ETAPA 4) */}
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#C5A880]" />
+                  <span className="font-mono text-xs uppercase tracking-wider text-[#F4F4F6] font-semibold">
+                    Estatísticas de Foco & Filtros na Timeline
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  Na tela <strong>/pomodoro</strong>, logo abaixo dos blocos em registro, você tem
+                  uma seção dedicada de <strong>Estatísticas de foco</strong> (âncora{' '}
+                  <code>#estatisticas</code>):
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Gráfico de Pizza/Donut</strong>
+                    <span className="text-[#A1A1AA]">
+                      Distribuição do tempo de foco acumulado pelas Top 5 tarefas + grupo Outras em
+                      paleta champagne harmônica. Clique em qualquer fatia ou legenda para
+                      selecionar a tarefa na hora.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Métricas de Disciplina</strong>
+                    <span className="text-[#A1A1AA]">
+                      Total focado no período, contagem de blocos, média por bloco, % de sessões
+                      completas sem corte e % de objetivos de bloco batidos.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#F4F4F6] block mb-1">Filtros Combinados</strong>
+                    <span className="text-[#A1A1AA]">
+                      Filtre a timeline por período (Hoje, 7d, 30d, Tudo), por tarefa específica e
+                      por status (completas ou interrompidas), com botão rápido de limpar.
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 

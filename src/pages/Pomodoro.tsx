@@ -32,6 +32,7 @@ import {
 import { usePomodoro, type ActivePreset } from '@/contexts/PomodoroContext'
 import { useAuth } from '@/contexts/AuthContext'
 import type { FocusPresetRecord, SessionRecord, TaskRecord } from '@/types'
+import { FocusDistributionChart } from '@/components/FocusDistributionChart'
 import {
   getFocusPresets,
   createFocusPreset,
@@ -99,8 +100,13 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
   const [nextInput, setNextInput] = useState('')
   const [pendingVerdict, setPendingVerdict] = useState<SessionRecord['outcome_status'] | null>(null)
 
-  // Filtro de período da timeline (Hoje | 7 dias | 30 dias | Tudo)
+  // Filtro de período da timeline e estatísticas (Hoje | 7 dias | 30 dias | Tudo)
   const [timeFilter, setTimeFilter] = useState<'hoje' | '7dias' | '30dias' | 'tudo'>('7dias')
+  // Filtros extras da timeline: por tarefa e por status (todas / completas / interrompidas)
+  const [selectedTaskFilter, setSelectedTaskFilter] = useState<string>('todas')
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
+    'todas' | 'completa' | 'interrompida'
+  >('todas')
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
 
   // Modal de edição de sessão existente na timeline
@@ -353,8 +359,8 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
     return `${mins}m`
   }
 
-  // Filtro de data: Hoje · 7 dias (padrão) · 30 dias · Tudo
-  const filteredSessions = useMemo(() => {
+  // Sessões filtradas estritamente pelo período (alimenta o gráfico de pizza e a base dos filtros de timeline)
+  const periodSessions = useMemo(() => {
     if (timeFilter === 'tudo') return sessions
     const now = new Date()
     const nowLocal = localDay(now)
@@ -377,6 +383,74 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
       return d >= cutoffIso
     })
   }, [sessions, timeFilter])
+
+  // Lista de tarefas únicas presentes nas sessões do período selecionado (para o dropdown de filtro)
+  const tasksInPeriod = useMemo(() => {
+    const map = new Map<string, string>()
+    let hasUntracked = false
+
+    periodSessions.forEach((s) => {
+      if (s.task) {
+        const title = s.expand?.task?.title || 'Tarefa'
+        map.set(s.task, title)
+      } else {
+        hasUntracked = true
+      }
+    })
+
+    const list = Array.from(map.entries()).map(([id, title]) => ({ id, title }))
+    list.sort((a, b) => a.title.localeCompare(b.title))
+
+    if (hasUntracked) {
+      list.push({ id: '__sem_tarefa__', title: 'Foco livre (sem tarefa)' })
+    }
+
+    return list
+  }, [periodSessions])
+
+  // Sessões filtradas para a timeline combinando Período + Tarefa + Status
+  const filteredSessions = useMemo(() => {
+    return periodSessions.filter((s) => {
+      // Filtro por Tarefa
+      if (selectedTaskFilter !== 'todas') {
+        if (selectedTaskFilter === '__sem_tarefa__') {
+          if (s.task) return false
+        } else if (s.task !== selectedTaskFilter) {
+          return false
+        }
+      }
+
+      // Filtro por Status
+      if (selectedStatusFilter !== 'todas') {
+        if (s.status !== selectedStatusFilter) return false
+      }
+
+      return true
+    })
+  }, [periodSessions, selectedTaskFilter, selectedStatusFilter])
+
+  // Rótulo textual do período selecionado
+  const timeFilterLabel = useMemo(() => {
+    switch (timeFilter) {
+      case 'hoje':
+        return 'Hoje'
+      case '7dias':
+        return 'Últimos 7 dias'
+      case '30dias':
+        return 'Últimos 30 dias'
+      case 'tudo':
+        return 'Histórico Completo'
+    }
+  }, [timeFilter])
+
+  // Indicador de se algum filtro extra de timeline está ativo
+  const hasExtraFiltersActive = selectedTaskFilter !== 'todas' || selectedStatusFilter !== 'todas'
+
+  // Limpa todos os filtros extras da timeline
+  const handleClearTimelineFilters = () => {
+    setSelectedTaskFilter('todas')
+    setSelectedStatusFilter('todas')
+  }
 
   // Agrupamento cronológico da timeline "Foco em registro"
   const sessionsByDay = useMemo(() => {
@@ -1428,8 +1502,72 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
               </div>
             </div>
 
+            {/* BARRA DE FILTROS EXTRAS DA TIMELINE (TAREFA + STATUS + LIMPAR) */}
+            <div className="pomodoro-timeline-filter-bar">
+              <div className="pomodoro-timeline-filter-group">
+                <span className="pomodoro-timeline-filter-icon">
+                  <Filter size={12} className="text-[#C5A880]" />
+                </span>
+
+                {/* FILTRO POR TAREFA */}
+                <div className="pomodoro-filter-control">
+                  <label htmlFor="pomodoro-task-filter" className="sr-only">
+                    Filtrar por tarefa
+                  </label>
+                  <select
+                    id="pomodoro-task-filter"
+                    value={selectedTaskFilter}
+                    onChange={(e) => setSelectedTaskFilter(e.target.value)}
+                    className="pomodoro-filter-select"
+                  >
+                    <option value="todas">Todas as tarefas ({tasksInPeriod.length})</option>
+                    {tasksInPeriod.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* FILTRO POR STATUS DE CONCLUSÃO */}
+                <div className="pomodoro-filter-control">
+                  <label htmlFor="pomodoro-status-filter" className="sr-only">
+                    Filtrar por status
+                  </label>
+                  <select
+                    id="pomodoro-status-filter"
+                    value={selectedStatusFilter}
+                    onChange={(e) =>
+                      setSelectedStatusFilter(
+                        e.target.value as 'todas' | 'completa' | 'interrompida',
+                      )
+                    }
+                    className="pomodoro-filter-select"
+                  >
+                    <option value="todas">Todos os status</option>
+                    <option value="completa">Completas</option>
+                    <option value="interrompida">Interrompidas</option>
+                  </select>
+                </div>
+              </div>
+
+              {hasExtraFiltersActive && (
+                <button
+                  type="button"
+                  onClick={handleClearTimelineFilters}
+                  className="pomodoro-filter-clear-btn"
+                  title="Limpar filtros de tarefa e status da timeline"
+                >
+                  <XIcon size={12} />
+                  <span>Limpar filtros</span>
+                </button>
+              )}
+            </div>
+
             {sessionsByDay.length === 0 ? (
-              <p className="pomodoro-timeline-empty">Nenhuma sessão registrada neste período.</p>
+              <p className="pomodoro-timeline-empty">
+                Nenhuma sessão encontrada para os filtros aplicados.
+              </p>
             ) : timeFilter === 'tudo' && sessionsByMonth ? (
               /* MODO TUDO: Agrupado e colapsável por mês */
               <div className="space-y-6">
@@ -1537,6 +1675,25 @@ export function PomodoroPage({ sessions, tasks, refreshSessions }: PomodoroPageP
           </div>
         </section>
       </div>
+
+      {/* =========================================================
+          SEÇÃO DE ESTATÍSTICAS DE FOCO (ETAPA 4)
+          Gráfico de Pizza/Donut por Tarefa + Métricas de Disciplina
+          ========================================================= */}
+      <section className="pomodoro-stats-section">
+        <FocusDistributionChart
+          sessions={periodSessions}
+          timeFilterLabel={timeFilterLabel}
+          onSelectTask={(taskId) => {
+            const foundTask = tasks.find((t) => t.id === taskId)
+            if (foundTask) {
+              selectTask(foundTask)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              toast({ title: `Tarefa "${foundTask.title}" selecionada para foco` })
+            }
+          }}
+        />
+      </section>
 
       {/* CARD DESTACADO DE DEFINIÇÃO DO OBJETIVO DO BLOCO (ANTES DO FOCO) */}
       {!hasActiveSession && !isReadOnlyTab && (

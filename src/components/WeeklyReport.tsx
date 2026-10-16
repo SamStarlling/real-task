@@ -449,10 +449,30 @@ export function WeeklyReport({ sessions }: { sessions: SessionRecord[] }) {
 
         {/* TOP TAREFAS DA SEMANA */}
         <section className="weekly-subcard">
-          <h3 className="weekly-subcard-title">Top Tarefas da Semana</h3>
-          <p className="weekly-subcard-desc">
-            Distribuição do tempo real dedicado por tarefa nas sessões
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="weekly-subcard-title">Top Tarefas da Semana</h3>
+              <p className="weekly-subcard-desc">
+                Distribuição do tempo real dedicado por tarefa nas sessões
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                nav('/pomodoro#estatisticas')
+                // Se já estiver na página, faz o scroll até a âncora
+                setTimeout(() => {
+                  const el = document.getElementById('estatisticas')
+                  if (el) el.scrollIntoView({ behavior: 'smooth' })
+                }, 100)
+              }}
+              className="text-[11px] font-['Space_Mono'] text-[#C5A880] hover:underline inline-flex items-center gap-1 shrink-0"
+              title="Ir para a seção de estatísticas completas em /pomodoro"
+            >
+              <span>Ver estatísticas completas</span>
+              <ArrowRight size={12} />
+            </button>
+          </div>
 
           <div className="weekly-top-tasks-list">
             {report.topTasks.length === 0 ? (

@@ -853,6 +853,9 @@ export function DevDocs() {
                   <li>
                     <code>lucide-react 0.577.0</code> — ícones vetoriais stroke-1.5
                   </li>
+                  <li>
+                    <code>recharts 2.15.4</code> — gráficos SVG de alta precisão (Donut / BarChart)
+                  </li>
                 </ul>
               </div>
 
@@ -880,8 +883,30 @@ export function DevDocs() {
                     <code>weekly-report.ts</code> — motor de agregação semanal e cruzamento com
                     metas diárias
                   </li>
+                  <li>
+                    <code>FocusDistributionChart.tsx</code> — motor de agregação sob demanda de foco
+                    por tarefa, fatias harmônicas e métricas de objetivos batidos
+                  </li>
                 </ul>
               </div>
+            </div>
+
+            {/* ARQUITETURA DE FILTROS E ESTATÍSTICAS DO POMODORO (ETAPA 4) */}
+            <div className="mt-4 p-4 rounded-xl bg-[#090A0E] border border-[#C5A880]/30 text-xs space-y-2">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#C5A880] block font-bold">
+                Arquitetura de Filtros e Estatísticas em /pomodoro (Etapa 4)
+              </span>
+              <p className="text-[#A1A1AA] leading-relaxed">
+                <strong>Decisão de Coesão Visual e de Dados:</strong> O filtro de período (Hoje, 7
+                dias, 30 dias, Tudo) alimenta tanto o gráfico de pizza/donut e métricas executivas
+                quanto a lista base da timeline. Já os filtros granulares de <em>Tarefa</em> e{' '}
+                <em>Status (completas / interrompidas)</em> afetam especificamente o detalhamento da
+                lista cronológica (timeline), preservando o gráfico de pizza como a visão panorâmica
+                holística do período selecionado. Dessa forma, o usuário pode analisar a composição
+                geral de seu tempo no donut enquanto filtra e audita ocorrências pontuais na
+                timeline. Ambas as agregações operam 100% no cliente com <code>useMemo</code>, sem
+                requisições adicionais de backend.
+              </p>
             </div>
           </section>
 
