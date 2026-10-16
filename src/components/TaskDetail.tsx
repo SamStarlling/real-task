@@ -377,7 +377,9 @@ export function TaskDetail({
                   Prazo:
                 </span>
                 <span className="text-xs font-mono text-[#f4f4f6]">
-                  {task.due_date ? formatShortDate(task.due_date) : 'Sem data'}
+                  {task.due_date
+                    ? formatShortDate(new Date(task.due_date.replace(' ', 'T')))
+                    : 'Sem data'}
                 </span>
               </div>
             </div>

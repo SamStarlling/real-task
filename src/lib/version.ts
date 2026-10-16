@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.50'
+export const APP_VERSION = '0.0.51'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,20 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.50).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.51).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.51',
+    title: 'Etapa 1.5 Todoist: Descrição da Tarefa com Links Clicáveis & Correção de Metadados',
+    tag: 'Engenharia Todoist',
+    highlights: [
+      'Etapa 1.5 Todoist: descrição da tarefa com links clicáveis (Obsidian/web), painel de detalhe com projeto e prazo em linha.',
+      'Correção de tipagem estrita no cabeçalho de metadados do TaskDetail: conversão segura da string due_date em Date para formatShortDate.',
+      'Parser de links com suporte total a URLs externas (http/https com target blank) e links nativos de notas no Obsidian (obsidian://).',
+      'Edição ágil no drawer com auto-foco, atalhos Ctrl+Enter/Esc e preservação do fluxo rápido de captura.',
+    ],
+  },
   {
     version: '0.0.50',
     title: 'Etapa 1.5: Descrição da Tarefa Todoist & Links Clicáveis',
