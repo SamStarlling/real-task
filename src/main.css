@@ -56,22 +56,71 @@ a {
   object-fit: contain;
 }
 .sidebar nav {
-  margin-top: 54px;
   display: grid;
-  gap: 7px;
+  gap: 4px;
 }
-.sidebar nav a {
+
+/* GRUPO DE ITENS DE NAVEGAÇÃO DA SIDEBAR ESTILO TODOIST */
+.sidebar-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-todoist-view-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  height: 48px;
-  padding: 0 14px;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
   text-decoration: none;
   color: #a1a1aa;
-  font-size: 14px;
-  transition: 150ms;
+  font-size: 13.5px;
+  transition: all 150ms ease;
+  border: 1px solid transparent;
 }
+.sidebar-todoist-view-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f4f6;
+}
+.sidebar-todoist-view-item.active {
+  color: #f4f4f6;
+  background: rgba(197, 168, 128, 0.1);
+  border-color: rgba(197, 168, 128, 0.25);
+  font-weight: 500;
+}
+.sidebar-todoist-view-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2.5px;
+  background: #c5a880;
+  border-radius: 2px;
+}
+.sidebar-todoist-view-item .sidebar-view-icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.5;
+  color: #a1a1aa;
+  flex: none;
+  transition: color 150ms ease;
+}
+.sidebar-todoist-view-item:hover .sidebar-view-icon,
+.sidebar-todoist-view-item.active .sidebar-view-icon {
+  color: #c5a880;
+}
+.sidebar-todoist-view-item .sidebar-view-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sidebar nav svg,
 .icon svg,
 .focus svg,
@@ -80,32 +129,18 @@ a {
   width: 18px;
   stroke-width: 1.5;
 }
-.sidebar nav a.active {
-  color: #f4f4f6;
-}
-.sidebar nav a.active:before {
-  content: '';
-  position: absolute;
-  left: -22px;
-  width: 2px;
-  height: 24px;
-  background: #c5a880;
-}
-.sidebar nav b {
-  margin-left: auto;
-  font: 11px 'Space Mono';
-}
 
-/* ÁREA ROLÁVEL DA SIDEBAR PARA ACOMODAR NOVAS SEÇÕES */
+/* ÁREA ROLÁVEL DA SIDEBAR PARA ACOMODAR AS 4 SEÇÕES DO TODOIST */
 .sidebar-scroll-area {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  margin-top: 24px;
   margin-right: -10px;
   padding-right: 8px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   scrollbar-width: thin;
   scrollbar-color: rgba(197, 168, 128, 0.2) transparent;
 }
@@ -287,6 +322,89 @@ a {
 .sidebar-item-count.zero {
   color: #80808a;
 }
+
+/* BOTÃO DE MAIS OPÇÕES (...) NOS ITENS DA SIDEBAR (PROJETOS & ETIQUETAS) */
+.sidebar-action-menu-trigger {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  color: #71717a;
+  border-radius: 4px;
+  transition: all 150ms ease;
+  flex: none;
+  opacity: 0;
+}
+.sidebar-custom-item:hover .sidebar-action-menu-trigger,
+.sidebar-action-menu-trigger:focus,
+.sidebar-action-menu-trigger[data-state='open'] {
+  opacity: 1;
+}
+.sidebar-action-menu-trigger:hover {
+  color: #c5a880;
+  background: rgba(197, 168, 128, 0.1);
+}
+
+/* BOTÃO CHEVRON EXPANDIR/RECOLHER SUBPROJETOS NA ÁRVORE */
+.sidebar-tree-toggle-btn {
+  width: 16px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  color: #71717a;
+  transition: color 150ms ease;
+  flex: none;
+}
+.sidebar-tree-toggle-btn:hover {
+  color: #c5a880;
+}
+
+/* CONTAINER E ITENS DE SUBPROJETOS ANINHADOS */
+.sidebar-project-tree-item {
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-subprojects-container {
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-subproject-item {
+  height: 32px !important;
+}
+
+/* BOTÃO DE RODAPÉ "GERENCIAR PROJETOS" NA SEÇÃO PROJETOS */
+.sidebar-manage-projects-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 150ms ease;
+  width: 100%;
+}
+.sidebar-manage-projects-btn:hover {
+  border-color: rgba(197, 168, 128, 0.3);
+  color: #f4f4f6;
+  background: rgba(197, 168, 128, 0.05);
+}
+
 .sidebar-pin-btn {
   width: 22px;
   height: 22px;

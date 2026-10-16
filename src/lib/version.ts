@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.51'
+export const APP_VERSION = '0.0.52'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,22 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.51).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.52).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.52',
+    title: 'Etapa 2 Todoist: Reestruturação da Sidebar e Favoritos Unificados',
+    tag: 'Engenharia Todoist',
+    highlights: [
+      'Estrutura hierárquica Todoist de 4 seções na Sidebar desktop (≥1025px) e no Drawer Mobile: Visões → Favoritos → Projetos → Etiquetas.',
+      'Seção VISÕES no topo: Hoje, Amanhã, Semana e Inbox com contagens à direita em Space Mono e estado colapsável persistido em localStorage.',
+      'Seção FAVORITOS unificada: reúne projetos favoritos (favorite=true) e etiquetas pinadas (pinned=true) com contagem agregada e estado recolhível.',
+      'Seção PROJETOS com suporte a sub-projetos aninhados (auto-relação parent), chevron de expandir/recolher filhos, dot de cor, ordenação (favoritos desc, depois ordem) e link rápido "Gerenciar projetos".',
+      'Menu de contexto (...) nos itens da sidebar com ações rápidas: Fixar/Desafixar dos favoritos, Renomear com modal direto na sidebar e Arquivar projeto sem risco de exclusão acidental.',
+      'Identidade visual dark/champagne Barbosa System (#090A0E/#12141C/#C5A880) preservada com destaque ativo champagne sutil.',
+    ],
+  },
   {
     version: '0.0.51',
     title: 'Etapa 1.5 Todoist: Descrição da Tarefa com Links Clicáveis & Correção de Metadados',

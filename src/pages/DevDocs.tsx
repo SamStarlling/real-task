@@ -931,6 +931,34 @@ export function DevDocs() {
                 requisições adicionais de backend.
               </p>
             </div>
+
+            {/* ARQUITETURA DA SIDEBAR TODOIST (ETAPA 2 TODOIST) */}
+            <div className="mt-4 p-4 rounded-xl bg-[#090A0E] border border-[#C5A880]/30 text-xs space-y-2">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#C5A880] block font-bold">
+                Engenharia da Sidebar Todoist & Árvore Hierárquica (Etapa 2 Todoist)
+              </span>
+              <p className="text-[#A1A1AA] leading-relaxed">
+                <strong>Estrutura de 4 Seções Reativas:</strong> A barra lateral e o drawer móvel
+                operam sob uma arquitetura de 4 blocos funcionais estritamente desacoplados:
+                <br />
+                1. <em>Visões:</em> Hoje, Amanhã, Semana e Inbox (sincronizadas com as rotas padrão
+                e contagem de tarefas abertas).
+                <br />
+                2. <em>Favoritos:</em> União em memória dos registros de <code>lists</code> (onde{' '}
+                <code>favorite === true</code>) e <code>tags</code> (onde{' '}
+                <code>pinned === true</code>), preservando os listeners realtime via{' '}
+                <code>useRealtime</code>.
+                <br />
+                3. <em>Projetos:</em> Construção de árvore pai-filho sob demanda com o campo{' '}
+                <code>parent</code>, permitindo expandir/recolher subprojetos via localStorage e
+                ações pontuais com <code>DropdownMenu</code>
+                (fixar/desafixar, renomeação rápida em modal nativo e arquivamento seguro sem
+                exclusão destrutiva).
+                <br />
+                4. <em>Etiquetas:</em> Preservação do drag-and-drop de reordenação (80/20) e
+                contagem agregada de pendências.
+              </p>
+            </div>
           </section>
 
           {/* SEÇÃO 07: CHANGELOG DAS ENTREGAS DO POMODORO & SISTEMA */}
@@ -939,8 +967,8 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas (v0.0.40–v0.0.50)
-                </h2>
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.52)
+                </h2>{' '}
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
                   Histórico de arquitetura, engenharia reversa Todoist/TickTick e refinamentos
                 </p>

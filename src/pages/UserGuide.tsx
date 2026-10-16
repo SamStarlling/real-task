@@ -574,13 +574,69 @@ export function UserGuide() {
                   </li>
                   <li>
                     <strong>Projetos Favoritos:</strong> projetos favoritados ganham selo dourado e
-                    ficam fixados em destaque no topo da seção PROJETOS na sidebar.
+                    aparecem na seção FAVORITOS unificada no topo da sidebar ao lado de etiquetas
+                    prioritárias.
+                  </li>
+                  <li>
+                    <strong>Sub-projetos Aninhados:</strong> organize projetos em árvores
+                    hierárquicas com chevron de expandir/recolher e indentação clara na sidebar.
+                  </li>
+                  <li>
+                    <strong>Menu de Ações Rápidas:</strong> passe o mouse sobre qualquer projeto na
+                    sidebar para fixar/desafixar dos favoritos, renomear ou arquivar em 1 clique.
                   </li>
                   <li>
                     <strong>Segurança de Dados:</strong> caso exclua um projeto, todas as tarefas
                     vinculadas voltam em segurança para a Inbox.
                   </li>
                 </ul>
+              </div>
+
+              {/* REESTRUTURAÇÃO DA SIDEBAR (ETAPA 2 TODOIST) */}
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#C5A880]/20 text-[#C5A880] border border-[#C5A880]/30">
+                    NOVA SIDEBAR TODOIST
+                  </span>
+                  <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                    Navegação Hierárquica em 4 Seções Colapsáveis
+                  </h3>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  A barra lateral do desktop e o drawer mobile foram totalmente reconstruídos no
+                  padrão Todoist, mantendo a identidade <em>dark & champagne</em> (#090A0E /
+                  #C5A880):
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">1. Visões</strong>
+                    <span className="text-[#A1A1AA]">
+                      Hoje, Amanhã, Semana e Inbox com contagens de tarefas abertas à direita em
+                      Space Mono e estado colapsável.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">2. Favoritos</strong>
+                    <span className="text-[#A1A1AA]">
+                      Área nobre com projetos favoritos e etiquetas prioritárias unificados com
+                      contagem somada.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">3. Projetos</strong>
+                    <span className="text-[#A1A1AA]">
+                      Dot colorido, suporte a subprojetos aninhados, reordenação e link de acesso
+                      rápido para gerenciar.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">4. Etiquetas</strong>
+                    <span className="text-[#A1A1AA]">
+                      Paleta sóbria, filtro ágil de visualização e reordenação com persistência
+                      direta no PocketBase.
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -867,8 +923,8 @@ export function UserGuide() {
                     Gaveta via hambúrguer
                   </strong>
                   <p className="text-xs text-[#A1A1AA]">
-                    O menu no canto superior abre todas as suas listas, etiquetas e a caixa de
-                    entrada.
+                    O menu no canto superior abre a navegação completa idêntica ao desktop: Visões,
+                    Favoritos, Projetos e Etiquetas.
                   </p>
                 </div>
               </div>

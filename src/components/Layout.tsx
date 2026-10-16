@@ -2,24 +2,45 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import pb from '@/lib/pocketbase/client'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
+  Archive,
   ArrowRight,
   CalendarDays,
   ChevronDown,
   ChevronRight,
   Clock3,
+  Edit2,
   FolderKanban,
   GripVertical,
   Inbox,
   LogOut,
   Menu,
+  MoreHorizontal,
   Pin,
+  PinOff,
   Plus,
   Star,
+  StarOff,
   Sun,
+  Tag as TagIcon,
   Timer,
   X,
 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Sheet,
   SheetContent,
@@ -39,16 +60,23 @@ import {
   reorderLists,
   reorderTags,
   sortPrioritizedItems,
-  toggleListPinned,
+  toggleProjectArchived,
+  toggleProjectFavorite,
   toggleTagPinned,
+  updateProject,
+  TAG_PALETTE,
 } from '@/services/data'
 
-const desktopNavLinks = [
-  ['/?view=inbox', 'Inbox', Inbox],
-  ['/', 'Hoje', Sun],
-  ['/?view=amanha', 'Amanhã', ArrowRight],
-  ['/semana', 'Semana', CalendarDays],
-  ['/projetos', 'Projetos', FolderKanban],
+// As 4 visões fixas no topo ao estilo Todoist
+const todoistViews = [
+  { to: '/', label: 'Hoje', icon: Sun },
+  { to: '/?view=amanha', label: 'Amanhã', icon: ArrowRight },
+  { to: '/semana', label: 'Semana', icon: CalendarDays },
+  { to: '/?view=inbox', label: 'Inbox', icon: Inbox },
+] as const
+
+// Links utilitários complementares (Pomodoro e Histórico)
+const utilityNavLinks = [
   ['/pomodoro', 'Pomodoro', Timer],
   ['/historico', 'Histórico', Clock3],
 ] as const
@@ -83,7 +111,28 @@ export function Layout({
   const tomorrow = localDay(new Date(Date.now() + 86400000))
   const day6 = localDay(new Date(Date.now() + 6 * 86400000))
 
-  // Estado colapsável memorizado no localStorage
+  // Estados colapsáveis das seções Todoist memorizados no localStorage
+  const [viewsCollapsed, setViewsCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('barbosa_sidebar_views_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [favoritesCollapsed, setFavoritesCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('barbosa_sidebar_favorites_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [projectsCollapsed, setProjectsCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('barbosa_sidebar_projects_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
   const [tagsCollapsed, setTagsCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem('barbosa_sidebar_tags_collapsed') === 'true'
@@ -91,19 +140,24 @@ export function Layout({
       return false
     }
   })
-  const [listsCollapsed, setListsCollapsed] = useState<boolean>(() => {
+
+  // Estado de expansão de projetos-pai com subprojetos
+  const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>(() => {
     try {
-      return localStorage.getItem('barbosa_sidebar_lists_collapsed') === 'true'
+      const saved = localStorage.getItem('barbosa_sidebar_expanded_projects')
+      return saved ? JSON.parse(saved) : {}
     } catch {
-      return false
+      return {}
     }
   })
 
-  const toggleTagsCollapse = () => {
-    setTagsCollapsed((prev) => {
-      const next = !prev
+  const toggleParentProject = (parentId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    e?.preventDefault()
+    setExpandedParents((prev) => {
+      const next = { ...prev, [parentId]: !prev[parentId] }
       try {
-        localStorage.setItem('barbosa_sidebar_tags_collapsed', String(next))
+        localStorage.setItem('barbosa_sidebar_expanded_projects', JSON.stringify(next))
       } catch {
         // ignore
       }
@@ -111,11 +165,47 @@ export function Layout({
     })
   }
 
-  const toggleListsCollapse = () => {
-    setListsCollapsed((prev) => {
+  const toggleViewsCollapse = () => {
+    setViewsCollapsed((prev) => {
       const next = !prev
       try {
-        localStorage.setItem('barbosa_sidebar_lists_collapsed', String(next))
+        localStorage.setItem('barbosa_sidebar_views_collapsed', String(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const toggleFavoritesCollapse = () => {
+    setFavoritesCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('barbosa_sidebar_favorites_collapsed', String(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const toggleProjectsCollapse = () => {
+    setProjectsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('barbosa_sidebar_projects_collapsed', String(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
+
+  const toggleTagsCollapse = () => {
+    setTagsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('barbosa_sidebar_tags_collapsed', String(next))
       } catch {
         // ignore
       }
@@ -156,6 +246,11 @@ export function Layout({
 
   const [optimisticTags, setOptimisticTags] = useState<TagRecord[]>(sortedTags)
   const [optimisticLists, setOptimisticLists] = useState<ListRecord[]>(sortedLists)
+
+  // Estado para modal rápido de renomeação de projeto na sidebar
+  const [renamingProject, setRenamingProject] = useState<ListRecord | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renameColor, setRenameColor] = useState('#C5A880')
 
   useEffect(() => {
     setOptimisticTags(sortedTags)
@@ -360,19 +455,51 @@ export function Layout({
     }
   }
 
-  // Toggle do pin de lista com atualização otimista
-  const handleToggleListPin = async (e: React.MouseEvent, list: ListRecord) => {
+  // Toggle do favorito de projeto com atualização otimista
+  const handleToggleProjectFavorite = async (e: React.MouseEvent, list: ListRecord) => {
     e.preventDefault()
     e.stopPropagation()
-    const nextPinned = !list.pinned
+    const nextFavorite = !list.favorite
     setOptimisticLists((prev) =>
-      sortPrioritizedItems(prev.map((l) => (l.id === list.id ? { ...l, pinned: nextPinned } : l))),
+      prev.map((l) => (l.id === list.id ? { ...l, favorite: nextFavorite } : l)),
     )
     try {
-      await toggleListPinned(list.id, !!list.pinned)
+      await toggleProjectFavorite(list.id, !!list.favorite)
       refresh()
     } catch (err) {
-      console.error('Erro ao alternar pin da lista:', err)
+      console.error('Erro ao alternar favorito do projeto:', err)
+      setOptimisticLists(sortedLists)
+    }
+  }
+
+  // Toggle de arquivar projeto na sidebar
+  const handleToggleProjectArchived = async (list: ListRecord) => {
+    const nextArchived = !list.archived
+    setOptimisticLists((prev) =>
+      prev.map((l) => (l.id === list.id ? { ...l, archived: nextArchived } : l)),
+    )
+    try {
+      await toggleProjectArchived(list.id, !!list.archived)
+      refresh()
+    } catch (err) {
+      console.error('Erro ao arquivar/desarquivar projeto:', err)
+      setOptimisticLists(sortedLists)
+    }
+  }
+
+  // Salvar renomeação de projeto
+  const handleSaveProjectRename = async () => {
+    if (!renamingProject || !renameValue.trim()) return
+    const id = renamingProject.id
+    const name = renameValue.trim()
+    const color = renameColor
+    setRenamingProject(null)
+    setOptimisticLists((prev) => prev.map((l) => (l.id === id ? { ...l, name, color } : l)))
+    try {
+      await updateProject(id, { name, color })
+      refresh()
+    } catch (err) {
+      console.error('Erro ao renomear projeto:', err)
       setOptimisticLists(sortedLists)
     }
   }
@@ -432,30 +559,689 @@ export function Layout({
     .join('')
     .toUpperCase()
 
+  // Cálculos agregados para as 4 seções do modelo Todoist
+  // 1. VISÕES: contagem total de itens das visões (Hoje + Amanhã + Semana + Inbox)
+  const viewsAggregateCount = useMemo(() => {
+    return count('Hoje') + count('Amanhã') + count('Semana') + count('Inbox')
+  }, [tasks])
+
+  // 2. PROJETOS ATIVOS (archived != true): cálculo de hierarquia pai/filho
+  const activeProjects = useMemo(() => {
+    return optimisticLists.filter((l) => !l.archived)
+  }, [optimisticLists])
+
+  // Contagem de tarefas abertas somadas de todos os projetos ativos
+  const projectsAggregateCount = useMemo(() => {
+    let sum = 0
+    for (const p of activeProjects) {
+      sum += openCountByList.get(p.id) || 0
+    }
+    return sum
+  }, [activeProjects, openCountByList])
+
+  // Árvore de projetos para exibição hierárquica
+  const hierarchicalProjects = useMemo(() => {
+    const roots = activeProjects.filter((p) => !p.parent)
+    const children = activeProjects.filter((p) => !!p.parent)
+
+    // Ordenação dos pais: favorite desc, depois pinned desc, depois order asc, depois name asc
+    roots.sort((a, b) => {
+      if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1
+      const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
+      const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
+      if (orderA !== orderB) return orderA - orderB
+      return a.name.localeCompare(b.name, 'pt-BR')
+    })
+
+    return roots.map((root) => {
+      const kids = children.filter((c) => c.parent === root.id)
+      kids.sort((a, b) => {
+        if (!!a.favorite !== !!b.favorite) return a.favorite ? -1 : 1
+        const orderA = typeof a.order === 'number' && a.order > 0 ? a.order : 999999
+        const orderB = typeof b.order === 'number' && b.order > 0 ? b.order : 999999
+        if (orderA !== orderB) return orderA - orderB
+        return a.name.localeCompare(b.name, 'pt-BR')
+      })
+      return { root, kids }
+    })
+  }, [activeProjects])
+
+  // 3. FAVORITOS: itens pinados de qualquer tipo (projetos com favorite=true e etiquetas com pinned=true)
+  const favoriteProjects = useMemo(() => {
+    return activeProjects.filter((p) => !!p.favorite)
+  }, [activeProjects])
+
+  const favoriteTags = useMemo(() => {
+    return optimisticTags.filter((t) => !!t.pinned)
+  }, [optimisticTags])
+
+  const favoritesAggregateCount = useMemo(() => {
+    let sum = 0
+    for (const p of favoriteProjects) {
+      sum += openCountByList.get(p.id) || 0
+    }
+    for (const t of favoriteTags) {
+      sum += openCountByTag.get(t.id) || 0
+    }
+    return sum
+  }, [favoriteProjects, favoriteTags, openCountByList, openCountByTag])
+
+  const totalFavoritesCount = favoriteProjects.length + favoriteTags.length
+
+  // 4. ETIQUETAS: contagem agregada de tarefas abertas de todas as etiquetas
+  const tagsAggregateCount = useMemo(() => {
+    let sum = 0
+    for (const t of optimisticTags) {
+      sum += openCountByTag.get(t.id) || 0
+    }
+    return sum
+  }, [optimisticTags, openCountByTag])
+
   // Função auxiliar para renderizar a árvore de navegação completa da sidebar
   // compartilhada entre a barra lateral do desktop e o drawer mobile
   const renderSidebarBody = (onItemClick?: () => void) => (
     <>
       <div className="sidebar-scroll-area">
-        <nav>
-          {desktopNavLinks.map(([to, label, Icon]) => (
-            <NavLink
-              key={label}
-              end={to === '/'}
-              to={to}
-              onClick={onItemClick}
-              className={({ isActive }) =>
-                isActive && !activeUrlTag && !activeUrlList ? 'active' : ''
-              }
-            >
-              <Icon />
-              <span>{label}</span>
-              {label !== 'Histórico' && label !== 'Pomodoro' && <b>{count(label)}</b>}
-            </NavLink>
-          ))}
-        </nav>
+        {/* ============================================================== */}
+        {/* 1. SEÇÃO VISÕES: Hoje, Amanhã, Semana, Inbox                    */}
+        {/* ============================================================== */}
+        <div className="sidebar-custom-section !pt-0 !border-t-0">
+          <button
+            type="button"
+            className="sidebar-section-header"
+            onClick={toggleViewsCollapse}
+            aria-expanded={!viewsCollapsed}
+            title={viewsCollapsed ? 'Expandir visões' : 'Recolher visões'}
+          >
+            <span className="sidebar-section-title">VISÕES</span>
+            <span className="sidebar-section-meta">
+              {viewsCollapsed && viewsAggregateCount > 0 && (
+                <span className="sidebar-section-count">{viewsAggregateCount}</span>
+              )}
+              {viewsCollapsed ? (
+                <ChevronRight className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </span>
+          </button>
 
-        {/* SEÇÃO ETIQUETAS (COLAPSÁVEL + DRAG + PIN 80/20) */}
+          {!viewsCollapsed && (
+            <nav className="sidebar-nav-group">
+              {todoistViews.map(({ to, label, icon: Icon }) => {
+                const isItemActive =
+                  to === '/'
+                    ? (location.pathname === '/' || location.pathname === '') &&
+                      (!searchParams.get('view') || searchParams.get('view') === 'hoje') &&
+                      !activeUrlTag &&
+                      !activeUrlList
+                    : to === '/?view=amanha'
+                      ? (location.pathname === '/' || location.pathname === '') &&
+                        searchParams.get('view') === 'amanha' &&
+                        !activeUrlTag &&
+                        !activeUrlList
+                      : to === '/semana'
+                        ? location.pathname === '/semana'
+                        : to === '/?view=inbox'
+                          ? (location.pathname === '/' || location.pathname === '') &&
+                            searchParams.get('view') === 'inbox' &&
+                            !activeUrlTag &&
+                            !activeUrlList
+                          : false
+
+                const itemCount = count(label)
+
+                return (
+                  <NavLink
+                    key={label}
+                    to={to}
+                    onClick={onItemClick}
+                    className={`sidebar-todoist-view-item ${isItemActive ? 'active' : ''}`}
+                  >
+                    <Icon className="sidebar-view-icon" />
+                    <span className="sidebar-view-label">{label}</span>
+                    <span className={`sidebar-item-count ${itemCount === 0 ? 'zero' : ''}`}>
+                      {itemCount}
+                    </span>
+                  </NavLink>
+                )
+              })}
+            </nav>
+          )}
+        </div>
+
+        {/* ============================================================== */}
+        {/* 2. SEÇÃO FAVORITOS: Projetos favoritos + Etiquetas pinadas      */}
+        {/* ============================================================== */}
+        <div className="sidebar-custom-section">
+          <button
+            type="button"
+            className="sidebar-section-header"
+            onClick={toggleFavoritesCollapse}
+            aria-expanded={!favoritesCollapsed}
+            title={favoritesCollapsed ? 'Expandir favoritos' : 'Recolher favoritos'}
+          >
+            <span className="sidebar-section-title flex items-center gap-1.5">
+              <span>FAVORITOS</span>
+              {totalFavoritesCount > 0 && (
+                <Star className="w-2.5 h-2.5 text-[#C5A880] fill-[#C5A880]" />
+              )}
+            </span>
+            <span className="sidebar-section-meta">
+              {favoritesCollapsed ? (
+                <>
+                  {favoritesAggregateCount > 0 && (
+                    <span className="sidebar-section-count">{favoritesAggregateCount}</span>
+                  )}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  {totalFavoritesCount > 0 && (
+                    <span className="sidebar-section-count">{totalFavoritesCount}</span>
+                  )}
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </>
+              )}
+            </span>
+          </button>
+
+          {!favoritesCollapsed && (
+            <div className="sidebar-custom-list">
+              {totalFavoritesCount === 0 ? (
+                <div className="sidebar-empty-hint">
+                  Fixe projetos ou etiquetas para vê-los aqui
+                </div>
+              ) : (
+                <>
+                  {/* Projetos favoritados */}
+                  {favoriteProjects.map((project) => {
+                    const projectCount = openCountByList.get(project.id) || 0
+                    const isActive =
+                      location.pathname === `/projetos/${project.id}` ||
+                      activeUrlList === project.id
+
+                    return (
+                      <div
+                        key={`fav-p-${project.id}`}
+                        className={`sidebar-custom-item ${isActive ? 'active' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="sidebar-item-link"
+                          onClick={() => {
+                            navigate(`/projetos/${project.id}`)
+                            onItemClick?.()
+                          }}
+                          title={`Projeto favorito: ${project.name}`}
+                        >
+                          <span
+                            className="sidebar-item-dot"
+                            style={{ backgroundColor: project.color || '#C5A880' }}
+                          />
+                          <span className="sidebar-item-name">{project.name}</span>
+                          <span
+                            className={`sidebar-item-count ${projectCount === 0 ? 'zero' : ''}`}
+                          >
+                            {projectCount}
+                          </span>
+                        </button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="sidebar-action-menu-trigger"
+                              title="Mais opções do projeto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[160px]"
+                          >
+                            <DropdownMenuItem
+                              onClick={(e) => handleToggleProjectFavorite(e, project)}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <StarOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                              <span>Remover dos favoritos</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setRenamingProject(project)
+                                setRenameValue(project.name)
+                                setRenameColor(project.color || '#C5A880')
+                              }}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                              <span>Renomear</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-[rgba(255,255,255,0.08)]" />
+                            <DropdownMenuItem
+                              onClick={() => handleToggleProjectArchived(project)}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <Archive className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                              <span>Arquivar projeto</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )
+                  })}
+
+                  {/* Etiquetas favoritadas (pinned) */}
+                  {favoriteTags.map((tag) => {
+                    const tagCount = openCountByTag.get(tag.id) || 0
+                    const isActive = activeUrlTag === tag.id
+
+                    return (
+                      <div
+                        key={`fav-t-${tag.id}`}
+                        className={`sidebar-custom-item ${isActive ? 'active' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="sidebar-item-link"
+                          onClick={() => {
+                            navigate(`/?view=hoje&tag=${tag.id}`)
+                            onItemClick?.()
+                          }}
+                          title={`Etiqueta favoritada: @${tag.name}`}
+                        >
+                          <span
+                            className="sidebar-item-dot"
+                            style={{ backgroundColor: tag.color || '#C5A880' }}
+                          />
+                          <span className="sidebar-item-name">{tag.name}</span>
+                          <span className={`sidebar-item-count ${tagCount === 0 ? 'zero' : ''}`}>
+                            {tagCount}
+                          </span>
+                        </button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="sidebar-action-menu-trigger"
+                              title="Mais opções da etiqueta"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[160px]"
+                          >
+                            <DropdownMenuItem
+                              onClick={(e) => handleToggleTagPin(e, tag)}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <PinOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                              <span>Remover dos favoritos</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================== */}
+        {/* 3. SEÇÃO PROJETOS: Cores + Contagens + Subprojetos aninhados    */}
+        {/* ============================================================== */}
+        <div className="sidebar-custom-section">
+          <div className="flex items-center justify-between px-1">
+            <button
+              type="button"
+              className="sidebar-section-header flex-1 !p-1"
+              onClick={toggleProjectsCollapse}
+              aria-expanded={!projectsCollapsed}
+              title={projectsCollapsed ? 'Expandir projetos' : 'Recolher projetos'}
+            >
+              <span className="sidebar-section-title">PROJETOS</span>
+              <span className="sidebar-section-meta">
+                {projectsCollapsed ? (
+                  <>
+                    {projectsAggregateCount > 0 && (
+                      <span className="sidebar-section-count">{projectsAggregateCount}</span>
+                    )}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </>
+                ) : (
+                  <>
+                    {activeProjects.length > 0 && (
+                      <span className="sidebar-section-count">{activeProjects.length}</span>
+                    )}
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/projetos')
+                onItemClick?.()
+              }}
+              className="text-[#71717A] hover:text-[#C5A880] p-1.5 rounded transition-colors"
+              title="Gerenciar e criar projetos (/projetos)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {!projectsCollapsed && (
+            <div className="sidebar-custom-list">
+              {activeProjects.length === 0 ? (
+                <div className="sidebar-empty-hint">Nenhum projeto ativo</div>
+              ) : (
+                hierarchicalProjects.map(({ root: project, kids }) => {
+                  const projectCount = openCountByList.get(project.id) || 0
+                  const isFav = !!project.favorite
+                  const isActive =
+                    location.pathname === `/projetos/${project.id}` || activeUrlList === project.id
+                  const isDragging = draggingListId === project.id
+                  const dropPos = listDropTarget?.id === project.id ? listDropTarget.position : null
+                  const hasKids = kids.length > 0
+                  const isExpanded = !!expandedParents[project.id]
+
+                  return (
+                    <div key={project.id} className="sidebar-project-tree-item">
+                      <div
+                        data-list-id={project.id}
+                        draggable={true}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', project.id)
+                          e.dataTransfer.effectAllowed = 'move'
+                          setDraggingListId(project.id)
+                        }}
+                        onDragEnd={() => {
+                          setDraggingListId(null)
+                          setListDropTarget(null)
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                          if (!draggingListId || draggingListId === project.id) {
+                            setListDropTarget(null)
+                            return
+                          }
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const midY = rect.top + rect.height / 2
+                          const position = e.clientY < midY ? 'before' : 'after'
+                          setListDropTarget({ id: project.id, position })
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault()
+                          const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
+                          const pos =
+                            listDropTarget?.id === project.id ? listDropTarget.position : 'before'
+                          setDraggingListId(null)
+                          setListDropTarget(null)
+                          if (sourceId && sourceId !== project.id) {
+                            await commitListReorder(sourceId, project.id, pos)
+                          }
+                        }}
+                        className={`sidebar-custom-item ${isFav ? 'is-pinned' : ''} ${
+                          isActive ? 'active' : ''
+                        } ${isDragging ? 'is-dragging' : ''} ${
+                          dropPos ? `drop-indicator-${dropPos}` : ''
+                        }`}
+                      >
+                        {/* Chevron para projetos com sub-projetos filhos */}
+                        {hasKids ? (
+                          <button
+                            type="button"
+                            className="sidebar-tree-toggle-btn"
+                            onClick={(e) => toggleParentProject(project.id, e)}
+                            title={
+                              isExpanded
+                                ? 'Recolher subprojetos'
+                                : `Expandir ${kids.length} subprojetos`
+                            }
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-3 h-3 text-[#A1A1AA]" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3 text-[#A1A1AA]" />
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="sidebar-drag-handle"
+                            title="Arrastar para reordenar"
+                            onTouchStart={(e) => {
+                              const touch = e.touches[0]
+                              listTouchStateRef.current = {
+                                activeId: project.id,
+                                lastTouchY: touch.clientY,
+                              }
+                              setDraggingListId(project.id)
+                            }}
+                          >
+                            <GripVertical className="w-3 h-3 text-[#71717A]" />
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          className="sidebar-item-link"
+                          onClick={() => {
+                            navigate(`/projetos/${project.id}`)
+                            onItemClick?.()
+                          }}
+                          title={`Projeto: ${project.name}${isFav ? ' (Favorito)' : ''}`}
+                        >
+                          <span
+                            className="sidebar-item-dot"
+                            style={{ backgroundColor: project.color || '#C5A880' }}
+                          />
+                          <span className="sidebar-item-name flex items-center gap-1">
+                            <span>{project.name}</span>
+                            {isFav && (
+                              <Star className="w-2.5 h-2.5 text-[#C5A880] fill-[#C5A880]" />
+                            )}
+                          </span>
+                          <span
+                            className={`sidebar-item-count ${projectCount === 0 ? 'zero' : ''}`}
+                          >
+                            {projectCount}
+                          </span>
+                        </button>
+
+                        {/* Menu de contexto (...) para Ações Rápidas */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="sidebar-action-menu-trigger"
+                              title="Mais opções do projeto"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[170px]"
+                          >
+                            <DropdownMenuItem
+                              onClick={(e) => handleToggleProjectFavorite(e, project)}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              {isFav ? (
+                                <>
+                                  <StarOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                  <span>Desafixar dos favoritos</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Star className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                  <span>Fixar nos favoritos</span>
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setRenamingProject(project)
+                                setRenameValue(project.name)
+                                setRenameColor(project.color || '#C5A880')
+                              }}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                              <span>Renomear</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-[rgba(255,255,255,0.08)]" />
+                            <DropdownMenuItem
+                              onClick={() => handleToggleProjectArchived(project)}
+                              className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                            >
+                              <Archive className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                              <span>Arquivar projeto</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* SUBPROJETOS ANINHADOS (indentação e exibição quando expandido) */}
+                      {hasKids && isExpanded && (
+                        <div className="sidebar-subprojects-container pl-4 ml-2 border-l border-[rgba(255,255,255,0.06)] space-y-0.5 mt-0.5">
+                          {kids.map((child) => {
+                            const childCount = openCountByList.get(child.id) || 0
+                            const isChildFav = !!child.favorite
+                            const isChildActive =
+                              location.pathname === `/projetos/${child.id}` ||
+                              activeUrlList === child.id
+
+                            return (
+                              <div
+                                key={child.id}
+                                className={`sidebar-custom-item sidebar-subproject-item ${
+                                  isChildActive ? 'active' : ''
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  className="sidebar-item-link"
+                                  onClick={() => {
+                                    navigate(`/projetos/${child.id}`)
+                                    onItemClick?.()
+                                  }}
+                                  title={`Subprojeto: ${child.name}`}
+                                >
+                                  <span
+                                    className="sidebar-item-dot"
+                                    style={{ backgroundColor: child.color || '#C5A880' }}
+                                  />
+                                  <span className="sidebar-item-name text-xs flex items-center gap-1">
+                                    <span>{child.name}</span>
+                                    {isChildFav && (
+                                      <Star className="w-2 h-2 text-[#C5A880] fill-[#C5A880]" />
+                                    )}
+                                  </span>
+                                  <span
+                                    className={`sidebar-item-count ${childCount === 0 ? 'zero' : ''}`}
+                                  >
+                                    {childCount}
+                                  </span>
+                                </button>
+
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="sidebar-action-menu-trigger"
+                                      title="Mais opções do subprojeto"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[170px]"
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={(e) => handleToggleProjectFavorite(e, child)}
+                                      className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                                    >
+                                      {isChildFav ? (
+                                        <>
+                                          <StarOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                          <span>Desafixar dos favoritos</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Star className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                          <span>Fixar nos favoritos</span>
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setRenamingProject(child)
+                                        setRenameValue(child.name)
+                                        setRenameColor(child.color || '#C5A880')
+                                      }}
+                                      className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                                      <span>Renomear</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-[rgba(255,255,255,0.08)]" />
+                                    <DropdownMenuItem
+                                      onClick={() => handleToggleProjectArchived(child)}
+                                      className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                                    >
+                                      <Archive className="w-3.5 h-3.5 mr-2 text-[#A1A1AA]" />
+                                      <span>Arquivar subprojeto</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+
+              {/* Botão de Rodapé da Seção Projetos */}
+              <button
+                type="button"
+                onClick={() => {
+                  navigate('/projetos')
+                  onItemClick?.()
+                }}
+                className="sidebar-manage-projects-btn"
+                title="Ver e gerenciar todos os projetos"
+              >
+                <FolderKanban className="w-3.5 h-3.5 text-[#C5A880]" />
+                <span>Gerenciar projetos</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ============================================================== */}
+        {/* 4. SEÇÃO ETIQUETAS: Contagens, Ordenação & Drag-and-Drop       */}
+        {/* ============================================================== */}
         <div className="sidebar-custom-section">
           <button
             type="button"
@@ -466,13 +1252,20 @@ export function Layout({
           >
             <span className="sidebar-section-title">ETIQUETAS</span>
             <span className="sidebar-section-meta">
-              {optimisticTags.length > 0 && (
-                <span className="sidebar-section-count">{optimisticTags.length}</span>
-              )}
               {tagsCollapsed ? (
-                <ChevronRight className="w-3.5 h-3.5" />
+                <>
+                  {tagsAggregateCount > 0 && (
+                    <span className="sidebar-section-count">{tagsAggregateCount}</span>
+                  )}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </>
               ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
+                <>
+                  {optimisticTags.length > 0 && (
+                    <span className="sidebar-section-count">{optimisticTags.length}</span>
+                  )}
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </>
               )}
             </span>
           </button>
@@ -554,7 +1347,7 @@ export function Layout({
                           navigate(`/?view=hoje&tag=${tag.id}`)
                           onItemClick?.()
                         }}
-                        title={`Filtrar por etiqueta @${tag.name}${isPinned ? ' (Prioritária)' : ''}`}
+                        title={`Filtrar por etiqueta @${tag.name}${isPinned ? ' (Fixada nos favoritos)' : ''}`}
                       >
                         <span
                           className="sidebar-item-dot"
@@ -566,18 +1359,39 @@ export function Layout({
                         </span>
                       </button>
 
-                      <button
-                        type="button"
-                        className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
-                        onClick={(e) => handleToggleTagPin(e, tag)}
-                        title={
-                          isPinned
-                            ? 'Etiqueta prioritária (80/20) · Clique para desmarcar'
-                            : 'Fixar como etiqueta prioritária (80/20)'
-                        }
-                      >
-                        <Pin className="w-3 h-3" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="sidebar-action-menu-trigger"
+                            title="Opções da etiqueta"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="bg-[#12141C] border border-[rgba(197,168,128,0.2)] text-[#F4F4F6] min-w-[170px]"
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) => handleToggleTagPin(e, tag)}
+                            className="text-xs cursor-pointer focus:bg-[rgba(197,168,128,0.1)] focus:text-[#C5A880]"
+                          >
+                            {isPinned ? (
+                              <>
+                                <PinOff className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                <span>Desafixar dos favoritos</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="w-3.5 h-3.5 mr-2 text-[#C5A880]" />
+                                <span>Fixar nos favoritos</span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   )
                 })
@@ -586,165 +1400,25 @@ export function Layout({
           )}
         </div>
 
-        {/* SEÇÃO PROJETOS (FAVORITOS NO TOPO + LISTA + COR + CONTAGENS) */}
-        <div className="sidebar-custom-section">
-          <div className="flex items-center justify-between px-3 py-1">
-            <button
-              type="button"
-              className="sidebar-section-header flex-1 !p-0"
-              onClick={toggleListsCollapse}
-              aria-expanded={!listsCollapsed}
-              title={listsCollapsed ? 'Expandir projetos' : 'Recolher projetos'}
-            >
-              <span className="sidebar-section-title">PROJETOS</span>
-              <span className="sidebar-section-meta">
-                {optimisticLists.length > 0 && (
-                  <span className="sidebar-section-count">{optimisticLists.length}</span>
-                )}
-                {listsCollapsed ? (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                navigate('/projetos')
-                onItemClick?.()
-              }}
-              className="text-[#71717A] hover:text-[#C5A880] p-1 transition-colors"
-              title="Gerenciar todos os projetos"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {!listsCollapsed && (
-            <div className="sidebar-custom-list">
-              {optimisticLists.length === 0 ? (
-                <div className="sidebar-empty-hint">Nenhum projeto criado</div>
-              ) : (
-                (() => {
-                  // Ordenação: Favoritos no topo da seção de projetos
-                  const activeNonArchived = optimisticLists.filter((l) => !l.archived)
-                  const favorites = activeNonArchived.filter((l) => l.favorite)
-                  const regulars = activeNonArchived.filter((l) => !l.favorite)
-                  const displayLists = [...favorites, ...regulars]
-
-                  return displayLists.map((list) => {
-                    const listCount = openCountByList.get(list.id) || 0
-                    const isPinned = !!list.pinned
-                    const isFav = !!list.favorite
-                    const isActive =
-                      location.pathname === `/projetos/${list.id}` || activeUrlList === list.id
-                    const isDragging = draggingListId === list.id
-                    const dropPos = listDropTarget?.id === list.id ? listDropTarget.position : null
-
-                    return (
-                      <div
-                        key={list.id}
-                        data-list-id={list.id}
-                        draggable={true}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', list.id)
-                          e.dataTransfer.effectAllowed = 'move'
-                          setDraggingListId(list.id)
-                        }}
-                        onDragEnd={() => {
-                          setDraggingListId(null)
-                          setListDropTarget(null)
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          e.dataTransfer.dropEffect = 'move'
-                          if (!draggingListId || draggingListId === list.id) {
-                            setListDropTarget(null)
-                            return
-                          }
-                          const rect = e.currentTarget.getBoundingClientRect()
-                          const midY = rect.top + rect.height / 2
-                          const position = e.clientY < midY ? 'before' : 'after'
-                          setListDropTarget({ id: list.id, position })
-                        }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          const sourceId = e.dataTransfer.getData('text/plain') || draggingListId
-                          const pos =
-                            listDropTarget?.id === list.id ? listDropTarget.position : 'before'
-                          setDraggingListId(null)
-                          setListDropTarget(null)
-                          if (sourceId && sourceId !== list.id) {
-                            await commitListReorder(sourceId, list.id, pos)
-                          }
-                        }}
-                        className={`sidebar-custom-item ${isPinned ? 'is-pinned' : ''} ${
-                          isActive ? 'active' : ''
-                        } ${isDragging ? 'is-dragging' : ''} ${
-                          dropPos ? `drop-indicator-${dropPos}` : ''
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="sidebar-drag-handle"
-                          title="Arrastar para reordenar"
-                          onTouchStart={(e) => {
-                            const touch = e.touches[0]
-                            listTouchStateRef.current = {
-                              activeId: list.id,
-                              lastTouchY: touch.clientY,
-                            }
-                            setDraggingListId(list.id)
-                          }}
-                        >
-                          <GripVertical className="w-3 h-3 text-[#71717A]" />
-                        </button>
-
-                        <button
-                          type="button"
-                          className="sidebar-item-link"
-                          onClick={() => {
-                            navigate(`/projetos/${list.id}`)
-                            onItemClick?.()
-                          }}
-                          title={`Projeto ${list.name}${isFav ? ' (Favorito)' : ''}${isPinned ? ' (Prioritário 80/20)' : ''}`}
-                        >
-                          <span
-                            className="sidebar-item-dot"
-                            style={{ backgroundColor: list.color || '#C5A880' }}
-                          />
-                          <span className="sidebar-item-name flex items-center gap-1">
-                            <span>{list.name}</span>
-                            {isFav && (
-                              <Star className="w-2.5 h-2.5 text-[#C5A880] fill-[#C5A880]" />
-                            )}
-                          </span>
-                          <span className={`sidebar-item-count ${listCount === 0 ? 'zero' : ''}`}>
-                            {listCount}
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
-                          onClick={(e) => handleToggleListPin(e, list)}
-                          title={
-                            isPinned
-                              ? 'Projeto prioritário (80/20) · Clique para desmarcar'
-                              : 'Fixar como projeto prioritário (80/20)'
-                          }
-                        >
-                          <Pin className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )
-                  })
-                })()
-              )}
-            </div>
-          )}
+        {/* ============================================================== */}
+        {/* NAVEGAÇÃO SECUNDÁRIA: Pomodoro & Histórico                     */}
+        {/* ============================================================== */}
+        <div className="sidebar-custom-section !pt-2">
+          <nav className="sidebar-nav-group">
+            {utilityNavLinks.map(([to, label, Icon]) => (
+              <NavLink
+                key={label}
+                to={to}
+                onClick={onItemClick}
+                className={({ isActive }) =>
+                  `sidebar-todoist-view-item ${isActive ? 'active' : ''}`
+                }
+              >
+                <Icon className="sidebar-view-icon" />
+                <span className="sidebar-view-label">{label}</span>
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </div>
 
@@ -807,6 +1481,85 @@ export function Layout({
 
   return (
     <div className="app-shell">
+      {/* MODAL DE RENOMEAÇÃO RÁPIDA DE PROJETO (ACIONADO VIA SIDEBAR) */}
+      <Dialog
+        open={!!renamingProject}
+        onOpenChange={(open) => {
+          if (!open) setRenamingProject(null)
+        }}
+      >
+        <DialogContent className="bg-[#12141C] border border-[rgba(197,168,128,0.25)] text-[#F4F4F6] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-['Clash_Display'] text-lg font-semibold text-[#F4F4F6]">
+              Renomear Projeto
+            </DialogTitle>
+            <DialogDescription className="text-xs text-[#A1A1AA]">
+              Altere o nome e a cor de destaque do projeto diretamente na sidebar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-mono text-[#A1A1AA] uppercase tracking-wider block mb-1">
+                Nome do Projeto
+              </label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleSaveProjectRename()
+                  }
+                }}
+                autoFocus
+                placeholder="Ex.: Ciclo 12S · Faturamento"
+                className="w-full bg-[#090A0E] border border-[rgba(255,255,255,0.1)] rounded-lg px-3 py-2 text-sm text-[#F4F4F6] focus:outline-none focus:border-[#C5A880]"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-mono text-[#A1A1AA] uppercase tracking-wider block mb-1.5">
+                Cor de Destaque
+              </label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {TAG_PALETTE.map((pal) => (
+                  <button
+                    key={pal.color}
+                    type="button"
+                    onClick={() => setRenameColor(pal.color)}
+                    style={{ backgroundColor: pal.color }}
+                    className={`w-6 h-6 rounded-full transition-transform ${
+                      renameColor === pal.color
+                        ? 'ring-2 ring-white scale-110 shadow-lg'
+                        : 'opacity-70 hover:opacity-100 hover:scale-105'
+                    }`}
+                    title={pal.name}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setRenamingProject(null)}
+              className="px-3 py-1.5 rounded-lg text-xs font-mono text-[#A1A1AA] hover:text-[#F4F4F6] transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveProjectRename}
+              className="px-4 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#C5A880] text-[#090A0E] hover:bg-[#D4B991] transition-all"
+            >
+              Salvar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* SIDEBAR DESKTOP (≥1025px) - Mantida intacta */}
       <aside className="sidebar">
         <Brand />
