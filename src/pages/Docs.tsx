@@ -1,6 +1,7 @@
 import { BrandMark } from '@/components/Brand'
 import { ArrowRight, BookOpen, Code2, Sparkles, Terminal, CheckCircle2, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { APP_VERSION, APP_VERSION_LABEL } from '@/lib/version'
 
 export function Docs() {
   return (
@@ -21,7 +22,7 @@ export function Docs() {
             </h1>
           </div>
           <span className="font-mono text-[11px] text-[#C5A880] px-3 py-1.5 rounded-md bg-[#C5A880]/10 border border-[#C5A880]/20 self-center sm:self-end">
-            VERSÃO 0.0.34
+            VERSÃO {APP_VERSION}
           </span>
         </div>
         <p className="mt-4 text-sm sm:text-base text-[#A1A1AA] max-w-2xl leading-relaxed">
@@ -145,21 +146,21 @@ export function Docs() {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-[#C5A880]" />
           <span className="font-mono text-xs uppercase tracking-wider text-[#F4F4F6]">
-            Destaques da Versão 0.0.34
+            Destaques da Versão {APP_VERSION}
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[#A1A1AA]">
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
-            <strong className="block text-[#F4F4F6] font-mono mb-1">NAVEGAÇÃO ERGONÔMICA</strong>
-            Barra inferior de 5 destinos no mobile, drawer lateral completo e perfil integrado.
+            <strong className="block text-[#F4F4F6] font-mono mb-1">POMODORO & OBJETIVO</strong>
+            Objetivo do bloco, veredito pós-foco, timer imersivo em tela cheia e stopwatch.
           </div>
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
-            <strong className="block text-[#F4F4F6] font-mono mb-1">MCP DE 10 FERRAMENTAS</strong>
-            Parser nativo no servidor em pt-BR, suporte a sub-tarefas e gestão 80/20 via IA.
+            <strong className="block text-[#F4F4F6] font-mono mb-1">ESTATÍSTICAS & DONUT</strong>
+            Gráfico donut interativo por tarefa, métricas de disciplina e painel colapsável.
           </div>
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
-            <strong className="block text-[#F4F4F6] font-mono mb-1">FOCO & HISTÓRICO REAL</strong>
-            Controle de excesso no Pomodoro, notas de sessão e cálculo do melhor dia da conta.
+            <strong className="block text-[#F4F4F6] font-mono mb-1">MCP & SERVIDOR PT-BR</strong>
+            10 ferramentas nativas JSON-RPC, parser NL no servidor e integração 80/20 (Big3).
           </div>
         </div>
       </div>

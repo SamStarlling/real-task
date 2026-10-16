@@ -7,6 +7,7 @@ import {
   Code2,
   Cpu,
   Database,
+  History,
   Layers,
   Palette,
   Server,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getMcpServerUrl } from '@/services/mcp'
+import { APP_VERSION_LABEL, POMODORO_CHANGELOG } from '@/lib/version'
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'comece-aqui', num: '00', title: 'Comece por aqui' },
@@ -24,6 +26,7 @@ const TOC_ITEMS: TocItem[] = [
   { id: 'schema-banco', num: '04', title: 'Banco SQLite / PocketBase' },
   { id: 'design-tokens', num: '05', title: 'Design System & Breakpoints' },
   { id: 'stack-tecnica', num: '06', title: 'Stack & Arquitetura' },
+  { id: 'changelog', num: '07', title: 'Changelog & Ciclos Pomodoro' },
 ]
 
 export function DevDocs() {
@@ -46,7 +49,7 @@ export function DevDocs() {
           <span>Voltar ao Hub de Documentação</span>
         </Link>
         <span className="font-mono text-[11px] text-[#C5A880] px-2.5 py-1 rounded bg-[#C5A880]/10 border border-[#C5A880]/20">
-          DOCUMENTAÇÃO TÉCNICA · V0.0.34
+          DOCUMENTAÇÃO TÉCNICA · {APP_VERSION_LABEL.toUpperCase()}
         </span>
       </div>
 
@@ -394,7 +397,7 @@ export function DevDocs() {
                 <div className="flex items-center gap-2 mb-1.5">
                   <code className="text-[#C5A880] font-bold text-sm">capture_task</code>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
-                    Destaque v0.0.34
+                    Parser NL Nativo
                   </span>
                 </div>
                 <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
@@ -425,7 +428,7 @@ export function DevDocs() {
                 <div className="flex items-center gap-2 mb-1.5">
                   <code className="text-[#C5A880] font-bold text-sm">create_subtasks</code>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
-                    Destaque v0.0.34
+                    Checklist Estruturado
                   </span>
                 </div>
                 <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
@@ -907,6 +910,52 @@ export function DevDocs() {
                 timeline. Ambas as agregações operam 100% no cliente com <code>useMemo</code>, sem
                 requisições adicionais de backend.
               </p>
+            </div>
+          </section>
+
+          {/* SEÇÃO 07: CHANGELOG DAS ENTREGAS DO POMODORO & SISTEMA */}
+          <section id="changelog" className="scroll-mt-6">
+            <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
+              <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
+              <div>
+                <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
+                  Changelog Técnico & Entregas do Pomodoro (v0.0.40–v0.0.48)
+                </h2>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                  Histórico de arquitetura, banco de dados e refinamentos de interface
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {POMODORO_CHANGELOG.map((item) => (
+                <div
+                  key={item.version}
+                  className="p-4 sm:p-5 rounded-xl bg-[#12141C] border border-[#27272A] hover:border-[#C5A880]/40 transition-colors"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#C5A880] px-2 py-0.5 rounded bg-[#C5A880]/15 border border-[#C5A880]/30">
+                        v{item.version}
+                      </span>
+                      <h3 className="font-['Clash_Display'] text-sm sm:text-base font-semibold text-[#F4F4F6]">
+                        {item.title}
+                      </h3>
+                    </div>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#A1A1AA] px-2 py-0.5 rounded bg-[#1F2028]">
+                      {item.tag}
+                    </span>
+                  </div>
+
+                  <ul className="space-y-1.5 text-xs text-[#D4D4D8] list-disc list-inside">
+                    {item.highlights.map((highlight, idx) => (
+                      <li key={idx} className="leading-relaxed">
+                        {highlight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </section>
 

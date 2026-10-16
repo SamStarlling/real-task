@@ -18,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { APP_VERSION_LABEL } from '@/lib/version'
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'comece-aqui', num: '00', title: 'Comece por aqui' },
@@ -46,7 +47,7 @@ export function UserGuide() {
           <span>Voltar ao Hub de Documentação</span>
         </Link>
         <span className="font-mono text-[11px] text-[#C5A880] px-2.5 py-1 rounded bg-[#C5A880]/10 border border-[#C5A880]/20">
-          GUIA DO USUÁRIO · V0.0.34
+          GUIA DO USUÁRIO · {APP_VERSION_LABEL.toUpperCase()}
         </span>
       </div>
 
