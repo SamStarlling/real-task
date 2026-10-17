@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.54'
+export const APP_VERSION = '0.0.56'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,24 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.54).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.56).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.56',
+    title: 'Estimativa Livre (1–600 min), Parser NL de Duração & Estimativa Opcional',
+    tag: 'Estimativa Livre',
+    highlights: [
+      'Componente padrão EstimateInput (1–600 minutos) unificado na barra de captura do topo, gaveta de detalhes da tarefa (TaskDetail), visão Semana e captura inline de seções em Projetos.',
+      'Aposentadoria dos antigos steppers fixos de 5 em 5 (teto 240) e do seletor rígido de 4 opções (15/25/50/90): entrada numérica livre com digitação direta ou botões de decremento/incremento fino.',
+      'Chips de atalho rápido com durações ergonômicas (5m, 15m, 25m, 45m, 90m) e botão de ação rápida "Sem estimativa".',
+      'Estimativa opcional na Inbox: tarefas podem ser criadas sem estimativa prévia (armazenada como 0 ou nulo no PocketBase); cartões mostram "EST. —" e o comparativo Previsto × Real exibe traço neutro sem distorcer barras.',
+      'Aviso sutil champagne para tarefas longas (> 90 min): "90+ min? Considere quebrar a tarefa em partes menores" para incentivar decomposição de tarefas conforme boas práticas de produtividade.',
+      'Parser de linguagem natural de duração (parsePortugueseDuration / cleanDurationToken no frontend e parseServerDuration no MCP hook): detecta expressões como "por 90 min", "treino por 1h30", "45min", "2h", "durante 1h15" sem colidir com horários agendados ("às 9h30").',
+      'Migration 0024 no PocketBase: relaxamento do campo estimated_minutes na coleção tasks para min 0 e max 600, permitindo 0/null para tarefas livres.',
+      'Servidor MCP atualizado em capture_task, create_task e update_task: suporte total a estimated_minutes de 1 a 600, 0 ou null, eliminando o fallback legado forçado de 25 minutos.',
+    ],
+  },
   {
     version: '0.0.54',
     title: 'Etapa 3 MCP: Planejamento Massivo por LLM com Projetos, Seções, Filtros & Veredito',

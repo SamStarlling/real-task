@@ -362,9 +362,12 @@ export function DevDocs() {
                     </tr>
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">create_task</td>
-                      <td className="p-3 text-[#E4E4E7]">Criação com descrição, projeto e seção</td>
+                      <td className="p-3 text-[#E4E4E7]">
+                        Criação com descrição, projeto, seção & estimativa livre
+                      </td>
                       <td className="p-3 font-mono text-[#A1A1AA]">
-                        title, description, list, section, due_date, priority...
+                        title, description, list, section, due_date, priority, estimated_minutes
+                        (1–600 / null)
                       </td>
                       <td className="p-3 text-[#A1A1AA]">Objeto TaskRecord criado</td>
                     </tr>
@@ -389,10 +392,10 @@ export function DevDocs() {
                     <tr>
                       <td className="p-3 font-mono text-[#C5A880]">update_task</td>
                       <td className="p-3 text-[#E4E4E7]">
-                        Atualização incluindo descrição e seção
+                        Atualização incluindo descrição, seção & estimativa livre
                       </td>
                       <td className="p-3 font-mono text-[#A1A1AA]">
-                        id, title, description, section, list...
+                        id, title, description, section, list, estimated_minutes (1–600 / 0 / null)
                       </td>
                       <td className="p-3 text-[#A1A1AA]">Tarefa atualizada</td>
                     </tr>
@@ -510,16 +513,19 @@ export function DevDocs() {
                 <div className="flex items-center gap-2 mb-1.5">
                   <code className="text-[#C5A880] font-bold text-sm">capture_task</code>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
-                    Parser NL Nativo
+                    Parser NL Nativo & Duração Livre
                   </span>
                 </div>
                 <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
                   Executa o parser de linguagem natural nativo em português diretamente no hook do
-                  PocketBase. Reconhece datas (<code>hoje</code>, <code>amanhã</code>,{' '}
-                  <code>15/11</code>, <code>próxima segunda</code>), horários (<code>às 14:00</code>
-                  ), recorrência (<code>todo dia</code>, <code>toda semana</code>,{' '}
+                  PocketBase (<code>parseServerDuration</code>). Reconhece datas (<code>hoje</code>,{' '}
+                  <code>amanhã</code>, <code>15/11</code>, <code>próxima segunda</code>), horários (
+                  <code>às 14:00</code>, <code>9h30</code>), duração estimada em minutos ou horas (
+                  <code>por 90 min</code>, <code>treino por 1h30</code>, <code>45min</code>,{' '}
+                  <code>2h</code>), recorrência (<code>todo dia</code>, <code>toda semana</code>,{' '}
                   <code>todo dia 15</code>), prioridade (<code>p1..p4</code>), tags (
-                  <code>@nome</code>) e listas (<code>#nome</code>).
+                  <code>@nome</code>) e listas/projetos (<code>#nome</code>). Não força fallback
+                  legado de 25 min caso o usuário não informe duração.
                 </p>
                 <CopyableBlock
                   title="Exemplo de chamada JSON-RPC"
@@ -529,10 +535,49 @@ export function DevDocs() {
   "params": {
     "name": "capture_task",
     "arguments": {
-      "text": "Enviar proposta comercial amanhã às 15h p1 @trabalho #vendas"
+      "text": "Revisar proposta técnica amanhã às 15h por 90 min p1 @trabalho #vendas"
     }
   },
   "id": 1
+}`}
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/40">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <code className="text-[#C5A880] font-bold text-sm">
+                    create_task / update_task
+                  </code>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#C5A880]/15 text-[#C5A880]">
+                    Estimativa Livre 0–600 & Metadados Todoist
+                  </span>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
+                  As ferramentas de criação e atualização suportam estimativa livre sem travas
+                  rígidas de múltiplos de 5: o parâmetro <code>estimated_minutes</code> aceita
+                  inteiros de <strong>1 a 600 minutos</strong> (até 10h), bem como{' '}
+                  <strong>0</strong> ou <strong>null</strong> para representar tarefas sem
+                  estimativa. Também incluem os parâmetros <code>description</code> (até 5000
+                  caracteres, Markdown e links <code>obsidian://</code>) e <code>section</code> (ID
+                  da seção no projeto).
+                </p>
+                <CopyableBlock
+                  title="Exemplo com estimativa livre, descrição rica e seção"
+                  code={`{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "create_task",
+    "arguments": {
+      "title": "Arquitetar sincronização offline",
+      "description": "Especificação técnica e protótipo inicial\\n- [ ] Definir cache\\n- [ ] Tratar conflitos",
+      "list": "ID_DO_PROJETO_AQUI",
+      "section": "ID_DA_SECAO_AQUI",
+      "estimated_minutes": 135,
+      "priority": 1
+    }
+  },
+  "id": 2
 }`}
                 />
               </div>
@@ -706,7 +751,8 @@ export function DevDocs() {
                         <td className="p-3 font-mono text-[#C5A880] font-bold">tasks</td>
                         <td className="p-3 text-[#A1A1AA]">base</td>
                         <td className="p-3 font-mono text-[#A1A1AA]">
-                          title, due_date, due_time, priority, order, subtasks, recurrence_*
+                          title, description, due_date, due_time, priority, estimated_minutes (min:
+                          0, max: 600, null permitido), list, section, order, subtasks, recurrence_*
                         </td>
                         <td className="p-3 font-mono text-[11px] text-[#A1A1AA]">
                           user.id = @request.auth.id
@@ -1059,8 +1105,50 @@ export function DevDocs() {
                     <code>FocusDistributionChart.tsx</code> — motor de agregação sob demanda de foco
                     por tarefa, fatias harmônicas e métricas de objetivos batidos
                   </li>
+                  <li>
+                    <code>EstimateInput.tsx</code> — controle padrão universal de estimativa livre
+                    (1–600 min, chips 5/15/25/45/90, sem estimativa e aviso sutil champagne para
+                    &gt; 90 min)
+                  </li>
+                  <li>
+                    <code>date-parser.ts (parsePortugueseDuration)</code> — parser de duração em
+                    linguagem natural com proteção contra falsos positivos de horários
+                  </li>
                 </ul>
               </div>
+            </div>
+
+            {/* ENGENHARIA DO PARSER DE DURAÇÃO E ESTIMATIVA LIVRE (V0.0.56) */}
+            <div className="mt-4 p-4 rounded-xl bg-[#090A0E] border border-[#C5A880]/30 text-xs space-y-2">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#C5A880] block font-bold">
+                Engenharia do Parser de Duração & Estimativa Livre (v0.0.56 / Migration 0024)
+              </span>
+              <p className="text-[#A1A1AA] leading-relaxed">
+                <strong>Algoritmo de Extração de Duração:</strong> O módulo{' '}
+                <code>src/lib/date-parser.ts</code> implementa as funções{' '}
+                <code>parsePortugueseDuration</code> e <code>cleanDurationToken</code> (espelhadas
+                no hook PocketBase via <code>parseServerDuration</code>). O parser reconhece padrões
+                como:
+                <br />
+                &bull; Minutos explícitos: <code>por 90 min</code>, <code>durante 45 min</code>,{' '}
+                <code>45min</code>, <code>15m</code>;
+                <br />
+                &bull; Horas compostas e fracionadas: <code>1h30</code>, <code>por 1h30</code>,{' '}
+                <code>1h15m</code>, <code>2h</code>, <code>durante 2 horas</code>;
+                <br />
+                &bull; <strong>Proteção estrita contra falsos positivos de horário:</strong>{' '}
+                Expressões como <em>"às 9h30"</em>, <em>"as 14h"</em>, <em>"14:00"</em> e dígitos
+                seguidos de pontuação horária são protegidos por lookaheads e validação de contexto
+                antes do match de duração. O token de duração é limpo do título apenas quando de
+                fato representa tempo de esforço previsto.
+                <br />
+                <strong>Schema e Relaxamento do Banco (Migration 0024):</strong> O campo{' '}
+                <code>estimated_minutes</code> na coleção <code>tasks</code> foi expandido de{' '}
+                <code>min: 5, max: 240</code> para <code>min: 0, max: 600</code>. Valores{' '}
+                <code>null</code> ou <code>0</code> representam expressamente &quot;Sem
+                estimativa&quot;, renderizados na interface como <code>EST. —</code> e no Previsto
+                &times; Real como traço neutro sem distorcer barras ou gráficos.
+              </p>
             </div>
 
             {/* ARQUITETURA DE FILTROS E ESTATÍSTICAS DO POMODORO (ETAPA 4) */}
@@ -1137,7 +1225,7 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas (v0.0.40–v0.0.54)
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.56)
                 </h2>{' '}
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
                   Histórico de arquitetura, engenharia reversa Todoist/TickTick e refinamentos

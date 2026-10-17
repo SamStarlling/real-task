@@ -68,7 +68,13 @@ export function Docs() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#C5A880] flex-none" />
-                <span>Prioridades P1–P4, etiquetas, listas e Big3 (80/20)</span>
+                <span>
+                  Estimativa livre (1–600 min), atalhos rápidos e duração em linguagem natural
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#C5A880] flex-none" />
+                <span>Prioridades P1–P4, etiquetas, projetos Todoist e Big3 (80/20)</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#C5A880] flex-none" />
@@ -110,8 +116,9 @@ export function Docs() {
             </h2>
 
             <p className="text-sm text-[#A1A1AA] leading-relaxed mb-6">
-              Conecte assistentes de IA via Model Context Protocol (10 ferramentas nativas),
-              consulte o schema do banco, tokens de design e convenções de arquitetura.
+              Conecte assistentes de IA via Model Context Protocol (12 ferramentas nativas),
+              consulte o schema do banco (Migration 0024), tokens de design e convenções de
+              arquitetura.
             </p>
 
             <div className="space-y-2.5 pt-4 border-t border-[#1F2028] text-xs text-[#D4D4D8]">
@@ -121,7 +128,7 @@ export function Docs() {
               </div>
               <div className="flex items-center gap-2">
                 <Code2 className="w-3.5 h-3.5 text-[#C5A880] flex-none" />
-                <span>10 ferramentas MCP (captura NL, sub-tarefas, tags 80/20)</span>
+                <span>12 ferramentas MCP (projetos, filtros guiados, estimativa 0–600, NL)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Code2 className="w-3.5 h-3.5 text-[#C5A880] flex-none" />
@@ -151,16 +158,20 @@ export function Docs() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[#A1A1AA]">
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
-            <strong className="block text-[#F4F4F6] font-mono mb-1">POMODORO & OBJETIVO</strong>
-            Objetivo do bloco, veredito pós-foco, timer imersivo em tela cheia e stopwatch.
+            <strong className="block text-[#F4F4F6] font-mono mb-1">ESTIMATIVA LIVRE & NL</strong>
+            Componente EstimateInput 1–600 min, parser de duração em português e estimativa
+            opcional.
           </div>
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
-            <strong className="block text-[#F4F4F6] font-mono mb-1">ESTATÍSTICAS & DONUT</strong>
-            Gráfico donut interativo por tarefa, métricas de disciplina e painel colapsável.
+            <strong className="block text-[#F4F4F6] font-mono mb-1">
+              PROJETOS & FILTROS GUIADOS
+            </strong>
+            Ciclos de 12 semanas, seções Todoist, filtros salvos na sidebar e links Obsidian.
           </div>
           <div className="p-3 rounded-lg bg-[#12141C]/60 border border-[#1F2028]">
             <strong className="block text-[#F4F4F6] font-mono mb-1">MCP & SERVIDOR PT-BR</strong>
-            10 ferramentas nativas JSON-RPC, parser NL no servidor e integração 80/20 (Big3).
+            12 ferramentas nativas JSON-RPC, parser de duração no servidor e estimativa 0–600 /
+            null.
           </div>
         </div>
       </div>

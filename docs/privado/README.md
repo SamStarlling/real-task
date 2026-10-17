@@ -35,7 +35,7 @@ Bem-vindo à base de conhecimento corporativa e estratégica do Barbosa System. 
    - Critérios objetivos para priorização e rotina de validação semanal
 
 5. [Roadmap Estratégico do Produto](roadmap.md)
-   - Histórico consolidado das entregas (v0.0.1 a v0.0.48)
+   - Histórico consolidado das entregas (v0.0.1 a v0.0.56)
    - Itens pendentes e melhorias planejadas
    - Backlog aberto para os próximos ciclos de desenvolvimento e maturidade do produto
 

@@ -25,13 +25,14 @@ import { APP_VERSION_LABEL } from '@/lib/version'
 const TOC_ITEMS: TocItem[] = [
   { id: 'comece-aqui', num: '00', title: 'Comece por aqui' },
   { id: 'capturar', num: '01', title: 'Capturar pendências' },
-  { id: 'organizar', num: '02', title: 'Organizar e priorizar' },
-  { id: 'projetos', num: '03', title: 'Projetos Todoist & Seções' },
-  { id: 'filtros-hub', num: '04', title: 'Etiquetas & Filtros Salvos' },
-  { id: 'focar', num: '05', title: 'Focar com Pomodoro' },
-  { id: 'revisar', num: '06', title: 'Revisar semana e métricas' },
-  { id: 'dicas-mobile', num: '07', title: 'Uso no celular' },
-  { id: 'mcp-planejamento', num: '08', title: 'Planejamento via IA (MCP)' },
+  { id: 'estimativa-livre', num: '02', title: 'Estimativa Livre (1–600 min)' },
+  { id: 'organizar', num: '03', title: 'Organizar e priorizar' },
+  { id: 'projetos', num: '04', title: 'Projetos Todoist & Seções' },
+  { id: 'filtros-hub', num: '05', title: 'Etiquetas & Filtros Salvos' },
+  { id: 'focar', num: '06', title: 'Focar com Pomodoro' },
+  { id: 'revisar', num: '07', title: 'Revisar semana e métricas' },
+  { id: 'dicas-mobile', num: '08', title: 'Uso no celular' },
+  { id: 'mcp-planejamento', num: '09', title: 'Planejamento via IA (MCP)' },
 ]
 
 export function UserGuide() {
@@ -267,6 +268,17 @@ export function UserGuide() {
                           Ao concluir, gera a próxima tarefa idêntica
                         </td>
                       </tr>
+                      <tr>
+                        <td className="p-3 font-mono text-[#C5A880]">
+                          por 90 min / 1h30 / 45min / 2h
+                        </td>
+                        <td className="p-3 text-[#E4E4E7]">
+                          Duração estimada extraída em linguagem natural
+                        </td>
+                        <td className="p-3 text-[#A1A1AA]">
+                          Preenche a estimativa livre (1–600 min) sem colidir com horários agendados
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -278,12 +290,16 @@ export function UserGuide() {
                   Exemplos práticos de digitação (copie e teste na barra):
                 </span>
                 <CopyableBlock
-                  title="Reunião com horário, prioridade e categoria"
-                  code="Revisar proposta comercial amanhã às 10:00 p1 @trabalho #vendas"
+                  title="Reunião com horário, prioridade, projeto e duração em linguagem natural"
+                  code="Revisar proposta comercial amanhã às 10:00 por 90 min p1 @trabalho #vendas"
+                />
+                <CopyableBlock
+                  title="Treino com duração composta em horas e minutos"
+                  code="Treino de força hoje às 18h por 1h30 @saude"
                 />
                 <CopyableBlock
                   title="Hábito diário com tempo estimado"
-                  code="Ler 15 páginas de livro todo dia às 21:00 25m @desenvolvimento"
+                  code="Ler 15 páginas de livro todo dia às 21:00 45min @desenvolvimento"
                 />
                 <CopyableBlock
                   title="Compromisso recorrente mensal"
@@ -303,23 +319,196 @@ export function UserGuide() {
                     específico.
                   </li>
                   <li>
-                    <strong>Chips visuais editáveis:</strong> ao digitar uma data ou horário, um
-                    pequeno chip surge na barra. Clique nele para remover ou alterar antes de
-                    apertar Enter.
+                    <strong>Chips visuais editáveis:</strong> ao digitar uma data, horário ou
+                    duração, um pequeno chip surge na barra. Clique nele para remover ou alterar
+                    antes de apertar Enter.
                   </li>
                   <li>
-                    <strong>Tempo previsto:</strong> o seletor ao lado do botão de adicionar ajusta
-                    os minutos previstos (padrão 25 min, ajustável de 5 em 5 minutos).
+                    <strong>Estimativa Livre e Opcional:</strong> digite qualquer valor de 1 a 600
+                    minutos diretamente, use os chips de atalho rápido (5m, 15m, 25m, 45m, 90m) ou
+                    escolha "Sem estimativa" para capturas rápidas sem tempo previsto.
                   </li>
                 </ul>
               </div>
             </div>
           </section>
 
-          {/* TAREFA 02: ORGANIZAR E PRIORIZAR */}
-          <section id="organizar" className="scroll-mt-6">
+          {/* SEÇÃO NOVO: ESTIMATIVA LIVRE (1–600 MIN) */}
+          <section id="estimativa-livre" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
               <span className="font-mono text-xl font-bold text-[#C5A880]">02</span>
+              <div>
+                <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
+                  Estimativa Livre: 1 a 600 minutos, digitação direta e flexibilidade
+                </h2>
+                <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
+                  Aposentadoria dos steppers rígidos em favor de autonomia real de calibração
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 text-sm text-[#A1A1AA] leading-relaxed">
+              <p>
+                O Barbosa System substituiu os antigos controles engessados (steppers de 5 em 5
+                minutos com teto de 240 minutos e o seletor restrito a 4 opções: 15/25/50/90) pelo
+                componente padronizado <strong>EstimateInput</strong>. Agora você tem liberdade
+                total para digitar qualquer duração de{' '}
+                <strong>1 a 600 minutos (até 10 horas)</strong> ou deixar a tarefa livre sem
+                estimativa.
+              </p>
+
+              {/* GRID COM OS 4 PILARES DA ESTIMATIVA LIVRE */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Digitação Livre e Onipresente
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    O campo numérico aceita digitação direta em todos os pontos do sistema onde
+                    tarefas são criadas ou editadas:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
+                    <li>
+                      <strong>Barra de captura rápida</strong> fixada no topo;
+                    </li>
+                    <li>
+                      <strong>Painel de detalhe da tarefa (TaskDetail)</strong> ao clicar no card;
+                    </li>
+                    <li>
+                      <strong>Visão Semana (/semana)</strong> na captura rápida de cada coluna de
+                      dia;
+                    </li>
+                    <li>
+                      <strong>Captura inline nas seções de projeto</strong> em{' '}
+                      <code>/projetos/:id</code>.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Chips de Atalho & Sem Estimativa
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Para agilidade máxima sem perder a digitação livre, o componente oferece botões
+                    de 1 toque:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
+                    <li>
+                      <strong>Chips rápidos:</strong> <code>5m</code>, <code>15m</code>,{' '}
+                      <code>25m</code>, <code>45m</code> e <code>90m</code>;
+                    </li>
+                    <li>
+                      <strong>Opção "Sem estimativa":</strong> zera o campo com 1 clique para
+                      tarefas que não precisam de tempo pré-fixado;
+                    </li>
+                    <li>
+                      <strong>Incremento/decremento fino:</strong> botões <code>-</code> e{' '}
+                      <code>+</code> ajustam o valor mantendo foco ativo.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Compass className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Duração em Linguagem Natural
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Você pode incluir a duração diretamente no texto durante a captura. O parser
+                    inteligente reconhece formatos variados sem colidir com horários agendados:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
+                    <li>
+                      <code>por 90 min</code> ou <code>durante 45 min</code> &rarr; 90 ou 45
+                      minutos;
+                    </li>
+                    <li>
+                      <code>1h30</code> ou <code>por 1h30</code> &rarr; 90 minutos;
+                    </li>
+                    <li>
+                      <code>2h</code>, <code>3h</code> ou <code>durante 2 horas</code> &rarr; 120 ou
+                      180 minutos;
+                    </li>
+                    <li>
+                      <strong>Proteção contra horários:</strong> <em>"às 9h30"</em> ou{' '}
+                      <em>"14:00"</em> viram alarme/horário agendado, não duração estimada.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#12141C] border border-[#27272A]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ListTodo className="w-4 h-4 text-[#C5A880]" />
+                    <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                      Estimativa Opcional & Tratamento na UI
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
+                    Tarefas criadas na Inbox ou pelo fluxo rápido não precisam obrigatoriamente de
+                    estimativa:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
+                    <li>
+                      Tarefas sem estimativa guardam <code>null</code> ou <code>0</code> no
+                      PocketBase;
+                    </li>
+                    <li>
+                      Nos cartões, a tag exibe <code>EST. —</code> de forma limpa e discreta;
+                    </li>
+                    <li>
+                      O comparativo <strong>Previsto × Real</strong> exibe traço neutro em vez de
+                      barras infladas ou distorcidas;
+                    </li>
+                    <li>
+                      Você pode calibrar a estimativa mais tarde pelo painel de detalhe sempre que
+                      quiser.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* AVISO CHAMPAGNE > 90 MIN */}
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/40 relative overflow-hidden">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-[#C5A880]/15 text-[#C5A880] flex-none mt-0.5 border border-[#C5A880]/30">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <strong className="text-xs font-mono uppercase tracking-wider text-[#C5A880] block">
+                      Aviso sutil para tarefas longas (&gt; 90 min)
+                    </strong>
+                    <p className="text-xs text-[#E4E4E7] leading-relaxed">
+                      Ao definir uma estimativa superior a 90 minutos, um alerta champagne discreto
+                      é exibido abaixo do campo:{' '}
+                      <em className="text-[#C5A880]">
+                        &quot;90+ min? Considere quebrar a tarefa em partes menores&quot;
+                      </em>
+                      .
+                    </p>
+                    <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                      O aviso não impede o salvamento nem bloqueia sua ação — é um lembrete
+                      ergonômico de decomposição tática: tarefas menores reduzem procrastinação e
+                      facilitam o ritmo de blocos Pomodoro focados.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* TAREFA 03: ORGANIZAR E PRIORIZAR */}
+          <section id="organizar" className="scroll-mt-6">
+            <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
+              <span className="font-mono text-xl font-bold text-[#C5A880]">03</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Organizar o dia e definir o que realmente importa
@@ -503,10 +692,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 03: PROJETOS TODOIST & SEÇÕES */}
+          {/* TAREFA 04: PROJETOS TODOIST & SEÇÕES */}
           <section id="projetos" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">03</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">04</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Projetos Todoist: Ciclos de 12 Semanas, Recorrentes e Seções
@@ -645,10 +834,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA NOVA: ETIQUETAS & FILTROS SALVOS (ETAPA 3 TODOIST) */}
+          {/* TAREFA 05: ETIQUETAS & FILTROS SALVOS (ETAPA 3 TODOIST) */}
           <section id="filtros-hub" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">04</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Hub de Etiquetas & Filtros Salvos Guiados
@@ -727,10 +916,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 05: FOCAR COM POMODORO */}
+          {/* TAREFA 06: FOCAR COM POMODORO */}
           <section id="focar" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">05</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">06</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Executar em blocos de foco com o Pomodoro integrado
@@ -803,13 +992,18 @@ export function UserGuide() {
               {/* COMPARATIVO ESTIMADO VS REAL */}
               <div className="p-4 rounded-xl bg-[#090A0E] border border-[#27272A] space-y-2">
                 <strong className="text-xs font-mono uppercase tracking-wider text-[#C5A880] block">
-                  Estimativa vs. Tempo Real:
+                  Estimativa Livre vs. Tempo Real:
                 </strong>
                 <p className="text-xs text-[#D4D4D8] leading-relaxed">
-                  Cada tarefa registra quanto tempo você previu (<code>EST. 25 MIN</code>) e quanto
-                  tempo realmente dedicou em blocos de foco (<code>REAL 50 MIN</code>). Se você
-                  ultrapassar o previsto, uma barra discreta em ouro champagne sinaliza o desvio
-                  para ajudá-lo a calibrar futuras estimativas.
+                  Cada tarefa pode registrar quanto tempo você previu (ex: <code>EST. 45 MIN</code>)
+                  e quanto tempo realmente dedicou em blocos de foco (<code>REAL 50 MIN</code>). Se
+                  você ultrapassar o previsto, uma barra discreta em ouro champagne sinaliza o
+                  desvio para ajudá-lo a calibrar futuras estimativas.
+                </p>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  Caso crie uma tarefa sem estimativa (opcional na Inbox), o cartão exibe{' '}
+                  <code>EST. —</code> e o comparativo apresenta um traço limpo sem distorcer as
+                  barras de progresso.
                 </p>
               </div>
 
@@ -855,10 +1049,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 06: REVISAR SEMANA E MÉTRICAS */}
+          {/* TAREFA 07: REVISAR SEMANA E MÉTRICAS */}
           <section id="revisar" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">06</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Planejar a semana e acompanhar seu ritmo real
@@ -964,10 +1158,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 07: DICAS PARA CELULAR */}
+          {/* TAREFA 08: DICAS PARA CELULAR */}
           <section id="dicas-mobile" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">08</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Usando o aplicativo no celular
@@ -1017,10 +1211,10 @@ export function UserGuide() {
             </div>
           </section>
 
-          {/* TAREFA 08: PLANEJAMENTO MASSIVO VIA MCP (LLM) */}
+          {/* TAREFA 09: PLANEJAMENTO MASSIVO VIA MCP (LLM) */}
           <section id="mcp-planejamento" className="scroll-mt-6">
             <div className="flex items-center gap-3 border-b border-[#27272A] pb-3 mb-6">
-              <span className="font-mono text-xl font-bold text-[#C5A880]">08</span>
+              <span className="font-mono text-xl font-bold text-[#C5A880]">09</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
                   Planejamento Massivo via IA (Servidor MCP com Claude & Gemini)

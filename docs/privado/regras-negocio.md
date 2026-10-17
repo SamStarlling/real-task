@@ -32,7 +32,7 @@ Ao disparar a criação automática da próxima instância de uma tarefa com `re
 4. **Etiquetas (`tags`)**: Herdadas integralmente.
 5. **Prioridade (`priority`)**: Herdada integralmente (P1 a P4 ou 0).
 6. **Horário previsto (`due_time`)**: Herdado integralmente no formato `"HH:MM"`.
-7. **Estimativa (`estimated_minutes`)**: Herdada integralmente.
+7. **Estimativa (`estimated_minutes`)**: Herdada integralmente (preservando o valor digitado de 1–600 minutos, ou nulo/0 para tarefas livres sem estimativa).
 8. **Tempo realizado (`actual_minutes`)**: **Resetado para 0** (o esforço acumulado pertence à instância concluída).
 9. **Status (`done`)**: **Definido como false**.
 10. **Ordem de exibição (`order`)**: Incrementado como `(task.order || 0) + 1`.
