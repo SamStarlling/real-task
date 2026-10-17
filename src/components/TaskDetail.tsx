@@ -140,8 +140,13 @@ export function TaskDetail({
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null)
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('')
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
-  const { start } = usePomodoro()
-
+  const { start, state: pomodoroState } = usePomodoro()
+  const isCurrentlyInFocus = Boolean(
+    pomodoroState &&
+    pomodoroState.status === 'rodando' &&
+    pomodoroState.phase === 'foco' &&
+    pomodoroState.task?.id === task.id,
+  )
   useEffect(() => {
     setTitle(task.title)
     setDescription(task.description || '')
@@ -1114,8 +1119,21 @@ export function TaskDetail({
             />
           </i>
         </div>
-        <button className="primary" onClick={() => start(task)}>
-          <Play /> Iniciar Pomodoro
+        <button
+          type="button"
+          className={`primary focus-primary-action-btn ${isCurrentlyInFocus ? 'is-focus-running' : ''}`}
+          onClick={() => {
+            start(task)
+            onClose()
+          }}
+          title={
+            isCurrentlyInFocus
+              ? 'Bloco Pomodoro em andamento nesta tarefa'
+              : 'Iniciar bloco de foco Pomodoro nesta tarefa'
+          }
+        >
+          <Play className="fill-current w-4 h-4" />
+          <span>{isCurrentlyInFocus ? 'Pomodoro Em Foco Agora' : 'FOCUS · Iniciar Pomodoro'}</span>
         </button>
         <section className="session-list">
           <h2>Sessões</h2>

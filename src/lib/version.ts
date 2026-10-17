@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.57'
+export const APP_VERSION = '0.0.59'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,11 +15,27 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.57).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.59).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
   {
-    version: '0.0.57',
+    version: '0.0.59',
+    title: 'Pacote 3 Redesign: Respiro Geral dos Cards, Ações no Hover/Swipe e Foco Concentrado',
+    tag: 'Redesign Pacote 3',
+    date: '2025-05-18',
+    highlights: [
+      'Respiro geral dos cards em todas as telas (Hoje, Amanhã, Inbox, Semana, Projetos e Filtros): remoção definitiva do botão FOCUS permanente que ocupava a lateral direita de todos os itens.',
+      'Estado padrão limpo (95% do tempo): o card exibe estritamente o conteúdo da tarefa — checkbox à esquerda, título com altura compacta, chips de metadados (@etiquetas, #projeto, P1–P4, recorrente, horário, sub-tarefas) e barra de progresso Previsto × Real.',
+      'Ações suaves no Hover (Desktop): no padrão Todoist/Linear, botões discretos surgem à direita apenas ao passar o cursor sobre o card — FOCUS imediato com ícone de Play, seletor rápido de prioridade (P1 a P4) e atalho para abrir detalhes/editar.',
+      'Gesto de Swipe no Mobile: em telas de toque (smartphones e tablets), deslizar o card para a direita revela a ação de FOCUS com feedback visual instantâneo.',
+      'Painel de Detalhes como caminho alternativo: o drawer lateral de edição de tarefa traz o botão FOCUS em destaque como ação principal para iniciar o Pomodoro com um clique.',
+      'Destaque permanente exclusivo na tarefa em foco: quando o cronômetro Pomodoro está rodando na tarefa, o card mantém destaque persistente (borda champagne iluminada e badge pulsante "EM FOCO") como informação operacional clara.',
+      'Checkbox de conclusão intocado: clique direto no círculo de check continua concluindo e reabrindo tarefas instantaneamente sem qualquer interferência.',
+      'Listas mais densas e ergonômicas com melhor aproveitamento do espaço vertical sem poluição visual.',
+    ],
+  },
+  {
+    version: '0.0.58',
     title: 'Pacotes 1+2 Redesign: Sidebar Ativa Exata, Inbox no Topo & Modal de Captura Global (C)',
     tag: 'Redesign UI/UX',
     highlights: [

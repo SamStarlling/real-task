@@ -1082,15 +1082,22 @@ export function WeekPage({
                           )}
                         </button>
 
-                        <button
-                          type="button"
-                          className="focus"
-                          title="Foco Pomodoro"
-                          onClick={() => start(task)}
-                        >
-                          <Play />
-                          FOCUS
-                        </button>
+                        {/* AÇÕES DE HOVER (DESKTOP) — Padrão Todoist / Linear: sem botão permanente */}
+                        <aside className="task-hover-actions" aria-label="Ações rápidas">
+                          <button
+                            type="button"
+                            className="task-action-btn focus-action-btn"
+                            title="Iniciar foco Pomodoro nesta tarefa"
+                            aria-label="Foco Pomodoro"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              start(task)
+                            }}
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span className="task-action-label">FOCUS</span>
+                          </button>
+                        </aside>
                       </article>
                     )
                   })}

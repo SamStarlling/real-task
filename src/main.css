@@ -1715,24 +1715,207 @@ a {
   display: grid;
   gap: 10px;
 }
+/* Wrapper para suportar ação por swipe no mobile (Pacote 3 do Redesign) */
+.task-card-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.task-swipe-action-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(197, 168, 128, 0.25) 0%, rgba(197, 168, 128, 0.08) 100%);
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.task-swipe-action-bg.is-visible {
+  opacity: 1;
+}
+
+.task-swipe-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c5a880;
+  font:
+    700 11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.1em;
+}
+
+/* Card redesenhado — mais baixo, listas mais densas, respiro geral */
 .task-card {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 20px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
   background: #12141c;
   border: 1px solid rgba(197, 168, 128, 0.12);
-  border-radius: 12px;
-  animation: enter 0.35s both;
+  border-radius: 10px;
+  animation: enter 0.25s both;
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease,
     transform 150ms ease,
-    opacity 150ms ease;
+    opacity 150ms ease,
+    background 150ms ease;
   position: relative;
+  min-height: 52px;
 }
 .task-card:hover {
-  border-color: rgba(197, 168, 128, 0.28);
+  border-color: rgba(197, 168, 128, 0.32);
+}
+
+/* Destaque permanente na tarefa em foco pelo Pomodoro (informação, não decoração) */
+.task-card.is-in-focus {
+  border-color: #c5a880 !important;
+  background: linear-gradient(
+    90deg,
+    rgba(197, 168, 128, 0.12) 0%,
+    rgba(18, 20, 28, 0.98) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(197, 168, 128, 0.4),
+    0 4px 16px rgba(197, 168, 128, 0.12);
+}
+
+.task-active-focus-pill {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #090a0e;
+  background: #c5a880;
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1;
+  flex: none;
+  box-shadow: 0 0 8px rgba(197, 168, 128, 0.5);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.focus-pulsing-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #090a0e;
+  display: inline-block;
+  animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(197, 168, 128, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(197, 168, 128, 0.6);
+  }
+}
+
+/* Ações ao Hover no Desktop (Todoist/Linear pattern) */
+.task-hover-actions {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex: none;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .task-hover-actions {
+    display: flex;
+  }
+  .task-card:hover .task-hover-actions,
+  .task-card:focus-within .task-hover-actions {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+}
+
+.task-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(197, 168, 128, 0.22);
+  background: rgba(18, 20, 28, 0.85);
+  backdrop-filter: blur(4px);
+  color: #c5a880;
+  border-radius: 6px;
+  height: 28px;
+  padding: 0 8px;
+  font:
+    700 10.5px 'Space Mono',
+    monospace;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 120ms ease;
+  user-select: none;
+}
+
+.task-action-btn:hover {
+  background: #c5a880;
+  color: #090a0e;
+  border-color: #c5a880;
+  box-shadow: 0 2px 8px rgba(197, 168, 128, 0.3);
+}
+
+.task-action-btn.icon-only {
+  width: 28px;
+  padding: 0;
+  color: #a1a1aa;
+}
+
+.task-action-btn.icon-only:hover {
+  color: #090a0e;
+  background: #c5a880;
+  border-color: #c5a880;
+}
+
+.focus-primary-action-btn {
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(197, 168, 128, 0.25);
+  transition: all 150ms ease;
+}
+
+.focus-primary-action-btn.is-focus-running {
+  background: #d8c7b0 !important;
+  color: #090a0e !important;
+  box-shadow: 0 0 12px rgba(197, 168, 128, 0.5);
 }
 
 /* Recorrência de tarefas (TickTick quiet luxury) */
@@ -1740,10 +1923,12 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 9px;
+  margin-bottom: 4px;
 }
 .task-title-row h3 {
   margin: 0;
+  font-size: 14.5px;
+  line-height: 1.35;
 }
 .recurrence-indicator {
   display: inline-flex;
@@ -2178,22 +2363,11 @@ a {
   color: #c5a880 !important;
 }
 .progress {
-  margin-top: 14px;
+  margin-top: 8px;
 }
+/* Legado: botão permanente substituído por hover/swipe no Pacote 3 */
 .focus {
-  align-self: center;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid rgba(197, 168, 128, 0.25);
-  background: transparent;
-  color: #c5a880;
-  border-radius: 8px;
-  min-height: 40px;
-  padding: 0 11px;
-  font: 11px 'Space Mono';
-  letter-spacing: 0.08em;
-  cursor: pointer;
+  display: none !important;
 }
 .completed {
   margin-top: 28px;
@@ -5808,8 +5982,9 @@ a {
     width: 32px;
   }
   .task-card {
-    padding: 16px;
+    padding: 10px 12px;
     gap: 10px;
+    min-height: 48px;
   }
   .task-drag-handle {
     padding: 4px 2px;
@@ -5819,11 +5994,8 @@ a {
     width: 17px;
     height: 17px;
   }
-  .focus {
-    width: 44px;
-    font-size: 0;
-    padding: 0;
-    justify-content: center;
+  .task-hover-actions {
+    display: none !important;
   }
   .meta {
     line-height: 1.8;

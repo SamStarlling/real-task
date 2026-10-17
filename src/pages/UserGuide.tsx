@@ -581,6 +581,53 @@ export function UserGuide() {
                 </div>
               </div>
 
+              {/* RESPIRO DOS CARDS & AÇÕES NO HOVER / SWIPE (PACOTE 3 DO REDESIGN) */}
+              <div className="p-4 rounded-xl bg-[#12141C] border border-[#C5A880]/30 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#C5A880]/20 text-[#C5A880] border border-[#C5A880]/30">
+                    PACOTE 3 REDESIGN
+                  </span>
+                  <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
+                    Respiro Geral dos Cards: Conteúdo em Destaque, Ações no Hover & Swipe
+                  </h3>
+                </div>
+                <p className="text-xs text-[#A1A1AA] leading-relaxed">
+                  Para reduzir a carga cognitiva e permitir listas mais densas e elegantes, o antigo
+                  botão permanente <code>FOCUS</code> foi retirado da lateral direita dos cards:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">
+                      🖥️ Desktop: Ações no Hover
+                    </strong>
+                    <span className="text-[#A1A1AA]">
+                      Passe o mouse sobre qualquer tarefa para revelar ações rápidas e fluidas à
+                      direita: botão <strong>FOCUS</strong> imediato, menu de{' '}
+                      <strong>Prioridade rápida (P1 a P4)</strong> e atalho para abrir
+                      detalhes/editar.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">📱 Mobile: Gesto de Swipe</strong>
+                    <span className="text-[#A1A1AA]">
+                      No smartphone, deslize o card para a direita para disparar o{' '}
+                      <strong>FOCUS</strong> instantaneamente com feedback táctil e visual. Toque no
+                      card para abrir o painel completo.
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
+                    <strong className="text-[#C5A880] block mb-1">
+                      ⏱️ Tarefa em Foco Destacada
+                    </strong>
+                    <span className="text-[#A1A1AA]">
+                      Apenas a tarefa que está ativamente rodando no Pomodoro recebe destaque
+                      permanente com borda champagne iluminada e badge pulsante <em>EM FOCO</em>.
+                      Checkbox de conclusão permanece direto e imediato.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* ARRASTAR E SOLTAR + HIERARQUIA */}
               <div className="p-4 rounded-xl bg-[#090A0E] border border-[#27272A] space-y-3">
                 <div className="flex items-center gap-2">
