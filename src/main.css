@@ -1836,31 +1836,38 @@ a {
   }
 }
 
-/* Ações ao Hover no Desktop (Todoist/Linear pattern) */
+/* Ações ao Hover no Desktop (Todoist/Linear pattern) — SOBREPOSTAS para não reservar espaço */
 .task-hover-actions {
-  display: none;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%) translateX(6px);
+  display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
-  flex: none;
   opacity: 0;
-  transform: translateX(4px);
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 20;
+  padding: 2px 4px;
+  border-radius: 8px;
+  background: rgba(14, 16, 22, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(197, 168, 128, 0.28);
   transition:
     opacity 140ms ease,
-    transform 140ms ease;
-  pointer-events: none;
+    transform 140ms ease,
+    visibility 140ms ease;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .task-hover-actions {
-    display: flex;
-  }
-  .task-card:hover .task-hover-actions,
-  .task-card:focus-within .task-hover-actions {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
+.task-card:hover .task-hover-actions,
+.task-card:focus-within .task-hover-actions {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
 }
 
 .task-action-btn {
@@ -2236,23 +2243,52 @@ a {
   cursor: pointer;
 }
 
-/* Arrastar e soltar (Drag and drop) - Quiet Luxury */
+/* Arrastar e soltar (Drag and drop) - Quiet Luxury — Não ocupa largura fixa quando inativo */
 .task-drag-handle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #94949e;
   cursor: grab;
-  padding: 2px 0 2px 2px;
+  padding: 2px;
   margin-top: 2px;
   flex: none;
   touch-action: none;
   user-select: none;
-  transition: color 150ms ease;
+  width: 0;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    width 140ms ease,
+    max-width 140ms ease,
+    color 150ms ease;
 }
-.task-drag-handle:hover,
-.task-card:hover .task-drag-handle {
+
+@media (hover: hover) and (pointer: fine) {
+  .task-card:hover .task-drag-handle,
+  .task-card:focus-within .task-drag-handle {
+    width: 18px;
+    max-width: 18px;
+    opacity: 0.85;
+    pointer-events: auto;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .task-drag-handle {
+    width: 20px;
+    max-width: 20px;
+    opacity: 0.7;
+    pointer-events: auto;
+  }
+}
+
+.task-drag-handle:hover {
   color: #c5a880;
+  opacity: 1 !important;
 }
 .task-drag-handle:active {
   cursor: grabbing;
@@ -2664,8 +2700,9 @@ a {
   border-radius: 6px;
   border: 1px solid currentColor;
   background: transparent;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
   user-select: none;
   transition: all 140ms ease;
   box-sizing: border-box;
@@ -2673,10 +2710,11 @@ a {
 
 .tag-chip-label,
 .recurrence-chip-text {
-  max-width: 140px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
   display: inline-block;
   vertical-align: middle;
 }
@@ -2691,10 +2729,11 @@ a {
 }
 
 .meta-list-chip {
-  max-width: 120px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
   display: inline-block;
   color: #a1a1aa;
 }
@@ -7047,14 +7086,46 @@ a {
   border-style: dashed;
 }
 
-/* Faixa horizontal da Inbox no topo */
+/* Faixa horizontal da Inbox no topo — Cartão compacto recolhível */
 .week-inbox-shelf {
   background: #12141c;
-  border: 1px solid rgba(197, 168, 128, 0.14);
-  border-radius: 12px;
-  padding: 14px 18px;
-  margin-bottom: 24px;
+  border: 1px solid rgba(197, 168, 128, 0.16);
+  border-radius: 10px;
+  padding: 0;
+  margin-bottom: 20px;
   position: relative;
+  overflow: hidden;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.week-inbox-shelf:hover {
+  border-color: rgba(197, 168, 128, 0.28);
+}
+
+.week-inbox-shelf.is-expanded {
+  border-color: rgba(197, 168, 128, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.inbox-shelf-header-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  transition: background 140ms ease;
+}
+
+.inbox-shelf-header-btn:hover {
+  background: rgba(197, 168, 128, 0.04);
 }
 
 .inbox-shelf-header {
@@ -7062,14 +7133,14 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .inbox-shelf-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font:
     11px 'Space Mono',
     monospace;
@@ -7078,6 +7149,39 @@ a {
   flex: 1;
   min-width: 0;
   flex-wrap: wrap;
+}
+
+.inbox-shelf-expand-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #a1a1aa;
+  font:
+    11px 'Space Mono',
+    monospace;
+  letter-spacing: 0.04em;
+  transition: color 140ms ease;
+}
+
+.inbox-shelf-header-btn:hover .inbox-shelf-expand-indicator {
+  color: #c5a880;
+}
+
+.inbox-shelf-expand-indicator svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.8;
+  transition: transform 200ms ease;
+}
+
+.inbox-shelf-expand-indicator svg.is-open {
+  transform: rotate(180deg);
+}
+
+.inbox-shelf-content-body {
+  padding: 0 16px 14px 16px;
+  border-top: 1px solid rgba(197, 168, 128, 0.1);
+  animation: enter 0.2s ease-out;
 }
 
 .inbox-shelf-title svg {
@@ -7177,7 +7281,7 @@ a {
   overflow-x: auto;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  padding: 2px 2px 8px 2px;
+  padding: 12px 2px 8px 2px;
   scrollbar-width: thin;
   scrollbar-color: rgba(197, 168, 128, 0.25) transparent;
   -webkit-overflow-scrolling: touch;
@@ -7247,7 +7351,8 @@ a {
 
 .inbox-item-title {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   color: #f4f4f6;
   white-space: nowrap;
   overflow: hidden;
@@ -7627,25 +7732,40 @@ a {
   background: #090a0e;
   border-color: rgba(197, 168, 128, 0.14);
   align-items: flex-start;
+  position: relative;
 }
 
-/* Alça de arrastar visível só no hover em desktop, sempre acessível no toque */
+/* Alça de arrastar visível só no hover em desktop ou toque, não ocupando espaço quando inativa */
 .week-task-card .task-drag-handle {
+  width: 0;
+  max-width: 0;
   opacity: 0;
-  width: 14px;
-  transition: opacity 120ms ease;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    width 120ms ease,
+    max-width 120ms ease;
   margin-top: 3px;
+  padding: 0;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .week-task-card:hover .task-drag-handle {
-    opacity: 1;
+  .week-task-card:hover .task-drag-handle,
+  .week-task-card:focus-within .task-drag-handle {
+    width: 14px;
+    max-width: 14px;
+    opacity: 0.9;
+    pointer-events: auto;
   }
 }
 
 @media (hover: none), (pointer: coarse) {
   .week-task-card .task-drag-handle {
-    opacity: 0.6;
+    width: 16px;
+    max-width: 16px;
+    opacity: 0.7;
+    pointer-events: auto;
   }
 }
 
@@ -7674,9 +7794,10 @@ a {
   min-width: 0;
 }
 
-/* Título limitado a 2 linhas com line-clamp e elipse suave */
+/* Título restaurado para 14px+ legível */
 .week-task-card h3 {
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.35;
   margin: 0 0 5px;
   display: -webkit-box;
@@ -7688,7 +7809,7 @@ a {
 }
 
 .week-task-card .meta {
-  font-size: 10.5px;
+  font-size: 11px;
   gap: 5px;
   display: flex;
   align-items: center;
@@ -7698,11 +7819,10 @@ a {
 
 .week-task-card .meta-times {
   font:
-    10px 'Space Mono',
+    11px 'Space Mono',
     monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
   max-width: 100%;
 }
 
@@ -7728,7 +7848,7 @@ a {
   transition: width 200ms ease;
 }
 
-/* Chips com elipse e max-width para não quebrar ou estourar a coluna */
+/* Chips legíveis de 11px que quebram em linha em vez de truncar para o nada */
 .week-task-card .tag-chip,
 .week-task-card .time-chip,
 .week-task-card .priority-chip,
@@ -7736,47 +7856,49 @@ a {
 .week-task-card .meta-list-chip,
 .week-task-card .big3-indicator-chip,
 .week-task-card .recurrence-chip {
-  padding: 1px 5px;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-  font-size: 10px;
+  padding: 2px 6px;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  white-space: normal;
+  max-width: 100%;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .week-task-card .tag-chip-label,
 .week-task-card .recurrence-chip-text {
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-block;
-  max-width: 100px;
-  vertical-align: middle;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+  display: inline;
 }
 
 .column-empty-dropzone {
-  min-height: 64px;
-  border: 1px dashed rgba(255, 255, 255, 0.08);
+  min-height: 72px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #94949e;
+  color: #a1a1aa;
   font:
-    10.5px 'Space Mono',
+    500 12px 'Space Mono',
     monospace;
-  gap: 2px;
-  margin: 4px 0;
-  background: rgba(0, 0, 0, 0.15);
+  gap: 3px;
+  margin: 6px 0;
+  background: rgba(0, 0, 0, 0.22);
   pointer-events: none;
+  padding: 12px 8px;
 }
 
 .column-empty-dropzone small {
-  font-size: 11px;
-  color: #80808a;
+  font-size: 12px;
+  color: #c5a880;
+  opacity: 0.85;
 }
 
 /* Concluídas dentro da coluna */
@@ -7967,10 +8089,14 @@ a {
   .week-grid-fade {
     display: none;
   }
+
+  .week-column {
+    scroll-snap-align: start;
+  }
 }
 
 /* REGIME 2: 1.200px a 1.639px (e tablets desktop 901px a 1.199px) — Carrossel horizontal
-   com scroll-snap, setas ‹ › no cabeçalho e fade lateral direito indicando continuação.
+   com scroll-snap firme, setas ‹ › no cabeçalho e fade lateral direito indicando continuação.
    A coluna nunca fica cortada no meio: alinha perfeitamente pelo snap. */
 @media (min-width: 901px) and (max-width: 1639px) {
   .week-grid-nav-controls {
@@ -7985,6 +8111,7 @@ a {
     overflow-x: auto;
     scroll-behavior: smooth;
     scroll-snap-type: x mandatory;
+    scroll-padding: 0;
     padding-bottom: 16px;
     scrollbar-width: thin;
     scrollbar-color: rgba(197, 168, 128, 0.25) transparent;
@@ -8002,6 +8129,7 @@ a {
 
   .week-column {
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     min-height: 340px;
   }
 }
