@@ -177,11 +177,18 @@ export function UserGuide() {
 
             <div className="space-y-6 text-sm text-[#A1A1AA] leading-relaxed">
               <p>
-                A <strong>Barra de Captura</strong> fica permanentemente fixada no topo da
-                interface. Você não precisa preencher formulários compridos: basta escrever em
-                linguagem natural, como se estivesse mandando uma mensagem para um colega. O sistema
-                extrai datas, horários, prioridades e categorias automaticamente, deixando o título
-                da tarefa limpo.
+                A captura de tarefas é ágil e global: pressione a tecla{' '}
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[#C5A880] font-mono text-xs border border-[rgba(197,168,128,0.2)]">
+                  C
+                </kbd>{' '}
+                em qualquer tela para abrir o <strong>Modal de Captura Global</strong> (ou clique no
+                botão flutuante{' '}
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[#C5A880] font-mono text-xs border border-[rgba(197,168,128,0.2)]">
+                  +
+                </kbd>{' '}
+                no mobile). As telas do sistema mantêm o cabeçalho limpo e espaçoso sem barras fixas
+                invasivas. As dicas de sintaxe em linguagem natural agora ficam acessíveis dentro do
+                próprio modal.
               </p>
 
               {/* TABELA DE ATALHOS DE CAPTURA */}
@@ -287,7 +294,7 @@ export function UserGuide() {
               {/* EXEMPLOS REAIS PRONTOS PARA COPIAR */}
               <div className="space-y-3">
                 <span className="font-mono text-xs uppercase tracking-wider text-[#F4F4F6] block">
-                  Exemplos práticos de digitação (copie e teste na barra):
+                  Exemplos práticos de digitação (pressione C para abrir a captura e teste):
                 </span>
                 <CopyableBlock
                   title="Reunião com horário, prioridade, projeto e duração em linguagem natural"
@@ -372,7 +379,7 @@ export function UserGuide() {
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
                     <li>
-                      <strong>Barra de captura rápida</strong> fixada no topo;
+                      <strong>Modal de captura global</strong> acionado pela tecla <code>C</code>;
                     </li>
                     <li>
                       <strong>Painel de detalhe da tarefa (TaskDetail)</strong> ao clicar no card;
@@ -802,10 +809,12 @@ export function UserGuide() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
-                    <strong className="text-[#C5A880] block mb-1">1. Visões</strong>
+                    <strong className="text-[#C5A880] block mb-1">1. Visões (Inbox no topo)</strong>
                     <span className="text-[#A1A1AA]">
-                      Hoje, Amanhã, Semana e Inbox com contagens de tarefas abertas à direita em
-                      Space Mono e estado colapsável.
+                      Ordem ergonômica:{' '}
+                      <strong>Inbox &rarr; Hoje &rarr; Amanhã &rarr; Semana</strong> com estado
+                      ativo por rota exata (apenas a visão em foco acende) e contagens em Space
+                      Mono.
                     </span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
@@ -1193,11 +1202,10 @@ export function UserGuide() {
                     Botão de captura rápida (+)
                   </strong>
                   <p className="text-xs text-[#A1A1AA]">
-                    Botão flutuante acima da barra inferior. Expande na hora para digitar sua
-                    pendência.
+                    Um botão flutuante acessível pelo polegar direito que abre o mesmo modal de
+                    captura com dicas de linguagem natural e estimativa livre.
                   </p>
                 </div>
-
                 <div className="p-3.5 rounded-xl bg-[#12141C] border border-[#27272A]">
                   <strong className="block text-xs font-semibold text-[#F4F4F6] mb-1">
                     Gaveta via hambúrguer

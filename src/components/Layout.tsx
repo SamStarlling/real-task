@@ -50,7 +50,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Brand } from '@/components/Brand'
-import { CaptureBar } from '@/components/CaptureBar'
+import { CaptureModal } from '@/components/CaptureModal'
 import { PomodoroWidget } from '@/components/PomodoroWidget'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ListRecord, SavedFilterRecord, TagRecord, TaskRecord } from '@/types'
@@ -71,12 +71,12 @@ import {
   TAG_PALETTE,
 } from '@/services/data'
 
-// As 4 visões fixas no topo ao estilo Todoist
+// As 4 visões fixas no topo ao estilo Todoist (Nova ordem: Inbox → Hoje → Amanhã → Semana)
 const todoistViews = [
+  { to: '/?view=inbox', label: 'Inbox', icon: Inbox },
   { to: '/', label: 'Hoje', icon: Sun },
   { to: '/?view=amanha', label: 'Amanhã', icon: ArrowRight },
   { to: '/semana', label: 'Semana', icon: CalendarDays },
-  { to: '/?view=inbox', label: 'Inbox', icon: Inbox },
 ] as const
 
 // Links utilitários complementares (Pomodoro e Histórico)
@@ -530,6 +530,39 @@ export function Layout({
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const [mobileCaptureOpen, setMobileCaptureOpen] = useState(false)
+  const [captureModalOpen, setCaptureModalOpen] = useState(false)
+
+  // Atalho global de teclado: tecla C abre o modal de captura em qualquer tela
+  // Ignora quando foco estiver em input, textarea, select ou elemento com contenteditable
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      // Se pressionou 'c' ou 'C'
+      if (e.key === 'c' || e.key === 'C') {
+        // Ignora se modificadores como Ctrl/Cmd/Alt estiverem pressionados
+        if (e.ctrlKey || e.metaKey || e.altKey) return
+
+        const activeEl = document.activeElement
+        const tagName = activeEl?.tagName.toLowerCase()
+        const isEditable =
+          tagName === 'input' ||
+          tagName === 'textarea' ||
+          tagName === 'select' ||
+          activeEl?.getAttribute('contenteditable') === 'true'
+
+        // Se houver algum input focado, não intercepta a digitação
+        if (isEditable) return
+
+        // Se o modal já estiver aberto, não faz nada
+        if (captureModalOpen) return
+
+        e.preventDefault()
+        setCaptureModalOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [captureModalOpen])
 
   // Fecha o drawer automaticamente ao mudar de rota ou parâmetros
   useEffect(() => {
@@ -704,25 +737,26 @@ export function Layout({
           {!viewsCollapsed && (
             <nav className="sidebar-nav-group">
               {todoistViews.map(({ to, label, icon: Icon }) => {
-                const isItemActive =
-                  to === '/'
-                    ? (location.pathname === '/' || location.pathname === '') &&
-                      (!searchParams.get('view') || searchParams.get('view') === 'hoje') &&
-                      !activeUrlTag &&
-                      !activeUrlList
-                    : to === '/?view=amanha'
-                      ? (location.pathname === '/' || location.pathname === '') &&
-                        searchParams.get('view') === 'amanha' &&
-                        !activeUrlTag &&
-                        !activeUrlList
-                      : to === '/semana'
-                        ? location.pathname === '/semana'
-                        : to === '/?view=inbox'
-                          ? (location.pathname === '/' || location.pathname === '') &&
-                            searchParams.get('view') === 'inbox' &&
-                            !activeUrlTag &&
-                            !activeUrlList
-                          : false
+                const isItemActive = (() => {
+                  const path = location.pathname
+                  const viewParam = searchParams.get('view')
+                  // Não pode estar com filtro de etiqueta ou de projeto ativo
+                  if (activeUrlTag || activeUrlList || activeUrlFilter) return false
+
+                  if (label === 'Inbox') {
+                    return (path === '/' || path === '') && viewParam === 'inbox'
+                  }
+                  if (label === 'Hoje') {
+                    return (path === '/' || path === '') && (viewParam === 'hoje' || !viewParam)
+                  }
+                  if (label === 'Amanhã') {
+                    return (path === '/' || path === '') && viewParam === 'amanha'
+                  }
+                  if (label === 'Semana') {
+                    return path === '/semana'
+                  }
+                  return false
+                })()
 
                 const itemCount = count(label)
 
@@ -731,7 +765,7 @@ export function Layout({
                     key={label}
                     to={to}
                     onClick={onItemClick}
-                    className={`sidebar-todoist-view-item ${isItemActive ? 'active' : ''}`}
+                    className={() => `sidebar-todoist-view-item ${isItemActive ? 'active' : ''}`}
                   >
                     <Icon className="sidebar-view-icon" />
                     <span className="sidebar-view-label">{label}</span>
@@ -794,8 +828,7 @@ export function Layout({
                     const projectCount = openCountByList.get(project.id) || 0
                     const isActive =
                       location.pathname === `/projetos/${project.id}` ||
-                      activeUrlList === project.id
-
+                      (location.pathname === '/' && activeUrlList === project.id)
                     return (
                       <div
                         key={`fav-p-${project.id}`}
@@ -934,7 +967,9 @@ export function Layout({
                   {/* Etiquetas favoritadas (pinned) */}
                   {favoriteTags.map((tag) => {
                     const tagCount = openCountByTag.get(tag.id) || 0
-                    const isActive = activeUrlTag === tag.id
+                    const isActive =
+                      (location.pathname === '/' || location.pathname === '') &&
+                      activeUrlTag === tag.id
 
                     return (
                       <div
@@ -1047,7 +1082,8 @@ export function Layout({
                   const projectCount = openCountByList.get(project.id) || 0
                   const isFav = !!project.favorite
                   const isActive =
-                    location.pathname === `/projetos/${project.id}` || activeUrlList === project.id
+                    location.pathname === `/projetos/${project.id}` ||
+                    (location.pathname === '/' && activeUrlList === project.id)
                   const isDragging = draggingListId === project.id
                   const dropPos = listDropTarget?.id === project.id ? listDropTarget.position : null
                   const hasKids = kids.length > 0
@@ -1221,7 +1257,7 @@ export function Layout({
                             const isChildFav = !!child.favorite
                             const isChildActive =
                               location.pathname === `/projetos/${child.id}` ||
-                              activeUrlList === child.id
+                              (location.pathname === '/' && activeUrlList === child.id)
 
                             return (
                               <div
@@ -1388,7 +1424,9 @@ export function Layout({
                 optimisticTags.map((tag) => {
                   const tagCount = openCountByTag.get(tag.id) || 0
                   const isPinned = !!tag.pinned
-                  const isActive = activeUrlTag === tag.id
+                  const isActive =
+                    (location.pathname === '/' || location.pathname === '') &&
+                    activeUrlTag === tag.id
                   const isDragging = draggingTagId === tag.id
                   const dropPos = tagDropTarget?.id === tag.id ? tagDropTarget.position : null
 
@@ -1747,51 +1785,44 @@ export function Layout({
         </SheetContent>
       </Sheet>
 
-      {/* CONTEÚDO PRINCIPAL */}
+      {/* CONTEÚDO PRINCIPAL (Header de página limpo sem a barra fixa de captura) */}
       <main className="main">
         {!isPomodoroPage && (
-          <div className="capture-sticky">
-            <CaptureBar onCreated={refresh} />
+          <div className="global-capture-shortcut-banner">
+            <button
+              type="button"
+              onClick={() => setCaptureModalOpen(true)}
+              className="global-capture-trigger-hint"
+              title="Abrir captura rápida global (atalho: C)"
+            >
+              <span className="hint-label">Pressione</span>
+              <kbd className="hint-kbd">C</kbd>
+              <span className="hint-label">para capturar em qualquer tela</span>
+            </button>
           </div>
         )}
         <Outlet />
       </main>
 
-      {/* BOTÃO FLUTUANTE DE CAPTURA (+) OU PAINEL EXPANDIDO NO MOBILE (Oculto em /pomodoro para foco visual absoluto) */}
+      {/* MODAL GLOBAL DE CAPTURA (Acionado pela tecla C ou pelo FAB mobile) */}
+      <CaptureModal
+        open={captureModalOpen}
+        onOpenChange={setCaptureModalOpen}
+        onCreated={refresh}
+      />
+
+      {/* BOTÃO FLUTUANTE DE CAPTURA (+) NO MOBILE (Abre o mesmo modal global de captura) */}
       {!isPomodoroPage && (
         <div className="mobile-capture-container">
-          {mobileCaptureOpen ? (
-            <div className="mobile-capture-expanded">
-              <div className="mobile-capture-expanded-header">
-                <span className="mobile-capture-expanded-title">NOVA TAREFA</span>
-                <button
-                  type="button"
-                  className="mobile-capture-close-btn"
-                  onClick={() => setMobileCaptureOpen(false)}
-                  title="Fechar captura rápida"
-                  aria-label="Fechar captura rápida"
-                >
-                  <X className="w-4 h-4 text-[#a1a1aa]" />
-                </button>
-              </div>
-              <CaptureBar
-                onCreated={() => {
-                  refresh()
-                  setMobileCaptureOpen(false)
-                }}
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="mobile-capture-fab"
-              onClick={() => setMobileCaptureOpen(true)}
-              title="Nova tarefa rápida (+)"
-              aria-label="Nova tarefa rápida"
-            >
-              <Plus className="w-6 h-6 text-[#090a0e]" strokeWidth={2.2} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="mobile-capture-fab"
+            onClick={() => setCaptureModalOpen(true)}
+            title="Nova tarefa rápida (C)"
+            aria-label="Nova tarefa rápida"
+          >
+            <Plus className="w-6 h-6 text-[#090a0e]" strokeWidth={2.2} />
+          </button>
         </div>
       )}
 

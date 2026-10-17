@@ -45,7 +45,13 @@ import {
   SESSION_EXPIRED_MESSAGE,
 } from '@/lib/pocketbase/auth-session'
 
-export function CaptureBar({ onCreated }: { onCreated: () => void }) {
+interface CaptureBarProps {
+  onCreated: () => void
+  inModal?: boolean
+  onClose?: () => void
+}
+
+export function CaptureBar({ onCreated, inModal = false, onClose }: CaptureBarProps) {
   const { user } = useAuth()
   const [text, setText] = useState('')
   // Estimativa livre opcional na Inbox/captura:
@@ -942,30 +948,32 @@ export function CaptureBar({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
 
-      {/* Faixa de dicas de sintaxe em linguagem natural */}
-      <div className="capture-hints-bar">
-        <span className="capture-hint-item">
-          <kbd>p1–p4 / !</kbd> prioridade
-        </span>
-        <span className="capture-hint-item">
-          <kbd>@tag</kbd> etiqueta
-        </span>
-        <span className="capture-hint-item">
-          <kbd>#projeto</kbd> projeto
-        </span>
-        <span className="capture-hint-item">
-          <kbd>todo dia / toda semana / todo dia 15</kbd> repetição
-        </span>
-        <span className="capture-hint-item">
-          <kbd>12/11 · 15 de nov · em 3 dias · próx segunda</kbd> lembrete
-        </span>
-        <span className="capture-hint-item">
-          <kbd>14:00 / às 9h30</kbd> horário
-        </span>
-        <span className="capture-hint-item">
-          <kbd>por 90 min · 1h30 · 45min · 2h</kbd> duração livre
-        </span>
-      </div>
+      {/* Faixa de dicas de sintaxe em linguagem natural (exibida apenas dentro do modal de captura) */}
+      {inModal && (
+        <div className="capture-hints-bar !mt-3 !pt-2 border-t border-[rgba(255,255,255,0.06)] flex-wrap">
+          <span className="capture-hint-item">
+            <kbd>p1–p4 / !</kbd> prioridade
+          </span>
+          <span className="capture-hint-item">
+            <kbd>@tag</kbd> etiqueta
+          </span>
+          <span className="capture-hint-item">
+            <kbd>#projeto</kbd> projeto
+          </span>
+          <span className="capture-hint-item">
+            <kbd>todo dia / toda semana / todo dia 15</kbd> repetição
+          </span>
+          <span className="capture-hint-item">
+            <kbd>12/11 · 15 de nov · em 3 dias · próx segunda</kbd> lembrete
+          </span>
+          <span className="capture-hint-item">
+            <kbd>14:00 / às 9h30</kbd> horário
+          </span>
+          <span className="capture-hint-item">
+            <kbd>por 90 min · 1h30 · 45min · 2h</kbd> duração livre
+          </span>
+        </div>
+      )}
     </div>
   )
 }

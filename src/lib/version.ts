@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.56'
+export const APP_VERSION = '0.0.57'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,24 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.56).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.57).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.57',
+    title: 'Pacotes 1+2 Redesign: Sidebar Ativa Exata, Inbox no Topo & Modal de Captura Global (C)',
+    tag: 'Redesign UI/UX',
+    highlights: [
+      'Pacote 1 — Sidebar corrigida e reordenada: estado ativo por rota exata (apenas a visão, projeto ou etiqueta em foco acende a borda champagne, sem acender Hoje+Amanhã+Inbox conjuntamente).',
+      'Nova ordem da seção VISÕES na barra lateral desktop e no drawer móvel: Inbox → Hoje → Amanhã → Semana.',
+      'Pacote 2 — Captura por atalho global: remoção definitiva da barra de captura fixa do topo das telas, liberando espaço vertical e limpando a hierarquia das páginas.',
+      'Novo Modal de Captura Global acionado pela tecla C em qualquer tela (com proteção contra digitação em inputs/textareas e fechamento no Esc).',
+      'Dicas de sintaxe de linguagem natural integradas dentro do modal (p1–p4, @tag, #projeto, datas, horários, repetições e durações) em vez de poluírem permanentemente a tela.',
+      'Banner sutil e minimalista no topo de descobribilidade ("Pressione C para capturar em qualquer tela") com acionador de clique.',
+      'Mobile: botão flutuante FAB (+) unificado abrindo o mesmo modal global de captura.',
+      'Preservação da captura rápida contextual inline nas seções de projetos (/projetos/:id) e na visão Semana.',
+    ],
+  },
   {
     version: '0.0.56',
     title: 'Estimativa Livre (1–600 min), Parser NL de Duração & Estimativa Opcional',
