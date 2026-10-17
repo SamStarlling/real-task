@@ -1125,23 +1125,38 @@ export function UserGuide() {
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar className="w-4 h-4 text-[#C5A880]" />
                     <h3 className="font-['Clash_Display'] text-base font-semibold text-[#F4F4F6]">
-                      Visão Semana (/semana)
+                      Visão Semana (/semana) — Responsiva em 3 Regimes
                     </h3>
                   </div>
                   <p className="text-xs text-[#A1A1AA] leading-relaxed mb-3">
-                    Exibe os próximos 7 dias em colunas completas. No topo, uma faixa com tarefas
-                    não agendadas prontas para encaixe.
+                    Exibe os próximos 7 dias com adaptação ergonômica inteligente para qualquer
+                    tamanho de tela:
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
-                    <li>Arraste uma tarefa entre colunas para reagendá-la na hora.</li>
+                    <li>
+                      <strong>Telas grandes (≥1.640px):</strong> 7 colunas simultâneas lado a lado.
+                    </li>
+                    <li>
+                      <strong>Laptops (1.200–1.640px):</strong> carrossel com scroll-snap, setas ‹ ›
+                      no topo, fade sutil e foco automático no dia de HOJE.
+                    </li>
+                    <li>
+                      <strong>Mobile (≤900px):</strong> seletor de dias em chips (SÁB DOM SEG...)
+                      com HOJE destacado — toque no chip para ver apenas a coluna do dia sem rolar 7
+                      blocos.
+                    </li>
+                    <li>
+                      <strong>Faixa da Inbox:</strong> scroll-snap, contador "+N tarefas" além do
+                      limite visível e arraste fluido entre dias.
+                    </li>
                     <li>
                       Clique no botão{' '}
                       <kbd className="font-mono text-[10px] bg-[#1F2028] px-1 py-0.5 rounded text-[#C5A880]">
                         +
                       </kbd>{' '}
-                      no rodapé de qualquer coluna para capturar já com a data definida.
+                      no rodapé de qualquer coluna para capturar com data e estimativa já ajustadas.
                     </li>
-                    <li>Cada coluna mostra a soma de minutos de trabalho previstos.</li>
+                    <li>Cada coluna mostra a carga de tarefas e soma de minutos previstos.</li>
                   </ul>
                 </div>
 

@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.59'
+export const APP_VERSION = '0.0.60'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,27 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.59).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.60).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.60',
+    title:
+      'Redesign Responsivo da Visão Semana: 3 Regimes de Tela, Carrossel com Snap & Chips Mobile',
+    tag: 'Redesign Semana',
+    date: '2025-05-19',
+    highlights: [
+      'Redesign responsivo completo da Visão Semana (/semana) eliminando cortes em telas médias (como laptops de ~1.366px) e melhorando a usabilidade no mobile.',
+      'Regime 1 (≥1.640px): 7 colunas inteiras visíveis lado a lado com respiro equilibrado em monitores widescreen.',
+      'Regime 2 (1.200–1.640px e tablets desktop): carrossel horizontal inteligente com scroll-snap que alinha colunas perfeitamente sem cortes no meio, gradiente suave de fade indicando continuação, setas ‹ › de navegação no cabeçalho e coluna de HOJE posicionada como âncora inicial ao abrir.',
+      'Regime 3 (≤900px Mobile): substituição do empilhamento vertical das 7 colunas por um seletor de dia em chips horizontais (SÁB DOM SEG TER QUI SEX SÁB) com HOJE destacado em champagne e opção TODOS; tocar em um chip foca instantaneamente na coluna daquele dia com zero rolagem cansativa.',
+      'Faixa da Inbox reformulada: scroll-snap nos cards, fade lateral indicador, contador dinâmico "+N tarefas" para itens além da borda visível e dica de arraste limpa no cabeçalho.',
+      'Cards de coluna compactos e consistentes: título com limite inteligente de 2 linhas e elipse (line-clamp), chips com truncamento seguro sem estouro horizontal, alça de arrastar visível no hover (desktop) ou toque (mobile) e alinhamento estável do checkbox.',
+      'Correção da barra de progresso Previsto × Real: renderização condicional estrita (apenas quando estimated_minutes > 0), eliminando cálculos inválidos (NaN) para tarefas sem estimativa livre.',
+      'Altura mínima da coluna reduzida de 520px para ~320px com dropzone vazia compacta (64px), eliminando áreas mortas em telas de baixa altura.',
+      'Cabeçalhos de coluna com acabamento translúcido e backdrop-blur para rolagem elegante sem cortar visualmente os cards ao fundo.',
+    ],
+  },
   {
     version: '0.0.59',
     title: 'Pacote 3 Redesign: Respiro Geral dos Cards, Ações no Hover/Swipe e Foco Concentrado',
