@@ -2,7 +2,7 @@
  * Fonte única da versão e metadados de versão da aplicação.
  * Atualizado a cada ciclo/entrega do Barbosa System.
  */
-export const APP_VERSION = '0.0.60'
+export const APP_VERSION = '0.0.62'
 export const APP_VERSION_LABEL = `v${APP_VERSION}`
 
 export interface ChangelogRelease {
@@ -15,9 +15,25 @@ export interface ChangelogRelease {
 }
 
 /**
- * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.60).
+ * Changelog oficial das entregas recentes do Pomodoro e do sistema (v0.0.40–v0.0.62).
  */
 export const POMODORO_CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '0.0.62',
+    title:
+      'Correção da Visão Semana & Cards Globais: Ações Fora do Fluxo, Tipografia 14px+, Carrossel com Snap e Inbox Compacta Recolhível',
+    tag: 'Correção Semana & Cards',
+    date: '2025-05-20',
+    highlights: [
+      'Eliminação da causa raiz de cards sem conteúdo: ações de hover (FOCUS + lápis de edição) removidas do fluxo de layout com posicionamento absoluto sobreposto (visibility: hidden + pointer-events: none quando inativas), devolvendo 100% da largura aos títulos e metadados.',
+      'Alça de arrastar com largura zero e visibilidade oculta quando inativa, surgindo de forma fluida somente no hover em desktop ou toque no mobile.',
+      'Tipografia restaurada em todo o sistema: títulos em 14px+ legíveis, chips de metadados e linha EST.·REAL em 11px Space Mono com quebra elegante em várias linhas (fim do truncamento com elipse vazia).',
+      'Faixa da Inbox na /semana transformada em Cartão Compacto Recolhível por padrão: contagem total de tarefas e estimativa acumulada sempre à vista, expandindo sob demanda para alocação nos dias.',
+      'Carrossel da /semana com scroll-snap firme (scroll-snap-align: start e scroll-snap-stop: always em todas as colunas) e âncora inicial na coluna de HOJE em telas intermediárias (1.200–1.639px), impedindo colunas cortadas ao meio.',
+      'Correção central aplicada no componente compartilhado TaskCard.tsx e propagada para todas as telas (Hoje, Amanhã, Inbox, Projetos, Filtros e Semana).',
+      'Dropzones vazias legíveis com texto em 13px e instrução clara "Sem tarefas / Arraste para cá".',
+    ],
+  },
   {
     version: '0.0.60',
     title:

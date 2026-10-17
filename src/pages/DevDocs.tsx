@@ -1225,10 +1225,11 @@ export function DevDocs() {
               <span className="font-mono text-xl font-bold text-[#C5A880]">07</span>
               <div>
                 <h2 className="font-['Clash_Display'] text-2xl font-semibold text-[#F4F4F6]">
-                  Changelog Técnico & Entregas (v0.0.40–v0.0.60)
+                  Changelog Técnico & Entregas (v0.0.40–v0.0.62)
                 </h2>{' '}
                 <p className="text-xs text-[#A1A1AA] font-mono mt-0.5">
-                  Histórico de arquitetura, redesign responsivo da Semana (v0.0.60) e refinamentos
+                  Histórico de arquitetura, correção da Semana e cards globais (v0.0.62) e
+                  refinamentos
                 </p>
               </div>
             </div>

@@ -598,13 +598,14 @@ export function UserGuide() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
                     <strong className="text-[#C5A880] block mb-1">
-                      🖥️ Desktop: Ações no Hover
+                      🖥️ Desktop: Ações Sobrepostas no Hover
                     </strong>
                     <span className="text-[#A1A1AA]">
-                      Passe o mouse sobre qualquer tarefa para revelar ações rápidas e fluidas à
-                      direita: botão <strong>FOCUS</strong> imediato, menu de{' '}
-                      <strong>Prioridade rápida (P1 a P4)</strong> e atalho para abrir
-                      detalhes/editar.
+                      As ações rápidas (botão <strong>FOCUS</strong> imediato e atalho para abrir
+                      detalhes/editar) ficam fora do fluxo de layout em camada sobreposta. Quando
+                      inativas, possuem visibilidade oculta e largura zero, garantindo que o título
+                      e chips utilizem 100% da largura do cartão sem cortes ou truncamentos
+                      prematuros.
                     </span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#090A0E] border border-[#27272A]">
@@ -1134,20 +1135,30 @@ export function UserGuide() {
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-xs text-[#D4D4D8]">
                     <li>
-                      <strong>Telas grandes (≥1.640px):</strong> 7 colunas simultâneas lado a lado.
+                      <strong>Telas grandes (≥1.640px):</strong> 7 colunas simultâneas lado a lado
+                      com largura confortável e respiro equilibrado.
                     </li>
                     <li>
-                      <strong>Laptops (1.200–1.640px):</strong> carrossel com scroll-snap, setas ‹ ›
-                      no topo, fade sutil e foco automático no dia de HOJE.
+                      <strong>Laptops e telas médias (1.200–1.639px):</strong> carrossel horizontal
+                      com scroll-snap firme (alinhamento perfeito no início de cada coluna, nunca
+                      cortada ao meio), setas ‹ › de navegação no topo, fade lateral elegante e
+                      ancoragem inicial automática no dia de HOJE.
                     </li>
                     <li>
                       <strong>Mobile (≤900px):</strong> seletor de dias em chips (SÁB DOM SEG...)
-                      com HOJE destacado — toque no chip para ver apenas a coluna do dia sem rolar 7
-                      blocos.
+                      com HOJE destacado — toque no chip para focar instantaneamente na coluna do
+                      dia sem rolagem exaustiva.
                     </li>
                     <li>
-                      <strong>Faixa da Inbox:</strong> scroll-snap, contador "+N tarefas" além do
-                      limite visível e arraste fluido entre dias.
+                      <strong>Faixa da Inbox recolhível:</strong> cartão compacto recolhido por
+                      padrão exibindo contagem total e estimativa acumulada à vista; expande com um
+                      clique para arrastar e alocar tarefas para os dias.
+                    </li>
+                    <li>
+                      <strong>Cards com largura total:</strong> ações rápidas (FOCUS + editar)
+                      sobrepostas no hover sem reservar espaço de layout, títulos legíveis em 14px+,
+                      chips que quebram em várias linhas e dropzones vazias legíveis (&quot;Sem
+                      tarefas / Arraste para cá&quot;).
                     </li>
                     <li>
                       Clique no botão{' '}

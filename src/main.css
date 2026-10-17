@@ -1839,7 +1839,7 @@ a {
 /* Ações ao Hover no Desktop (Todoist/Linear pattern) — SOBREPOSTAS para não reservar espaço */
 .task-hover-actions {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%) translateX(6px);
   display: flex;
@@ -1848,14 +1848,16 @@ a {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  z-index: 20;
-  padding: 2px 4px;
+  z-index: 25;
+  padding: 3px 6px;
   border-radius: 8px;
   background: rgba(14, 16, 22, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75);
-  border: 1px solid rgba(197, 168, 128, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(197, 168, 128, 0.35);
+  width: max-content;
+  max-width: none;
   transition:
     opacity 140ms ease,
     transform 140ms ease,
@@ -2250,39 +2252,46 @@ a {
   justify-content: center;
   color: #94949e;
   cursor: grab;
-  padding: 2px;
-  margin-top: 2px;
+  padding: 0;
+  margin: 0;
   flex: none;
   touch-action: none;
   user-select: none;
   width: 0;
   max-width: 0;
   opacity: 0;
+  visibility: hidden;
   overflow: hidden;
   pointer-events: none;
   transition:
     opacity 140ms ease,
+    visibility 140ms ease,
     width 140ms ease,
     max-width 140ms ease,
+    margin 140ms ease,
     color 150ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .task-card:hover .task-drag-handle,
   .task-card:focus-within .task-drag-handle {
-    width: 18px;
-    max-width: 18px;
+    width: 16px;
+    max-width: 16px;
     opacity: 0.85;
+    visibility: visible;
     pointer-events: auto;
+    margin-right: 2px;
   }
 }
 
 @media (hover: none), (pointer: coarse) {
   .task-drag-handle {
-    width: 20px;
-    max-width: 20px;
+    width: 18px;
+    max-width: 18px;
     opacity: 0.7;
+    visibility: visible;
     pointer-events: auto;
+    margin-right: 2px;
   }
 }
 
@@ -2369,15 +2378,18 @@ a {
 .task-body {
   flex: 1;
   min-width: 0;
+  width: 100%;
   text-align: left;
   background: transparent;
   border: 0;
   padding: 0;
 }
 .task-body h3 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  margin: 0 0 9px;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
 }
 .task-card.done {
   opacity: 0.55;
@@ -2388,9 +2400,11 @@ a {
 .meta {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 6px;
   flex-wrap: wrap;
   font-size: 11px;
+  max-width: 100%;
+  margin-top: 6px;
 }
 .meta b {
   font-weight: 400;
@@ -2695,8 +2709,8 @@ a {
     11px 'Space Mono',
     monospace;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 3px 8px;
+  letter-spacing: 0.04em;
+  padding: 2.5px 7px;
   border-radius: 6px;
   border: 1px solid currentColor;
   background: transparent;
@@ -2711,8 +2725,6 @@ a {
 .tag-chip-label,
 .recurrence-chip-text {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: normal;
   word-break: break-word;
   display: inline-block;
@@ -2744,8 +2756,9 @@ a {
 }
 
 .meta-times {
-  white-space: nowrap;
-  flex-shrink: 0;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .tags-filter-bar {
@@ -7627,6 +7640,8 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 320px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease,
@@ -7868,8 +7883,8 @@ a {
 
 .week-task-card .tag-chip-label,
 .week-task-card .recurrence-chip-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: normal;
   word-break: break-word;
   max-width: 100%;
@@ -7877,28 +7892,37 @@ a {
 }
 
 .column-empty-dropzone {
-  min-height: 72px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  min-height: 80px;
+  border: 1px dashed rgba(197, 168, 128, 0.22);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #a1a1aa;
+  color: #d4d4d8;
   font:
-    500 12px 'Space Mono',
+    600 13px 'Space Mono',
     monospace;
-  gap: 3px;
+  letter-spacing: 0.04em;
+  gap: 4px;
   margin: 6px 0;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.35);
   pointer-events: none;
-  padding: 12px 8px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.column-empty-dropzone span {
+  font-size: 13px;
+  color: #f4f4f6;
+  font-weight: 600;
 }
 
 .column-empty-dropzone small {
   font-size: 12px;
   color: #c5a880;
-  opacity: 0.85;
+  font-weight: 500;
+  opacity: 0.95;
 }
 
 /* Concluídas dentro da coluna */

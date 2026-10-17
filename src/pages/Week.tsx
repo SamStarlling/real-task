@@ -81,6 +81,9 @@ export function WeekPage({
   const gridScrollRef = useRef<HTMLDivElement>(null)
   const inboxScrollRef = useRef<HTMLDivElement>(null)
 
+  // Estado de recolhimento da Inbox na /semana (colapsado por padrão conforme item 4)
+  const [isInboxExpanded, setIsInboxExpanded] = useState(false)
+
   // Estados de scroll e fade
   const [gridCanScrollLeft, setGridCanScrollLeft] = useState(false)
   const [gridCanScrollRight, setGridCanScrollRight] = useState(false)
@@ -239,11 +242,10 @@ export function WeekPage({
     if (todayCol && el.scrollWidth > el.clientWidth) {
       const timer = setTimeout(() => {
         const colLeft = todayCol.offsetLeft
-        if (colLeft > el.clientWidth - 260) {
-          el.scrollTo({ left: Math.max(0, colLeft - 20), behavior: 'smooth' })
-        }
+        // Centraliza ou posiciona no início com folga visual confortável
+        el.scrollTo({ left: Math.max(0, colLeft - 14), behavior: 'smooth' })
         updateGridScrollState()
-      }, 100)
+      }, 120)
       return () => clearTimeout(timer)
     }
   }, [days, updateGridScrollState])
@@ -769,233 +771,270 @@ export function WeekPage({
         </div>
       )}
 
-      {/* FAIXA DO INBOX NO TOPO (Plano B: scroll-snap + fade + contador + hint no cabeçalho) */}
-      <section className="week-inbox-shelf">
-        <div className="inbox-shelf-header">
-          <div className="inbox-shelf-title">
-            <Inbox />
-            <span>INBOX — TAREFAS SEM DATA ({inboxTasks.length})</span>
-            {inboxHiddenCount > 0 && (
-              <span
-                className="inbox-hidden-counter-badge"
-                title={`${inboxHiddenCount} tarefas além do limite visível`}
-              >
-                +{inboxHiddenCount}
+      {/* FAIXA DO INBOX NO TOPO: Cartão compacto recolhível por padrão */}
+      <section className={`week-inbox-shelf ${isInboxExpanded ? 'is-expanded' : ''}`}>
+        <button
+          type="button"
+          className="inbox-shelf-header-btn"
+          onClick={() => setIsInboxExpanded((prev) => !prev)}
+          aria-expanded={isInboxExpanded}
+          aria-label={
+            isInboxExpanded
+              ? 'Recolher tarefas da Inbox'
+              : 'Expandir tarefas da Inbox para arrastar aos dias'
+          }
+        >
+          <div className="inbox-shelf-header">
+            <div className="inbox-shelf-title">
+              <Inbox />
+              <span>
+                INBOX — TAREFAS NÃO AGENDADAS ({inboxTasks.length})
+                {inboxTasks.length > 0 && (
+                  <>
+                    {' · '}
+                    EST. TOTAL:{' '}
+                    {formatMinutes(
+                      inboxTasks.reduce((acc, t) => acc + (t.estimated_minutes || 0), 0),
+                    )}
+                  </>
+                )}
               </span>
-            )}
-            <span className="inbox-shelf-hint">· Arraste para o dia desejado</span>
-          </div>
-
-          {inboxTasks.length > 0 && (
-            <div className="inbox-shelf-nav">
-              <button
-                type="button"
-                className="inbox-nav-arrow"
-                aria-label="Rolar Inbox para a esquerda"
-                disabled={!inboxCanScrollLeft}
-                onClick={() => scrollInbox('left')}
-              >
-                <ChevronLeft />
-              </button>
-              <button
-                type="button"
-                className="inbox-nav-arrow"
-                aria-label="Rolar Inbox para a direita"
-                disabled={!inboxCanScrollRight}
-                onClick={() => scrollInbox('right')}
-              >
-                <ChevronRight />
-              </button>
+              {isInboxExpanded && inboxHiddenCount > 0 && (
+                <span
+                  className="inbox-hidden-counter-badge"
+                  title={`${inboxHiddenCount} tarefas além do limite visível`}
+                >
+                  +{inboxHiddenCount}
+                </span>
+              )}
+              <span className="inbox-shelf-hint">
+                {isInboxExpanded
+                  ? '· Arraste para o dia desejado'
+                  : '· Clique para expandir e arrastar aos dias'}
+              </span>
             </div>
-          )}
-        </div>
 
-        {inboxTasks.length > 0 ? (
-          <div className="inbox-shelf-cards-wrapper">
-            {inboxCanScrollLeft && (
-              <div className="inbox-shelf-fade inbox-fade-left" aria-hidden="true" />
-            )}
-            {inboxCanScrollRight && (
-              <div className="inbox-shelf-fade inbox-fade-right" aria-hidden="true" />
-            )}
-            <div ref={inboxScrollRef} className="inbox-shelf-cards">
-              {inboxTasks.map((task) => {
-                const priorityMeta = getPriorityMeta(task.priority)
-                const priorityClass = priorityMeta
-                  ? `priority-${priorityMeta.code.toLowerCase()}`
-                  : ''
-                const subtaskProgress = getSubtaskProgress(task.subtasks)
-                const big3Source = getTaskBig3Source(task, tags, lists)
-                const hasEstimate =
-                  typeof task.estimated_minutes === 'number' && task.estimated_minutes > 0
-                return (
-                  <div
-                    key={task.id}
-                    data-task-id={task.id}
-                    className={`inbox-shelf-item ${priorityClass} ${draggingTaskId === task.id ? 'is-dragging' : ''} ${big3Source ? 'has-big3-source' : ''}`}
-                    style={{
-                      borderLeftColor: priorityMeta ? priorityMeta.borderColor : undefined,
-                    }}
-                    draggable
-                    onDragStart={(e) => handleDragStartTask(e, task.id, 'inbox')}
-                    onDragEnd={handleDragEndTask}
+            <div className="flex items-center gap-3">
+              {isInboxExpanded && inboxTasks.length > 0 && (
+                <div className="inbox-shelf-nav" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="inbox-nav-arrow"
+                    aria-label="Rolar Inbox para a esquerda"
+                    disabled={!inboxCanScrollLeft}
+                    onClick={() => scrollInbox('left')}
                   >
-                    <div
-                      className="inbox-item-drag-handle"
-                      onTouchStart={(e) => handleTouchStartHandle(e, task.id, 'inbox')}
-                      title="Arrastar para agendar no dia"
-                    >
-                      <GripHorizontal />
-                    </div>
-                    <button
-                      type="button"
-                      className="inbox-item-body"
-                      onClick={() => {
-                        setSelectedTask(task)
-                        setParams((p) => {
-                          p.set('taskId', task.id)
-                          return p
-                        })
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span className="inbox-item-title" title={task.title}>
-                          {task.title}
-                        </span>
-                        {task.recurrence_type && task.recurrence_type !== 'none' && (
-                          <span
-                            className="recurrence-indicator"
-                            title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
-                          >
-                            <Repeat className="w-3 h-3 text-[#C5A880]" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="inbox-item-meta">
-                        {big3Source && (
-                          <span
-                            className="tag-chip big3-indicator-chip"
-                            title={`Item prioritário Big3 (80/20) via ${big3Source.label}`}
-                          >
-                            <span
-                              className="big3-dot"
-                              style={{ backgroundColor: big3Source.color || '#C5A880' }}
-                            />
-                            BIG3
-                          </span>
-                        )}
-                        {priorityMeta && (
-                          <span
-                            className="tag-chip priority-chip"
-                            style={{
-                              borderColor: priorityMeta.borderColor,
-                              color: priorityMeta.color,
-                              backgroundColor: priorityMeta.bgSubtle,
-                            }}
-                            title={priorityMeta.label}
-                          >
-                            <Flag className="w-2.5 h-2.5 inline mr-1" />
-                            {priorityMeta.code}
-                          </span>
-                        )}
-                        {task.expand?.list && (
-                          <span
-                            className="inbox-list-chip meta-list-chip"
-                            title={`#${task.expand.list.name}`}
-                          >
-                            #{task.expand.list.name}
-                          </span>
-                        )}
-                        {task.expand?.tags &&
-                          (() => {
-                            const visibleTags = task.expand.tags.slice(0, 2)
-                            const overflowCount = task.expand.tags.length - visibleTags.length
-                            return (
-                              <>
-                                {visibleTags.map((tag) => (
-                                  <span
-                                    key={tag.id}
-                                    className="tag-chip"
-                                    style={{
-                                      borderColor: tag.color,
-                                      color: tag.color,
-                                    }}
-                                    title={`@${tag.name}`}
-                                  >
-                                    <span className="tag-chip-label">@{tag.name}</span>
-                                  </span>
-                                ))}
-                                {overflowCount > 0 && (
-                                  <span
-                                    className="tag-chip overflow-chip"
-                                    title={`${overflowCount} outra(s) etiqueta(s)`}
-                                  >
-                                    +{overflowCount}
-                                  </span>
-                                )}
-                              </>
-                            )
-                          })()}
-                        {task.recurrence_type && task.recurrence_type !== 'none' && (
-                          <span
-                            className="tag-chip recurrence-chip"
-                            style={{
-                              borderColor: 'rgba(197, 168, 128, 0.35)',
-                              color: '#C5A880',
-                            }}
-                            title={`Regra: ${formatRecurrenceRule(task)}`}
-                          >
-                            <Repeat className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
-                            <span className="recurrence-chip-text">
-                              {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
-                            </span>
-                          </span>
-                        )}
-                        {subtaskProgress.total > 0 && (
-                          <span
-                            className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
-                            title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
-                          >
-                            <CheckSquare className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
-                            {subtaskProgress.completed}/{subtaskProgress.total}
-                          </span>
-                        )}
-                        <span
-                          className="inbox-est-chip meta-times"
-                          title={
-                            hasEstimate
-                              ? `Estimado: ${formatMinutes(task.estimated_minutes)}`
-                              : 'Sem estimativa prévia'
-                          }
-                        >
-                          EST. {hasEstimate ? formatMinutes(task.estimated_minutes) : '—'}
-                        </span>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      className="inbox-item-focus"
-                      title="Iniciar Pomodoro"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        start(task)
-                      }}
-                    >
-                      <Play />
-                    </button>
-                  </div>
-                )
-              })}
+                    <ChevronLeft />
+                  </button>
+                  <button
+                    type="button"
+                    className="inbox-nav-arrow"
+                    aria-label="Rolar Inbox para a direita"
+                    disabled={!inboxCanScrollRight}
+                    onClick={() => scrollInbox('right')}
+                  >
+                    <ChevronRight />
+                  </button>
+                </div>
+              )}
+
+              <span className="inbox-shelf-expand-indicator">
+                <span>{isInboxExpanded ? 'Recolher' : 'Ver tarefas'}</span>
+                <ChevronDown className={isInboxExpanded ? 'is-open' : ''} />
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="inbox-shelf-empty">
-            <BrandMark />
-            <span>Inbox limpa. Todas as tarefas estão agendadas para esta semana.</span>
+        </button>
+
+        {isInboxExpanded && (
+          <div className="inbox-shelf-content-body">
+            {inboxTasks.length > 0 ? (
+              <div className="inbox-shelf-cards-wrapper">
+                {inboxCanScrollLeft && (
+                  <div className="inbox-shelf-fade inbox-fade-left" aria-hidden="true" />
+                )}
+                {inboxCanScrollRight && (
+                  <div className="inbox-shelf-fade inbox-fade-right" aria-hidden="true" />
+                )}
+                <div ref={inboxScrollRef} className="inbox-shelf-cards">
+                  {inboxTasks.map((task) => {
+                    const priorityMeta = getPriorityMeta(task.priority)
+                    const priorityClass = priorityMeta
+                      ? `priority-${priorityMeta.code.toLowerCase()}`
+                      : ''
+                    const subtaskProgress = getSubtaskProgress(task.subtasks)
+                    const big3Source = getTaskBig3Source(task, tags, lists)
+                    const hasEstimate =
+                      typeof task.estimated_minutes === 'number' && task.estimated_minutes > 0
+                    return (
+                      <div
+                        key={task.id}
+                        data-task-id={task.id}
+                        className={`inbox-shelf-item ${priorityClass} ${draggingTaskId === task.id ? 'is-dragging' : ''} ${big3Source ? 'has-big3-source' : ''}`}
+                        style={{
+                          borderLeftColor: priorityMeta ? priorityMeta.borderColor : undefined,
+                        }}
+                        draggable
+                        onDragStart={(e) => handleDragStartTask(e, task.id, 'inbox')}
+                        onDragEnd={handleDragEndTask}
+                      >
+                        <div
+                          className="inbox-item-drag-handle"
+                          onTouchStart={(e) => handleTouchStartHandle(e, task.id, 'inbox')}
+                          title="Arrastar para agendar no dia"
+                        >
+                          <GripHorizontal />
+                        </div>
+                        <button
+                          type="button"
+                          className="inbox-item-body"
+                          onClick={() => {
+                            setSelectedTask(task)
+                            setParams((p) => {
+                              p.set('taskId', task.id)
+                              return p
+                            })
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="inbox-item-title" title={task.title}>
+                              {task.title}
+                            </span>
+                            {task.recurrence_type && task.recurrence_type !== 'none' && (
+                              <span
+                                className="recurrence-indicator"
+                                title={formatRecurrenceRule(task) || 'Tarefa recorrente'}
+                              >
+                                <Repeat className="w-3 h-3 text-[#C5A880]" />
+                              </span>
+                            )}
+                          </div>
+                          <div className="inbox-item-meta">
+                            {big3Source && (
+                              <span
+                                className="tag-chip big3-indicator-chip"
+                                title={`Item prioritário Big3 (80/20) via ${big3Source.label}`}
+                              >
+                                <span
+                                  className="big3-dot"
+                                  style={{ backgroundColor: big3Source.color || '#C5A880' }}
+                                />
+                                BIG3
+                              </span>
+                            )}
+                            {priorityMeta && (
+                              <span
+                                className="tag-chip priority-chip"
+                                style={{
+                                  borderColor: priorityMeta.borderColor,
+                                  color: priorityMeta.color,
+                                  backgroundColor: priorityMeta.bgSubtle,
+                                }}
+                                title={priorityMeta.label}
+                              >
+                                <Flag className="w-2.5 h-2.5 inline mr-1" />
+                                {priorityMeta.code}
+                              </span>
+                            )}
+                            {task.expand?.list && (
+                              <span
+                                className="inbox-list-chip meta-list-chip"
+                                title={`#${task.expand.list.name}`}
+                              >
+                                #{task.expand.list.name}
+                              </span>
+                            )}
+                            {task.expand?.tags &&
+                              (() => {
+                                const visibleTags = task.expand.tags.slice(0, 2)
+                                const overflowCount = task.expand.tags.length - visibleTags.length
+                                return (
+                                  <>
+                                    {visibleTags.map((tag) => (
+                                      <span
+                                        key={tag.id}
+                                        className="tag-chip"
+                                        style={{
+                                          borderColor: tag.color,
+                                          color: tag.color,
+                                        }}
+                                        title={`@${tag.name}`}
+                                      >
+                                        <span className="tag-chip-label">@{tag.name}</span>
+                                      </span>
+                                    ))}
+                                    {overflowCount > 0 && (
+                                      <span
+                                        className="tag-chip overflow-chip"
+                                        title={`${overflowCount} outra(s) etiqueta(s)`}
+                                      >
+                                        +{overflowCount}
+                                      </span>
+                                    )}
+                                  </>
+                                )
+                              })()}
+                            {task.recurrence_type && task.recurrence_type !== 'none' && (
+                              <span
+                                className="tag-chip recurrence-chip"
+                                style={{
+                                  borderColor: 'rgba(197, 168, 128, 0.35)',
+                                  color: '#C5A880',
+                                }}
+                                title={`Regra: ${formatRecurrenceRule(task)}`}
+                              >
+                                <Repeat className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
+                                <span className="recurrence-chip-text">
+                                  {formatRecurrenceRule(task).replace(/^repete\s*·\s*/, '')}
+                                </span>
+                              </span>
+                            )}
+                            {subtaskProgress.total > 0 && (
+                              <span
+                                className={`tag-chip subtask-chip ${subtaskProgress.allDone ? 'all-done' : ''}`}
+                                title={`Sub-tarefas: ${subtaskProgress.completed} de ${subtaskProgress.total} concluídas`}
+                              >
+                                <CheckSquare className="w-2.5 h-2.5 inline mr-1 flex-shrink-0" />
+                                {subtaskProgress.completed}/{subtaskProgress.total}
+                              </span>
+                            )}
+                            <span
+                              className="inbox-est-chip meta-times"
+                              title={
+                                hasEstimate
+                                  ? `Estimado: ${formatMinutes(task.estimated_minutes)}`
+                                  : 'Sem estimativa prévia'
+                              }
+                            >
+                              EST. {hasEstimate ? formatMinutes(task.estimated_minutes) : '—'}
+                            </span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          className="inbox-item-focus"
+                          title="Iniciar Pomodoro"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            start(task)
+                          }}
+                        >
+                          <Play />
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="inbox-shelf-empty">
+                <BrandMark />
+                <span>Inbox limpa. Todas as tarefas estão agendadas para esta semana.</span>
+              </div>
+            )}
           </div>
         )}
       </section>
-
       {/* SELETOR MOBILE DE DIA EM CHIPS (≤900px) */}
       <section className="week-mobile-day-selector" aria-label="Seletor de dias da semana">
         <div className="week-mobile-chips-scroll">
